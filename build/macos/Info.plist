@@ -3,19 +3,19 @@
 <plist version="1.0">
     <dict>
         <key>CFBundleIdentifier</key>
-        <string>com.codemerx.decompiler</string>
+        <string>com.lextudio.ilspyrover</string>
         <key>CFBundleName</key>
-        <string>CodemerxDecompile</string>
+        <string>ILSpyRover</string>
         <key>CFBundleDisplayName</key>
-        <string>CodemerxDecompile</string>
+        <string>ILSpyRover</string>
         <key>CFBundleIconFile</key>
-        <string>codemerx-logo.icns</string>
+        <string>ilspyrover.icns</string>
         <key>CFBundleVersion</key>
         <string>1.5.0</string>
         <key>CFBundleShortVersionString</key>
         <string>1.5.0</string>
         <key>CFBundleExecutable</key>
-        <string>CodemerxDecompile</string>
+        <string>ILSpyRover</string>
         <key>CFBundleInfoDictionaryVersion</key>
         <string>6.0</string>
         <key>CFBundlePackageType</key>

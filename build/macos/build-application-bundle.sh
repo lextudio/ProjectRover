@@ -1,25 +1,26 @@
 #    Copyright 2024 CodeMerx
-#    This file is part of CodemerxDecompile.
+#    Copyright 2025 LeXtudio Inc.
+#    This file is part of ILSpyRover.
 
-#    CodemerxDecompile is free software: you can redistribute it and/or modify
+#    ILSpyRover is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
 
-#    CodemerxDecompile is distributed in the hope that it will be useful,
+#    ILSpyRover is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 #    GNU Affero General Public License for more details.
 
 #    You should have received a copy of the GNU Affero General Public License
-#    along with CodemerxDecompile.  If not, see<https://www.gnu.org/licenses/>.
+#    along with ILSpyRover.  If not, see<https://www.gnu.org/licenses/>.
 
 #!/bin/sh
 
-mkdir -p CodemerxDecompile.app/Contents/{MacOS,Resources}
+mkdir -p ILSpyRover.app/Contents/{MacOS,Resources}
 
 script_dir=$(dirname $0)
-cp $script_dir/Info.plist CodemerxDecompile.app/Contents
-cp $script_dir/codemerx-logo.icns CodemerxDecompile.app/Contents/Resources
+cp $script_dir/Info.plist ILSpyRover.app/Contents
+cp $script_dir/ilspyrover.icns ILSpyRover.app/Contents/Resources
 
-cp -Rp src/CodemerxDecompile/bin/Release/net7.0/$1/publish/ CodemerxDecompile.app/Contents/MacOS
+cp -Rp src/ILSpyRover/bin/Release/net10.0/$1/publish/ ILSpyRover.app/Contents/MacOS

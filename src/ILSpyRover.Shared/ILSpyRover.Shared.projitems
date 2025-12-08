@@ -1,0 +1,33 @@
+﻿<!--
+    Copyright 2020, 2021 CodeMerx
+    Copyright 2025 LeXtudio Inc.
+    This file is part of ILSpy Rover.
+
+    ILSpy Rover is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ILSpy Rover is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with ILSpy Rover.  If not, see<https://www.gnu.org/licenses/>.
+-->
+
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>f82c685f-d633-4e27-b9a3-578418d1bf85</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>ILSpyRover.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CommonAssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommonVersionAssemblyInfo.cs" />
+  </ItemGroup>
+</Project>
