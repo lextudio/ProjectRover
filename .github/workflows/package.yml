@@ -1,18 +1,19 @@
 #    Copyright 2024 CodeMerx
-#    This file is part of CodemerxDecompile.
+#    Copyright 2025 LeXtudio Inc.
+#    This file is part of ILSpyRover.
 
-#    CodemerxDecompile is free software: you can redistribute it and/or modify
+#    ILSpyRover is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
 
-#    CodemerxDecompile is distributed in the hope that it will be useful,
+#    ILSpyRover is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 #    GNU Affero General Public License for more details.
 
 #    You should have received a copy of the GNU Affero General Public License
-#    along with CodemerxDecompile.  If not, see<https://www.gnu.org/licenses/>.
+#    along with ILSpyRover.  If not, see<https://www.gnu.org/licenses/>.
 
 name: Package
 
@@ -31,27 +32,26 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: 10.0.x
 
     - name: Publish (x64)
       run: dotnet publish -r win-x64 -c Release
-      working-directory: ./src/CodemerxDecompile
+      working-directory: ./src/ILSpyRover
 
     - name: Publish (ARM)
       run: dotnet publish -r win-arm64 -c Release
-      working-directory: ./src/CodemerxDecompile
-
+      working-directory: ./src/ILSpyRover
     - name: Archive artifacts (x64)
       uses: actions/upload-artifact@v4
       with:
-        name: CodemerxDecompile-windows-x64
-        path: src/CodemerxDecompile/bin/Release/net7.0/win-x64/publish
+        name: ILSpyRover-windows-x64
+        path: src/ILSpyRover/bin/Release/net10.0/win-x64/publish
 
     - name: Archive artifacts (ARM)
       uses: actions/upload-artifact@v4
       with:
-        name: CodemerxDecompile-windows-arm64
-        path: src/CodemerxDecompile/bin/Release/net7.0/win-arm64/publish
+        name: ILSpyRover-windows-arm64
+        path: src/ILSpyRover/bin/Release/net10.0/win-arm64/publish
 
   package-linux:
     runs-on: ubuntu-22.04
@@ -64,20 +64,20 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: 10.0.x
 
     - name: Publish
       run: dotnet publish -r linux-x64 -c Release
-      working-directory: ./src/CodemerxDecompile
+      working-directory: ./src/ILSpyRover
 
     - name: Archive artifacts
-      run: tar -czpf CodemerxDecompile-linux-x64.tar.gz -C ./src/CodemerxDecompile/bin/Release/net7.0/linux-x64/publish .
+      run: tar -czpf ILSpyRover-linux-x64.tar.gz -C ./src/ILSpyRover/bin/Release/net10.0/linux-x64/publish .
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: CodemerxDecompile-linux-x64
-        path: CodemerxDecompile-linux-x64.tar.gz
+        name: ILSpyRover-linux-x64
+        path: ILSpyRover-linux-x64.tar.gz
 
   package-macos-arm64:
     runs-on: macos-14
@@ -89,19 +89,19 @@ jobs:
 
     - name: Publish
       run: dotnet publish -r osx-arm64 -c Release
-      working-directory: ./src/CodemerxDecompile
+      working-directory: ./src/ILSpyRover
 
     - name: Build .app bundle
       run: build/macos/build-application-bundle.sh osx-arm64
 
     - name: Archive artifacts
-      run: tar -czpf CodemerxDecompile-macos-arm64.tar.gz CodemerxDecompile.app
+      run: tar -czpf ILSpyRover-macos-arm64.tar.gz ILSpyRover.app
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: CodemerxDecompile-macos-arm64
-        path: CodemerxDecompile-macos-arm64.tar.gz
+        name: ILSpyRover-macos-arm64
+        path: ILSpyRover-macos-arm64.tar.gz
 
   package-macos-x64:
     runs-on: macos-13
@@ -113,16 +113,16 @@ jobs:
 
     - name: Publish
       run: dotnet publish -r osx-x64 -c Release
-      working-directory: ./src/CodemerxDecompile
+      working-directory: ./src/ILSpyRover
 
     - name: Build .app bundle
       run: build/macos/build-application-bundle.sh osx-x64
 
     - name: Archive artifacts
-      run: tar -czpf CodemerxDecompile-macos-x64.tar.gz CodemerxDecompile.app
+      run: tar -czpf ILSpyRover-macos-x64.tar.gz ILSpyRover.app
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: CodemerxDecompile-macos-x64
-        path: CodemerxDecompile-macos-x64.tar.gz
+        name: ILSpyRover-macos-x64
+        path: ILSpyRover-macos-x64.tar.gz
