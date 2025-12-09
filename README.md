@@ -1,6 +1,6 @@
-# ILSpy Rover
+# Project Rover
 
-Avalonia 11 UI carried over from the Codemerx decompiler app, now wired to the ILSpy decompiler backend. ILSpy Rover keeps the modern Codemerx UI while gracefully replacing the JustDecompile engine with ILSpy.
+Avalonia 11 UI carried over from the Codemerx decompiler app, now wired to the ILSpy decompiler backend. Project Rover keeps the modern Codemerx UI while gracefully replacing the JustDecompile engine with ILSpy.
 
 ## Quick start
 
@@ -8,34 +8,34 @@ Download the latest release archive for your platform from the Releases page, ex
 
 ### Windows
 1. Extract the archive.
-2. Start `ILSpyRover.exe`.
+2. Start `ProjectRover.exe`.
 
 ### Linux
 1. Extract the archive, for example:
    ```bash
-   mkdir ILSpyRover && tar -xzpf ./ILSpyRover-linux-x64.tar.gz -C ILSpyRover
+   mkdir ProjectRover && tar -xzpf ./ProjectRover-linux-x64.tar.gz -C ProjectRover
    ```
-2. Start the app using `./ILSpyRover/ILSpyRover`.
+2. Start the app using `./ProjectRover/ProjectRover`.
 
 ### macOS
 1. Extract the archive for your architecture:
-   - ARM64: `tar -xzpf ./ILSpyRover-macos-arm64.tar.gz`
-   - x64: `tar -xzpf ./ILSpyRover-macos-x64.tar.gz`
+   - ARM64: `tar -xzpf ./ProjectRover-macos-arm64.tar.gz`
+   - x64: `tar -xzpf ./ProjectRover-macos-x64.tar.gz`
 2. Remove the quarantine attribute because the app is not signed and macOS will otherwise block it:
    ```bash
-   xattr -d com.apple.quarantine ILSpyRover.app
+   xattr -d com.apple.quarantine ProjectRover.app
    ```
-3. Start `ILSpyRover.app`.
+3. Start `ProjectRover.app`.
 
 ## Build from source
 ```bash
 git submodule update --init --recursive
 dotnet restore
-dotnet build ILSpyRover.sln
+dotnet build ProjectRover.sln
 ```
 
 ## Layout
-- `src/ILSpyRover` – Avalonia application and view models.
+- `src/ProjectRover` – Avalonia application and view models.
 - `src/AvaloniaEdit` – bundled text editor control.
 - `extern/ILSpy` – ILSpy source pulled in as a submodule for reference.
 
