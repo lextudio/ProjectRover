@@ -17,13 +17,16 @@
     along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
 */
 
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
+using Avalonia.Styling;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
@@ -43,6 +46,8 @@ public partial class MainWindow : Window
 {
     internal static readonly TextSegmentCollection<ReferenceTextSegment> references = new();
     private static MainWindowViewModel viewModel;
+    private readonly RegistryOptions registryOptions;
+    private readonly TextMate.Installation textMateInstallation;
     
     public MainWindow(ILogger<MainWindow> logger, MainWindowViewModel mainWindowViewModel,
         IAnalyticsService analyticsService, IAutoUpdateService autoUpdateService, IAppInformationProvider appInformationProvider)
@@ -64,11 +69,11 @@ public partial class MainWindow : Window
         
         TextEditor.TextArea.TextView.ElementGenerators.Add(new ReferenceElementGenerator());
         
-        // TODO: Switch editor theme according with app theme
-        var registryOptions = new RegistryOptions(ThemeName.LightPlus);
-        var installation = TextEditor.InstallTextMate(registryOptions);
-        // TODO: Set grammar according to selected language in the UI
-        installation.SetGrammar(registryOptions.GetScopeByLanguageId(registryOptions.GetLanguageByExtension(".cs").Id));
+        registryOptions = new RegistryOptions(ThemeName.LightPlus);
+        textMateInstallation = TextEditor.InstallTextMate(registryOptions);
+        textMateInstallation.SetGrammar(registryOptions.GetScopeByLanguageId(registryOptions.GetLanguageByExtension(".cs").Id));
+        ApplyTheme(viewModel.SelectedTheme);
+        viewModel.PropertyChanged += ViewModelOnPropertyChanged;
 
         TextEditor.KeyDown += (_, args) =>
         {
@@ -164,6 +169,23 @@ public partial class MainWindow : Window
                 args.Handled = true;
             }
         };
+    }
+
+    private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowViewModel.SelectedTheme))
+        {
+            ApplyTheme(viewModel.SelectedTheme);
+        }
+    }
+
+    private void ApplyTheme(MainWindowViewModel.ThemeOption? themeOption)
+    {
+        var variant = themeOption?.Variant ?? ThemeVariant.Light;
+        Application.Current!.RequestedThemeVariant = variant;
+
+        var textMateTheme = variant == ThemeVariant.Dark ? ThemeName.DarkPlus : ThemeName.LightPlus;
+        textMateInstallation.SetTheme(registryOptions.LoadTheme(textMateTheme));
     }
     
     private class ReferenceElementGenerator : VisualLineElementGenerator

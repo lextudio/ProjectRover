@@ -28,6 +28,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Styling;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
@@ -91,6 +92,13 @@ public partial class MainWindowViewModel : ObservableObject
         };
         selectedLanguage = Languages[0];
 
+        Themes = new ObservableCollection<ThemeOption>
+        {
+            new("Light", ThemeVariant.Light),
+            new("Dark", ThemeVariant.Dark)
+        };
+        selectedTheme = Themes[0];
+
         LanguageVersions.CollectionChanged += OnLanguageVersionsChanged;
         UpdateLanguageVersions(selectedLanguage.Language);
 
@@ -109,6 +117,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     public bool SearchPaneSelected => SelectedPaneIndex == 1;
 
+    public ObservableCollection<ThemeOption> Themes { get; }
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(GenerateProjectCommand))]
     private Node? selectedNode;
@@ -126,6 +136,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool showCompilerGeneratedMembers;
+
+    [ObservableProperty]
+    private ThemeOption selectedTheme;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SearchPaneSelected))]
@@ -350,6 +363,11 @@ public partial class MainWindowViewModel : ObservableObject
         Decompile(SelectedNode);
     }
 
+    partial void OnSelectedThemeChanged(ThemeOption _)
+    {
+        PersistLastAssemblies();
+    }
+
     partial void OnShowCompilerGeneratedMembersChanged(bool _)
     {
         // Rebuild the tree to account for the new filter.
@@ -560,24 +578,25 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    private string[] LoadPersistedAssemblyList()
+    private StartupState LoadStartupState()
     {
         try
         {
             if (!File.Exists(startupStateFilePath))
-                return Array.Empty<string>();
+                return new StartupState();
 
             var json = File.ReadAllText(startupStateFilePath);
-            var state = JsonSerializer.Deserialize<StartupState>(json);
-            return state?.LastAssemblies?.Where(File.Exists).ToArray() ?? Array.Empty<string>();
+            var state = JsonSerializer.Deserialize<StartupState>(json) ?? new StartupState();
+            state.LastAssemblies = (state.LastAssemblies ?? Array.Empty<string>()).Where(File.Exists).ToArray();
+            return state;
         }
         catch
         {
-            return Array.Empty<string>();
+            return new StartupState();
         }
     }
 
-    private void SaveAssemblyList(string[] assemblies)
+    private void SaveStartupState(StartupState state)
     {
         try
         {
@@ -586,11 +605,6 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 Directory.CreateDirectory(directory);
             }
-
-            var state = new StartupState
-            {
-                LastAssemblies = assemblies
-            };
 
             var json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(startupStateFilePath, json);
@@ -604,6 +618,7 @@ public partial class MainWindowViewModel : ObservableObject
     private sealed class StartupState
     {
         public string[] LastAssemblies { get; set; } = Array.Empty<string>();
+        public string? Theme { get; set; }
     }
 
     private void RestoreLastAssemblies()
@@ -611,11 +626,22 @@ public partial class MainWindowViewModel : ObservableObject
         if (!startupOptions.RestoreAssemblies)
             return;
 
-        var lastAssemblies = LoadPersistedAssemblyList();
-        if (lastAssemblies.Length == 0)
+        var state = LoadStartupState();
+
+        if (!string.IsNullOrEmpty(state.Theme))
+        {
+            var savedTheme = Themes.FirstOrDefault(t => string.Equals(t.Variant.ToString(), state.Theme, StringComparison.OrdinalIgnoreCase))
+                             ?? Themes.FirstOrDefault(t => string.Equals(t.Name, state.Theme, StringComparison.OrdinalIgnoreCase));
+            if (savedTheme != null)
+            {
+                SelectedTheme = savedTheme;
+            }
+        }
+
+        if (state.LastAssemblies.Length == 0)
             return;
 
-        LoadAssemblies(lastAssemblies);
+        LoadAssemblies(state.LastAssemblies);
     }
 
     private void PersistLastAssemblies()
@@ -625,7 +651,11 @@ public partial class MainWindowViewModel : ObservableObject
             .Where(p => p != null)
             .ToArray();
 
-        SaveAssemblyList(files!);
+        SaveStartupState(new StartupState
+        {
+            LastAssemblies = files!,
+            Theme = SelectedTheme?.Variant.ToString()
+        });
     }
 
     partial void OnSelectedPaneIndexChanged(int _)
@@ -820,7 +850,9 @@ public partial class MainWindowViewModel : ObservableObject
     private static bool IsCompilerGenerated(ICustomAttributeProvider provider) =>
         provider.CustomAttributes.Any(attr => attr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute");
 
-public record LanguageOption(string Name, DecompilationLanguage Language);
+    public record ThemeOption(string Name, ThemeVariant Variant);
 
-public record LanguageVersionOption(string Name, LanguageVersion Version);
+    public record LanguageOption(string Name, DecompilationLanguage Language);
+
+    public record LanguageVersionOption(string Name, LanguageVersion Version);
 }

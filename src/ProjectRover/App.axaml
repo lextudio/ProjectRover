@@ -46,6 +46,45 @@
             <Setter Property="Opacity" Value="0.5" />
         </Style>
     </Application.Styles>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="ToolbarBackgroundBrush" Color="#F6F6F6" />
+                    <SolidColorBrush x:Key="ToolbarBorderBrush" Color="#DFDFDF" />
+                    <SolidColorBrush x:Key="ToolbarSeparatorBrush" Color="#DFDFDF" />
+                    <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#F6F6F6" />
+                    <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#DFDFDF" />
+                    <SolidColorBrush x:Key="StatusBarHoverBrush" Color="#DFDFDF" />
+
+                    <x:String x:Key="AssemblyIcon">/Assets/Assembly.svg</x:String>
+                    <x:String x:Key="SearchIcon">/Assets/Search.svg</x:String>
+                    <x:String x:Key="NamespaceIcon">/Assets/Namespace.svg</x:String>
+                    <x:String x:Key="PropertyIcon">/Assets/PropertyPublic.svg</x:String>
+                    <x:String x:Key="ReferenceGroupIcon">/Assets/ReferenceGroup.svg</x:String>
+                    <x:String x:Key="ReferenceIcon">/Assets/Reference.svg</x:String>
+                    <x:String x:Key="ReferenceWarningIcon">/Assets/ReferenceWarning.svg</x:String>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="ToolbarBackgroundBrush" Color="#1F1F1F" />
+                    <SolidColorBrush x:Key="ToolbarBorderBrush" Color="#3A3A3A" />
+                    <SolidColorBrush x:Key="ToolbarSeparatorBrush" Color="#3A3A3A" />
+                    <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#1F1F1F" />
+                    <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#3A3A3A" />
+                    <SolidColorBrush x:Key="StatusBarHoverBrush" Color="#3A3A3A" />
+
+                    <x:String x:Key="AssemblyIcon">/Assets/Dark/Assembly.svg</x:String>
+                    <x:String x:Key="SearchIcon">/Assets/Dark/Search.svg</x:String>
+                    <x:String x:Key="NamespaceIcon">/Assets/Dark/Namespace.svg</x:String>
+                    <x:String x:Key="PropertyIcon">/Assets/Dark/PropertyPublic.svg</x:String>
+                    <x:String x:Key="ReferenceGroupIcon">/Assets/Dark/ReferenceGroup.svg</x:String>
+                    <x:String x:Key="ReferenceIcon">/Assets/Dark/Reference.svg</x:String>
+                    <x:String x:Key="ReferenceWarningIcon">/Assets/Dark/ReferenceWarning.svg</x:String>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
     
     <NativeMenu.Menu>
         <NativeMenu>

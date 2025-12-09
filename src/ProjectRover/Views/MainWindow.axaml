@@ -113,9 +113,9 @@
                 <Border.Styles>
                     <Style Selector="Border.menu-bar">
                         <Setter Property="Padding" Value="5" />
-                        <Setter Property="Background" Value="#F6F6F6" />
+                        <Setter Property="Background" Value="{DynamicResource ToolbarBackgroundBrush}" />
                         <Setter Property="BorderThickness" Value="0 0 0 1" />
-                        <Setter Property="BorderBrush" Value="#DFDFDF" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource ToolbarBorderBrush}" />
                     </Style>
                 </Border.Styles>
                 
@@ -127,7 +127,7 @@
                         <Style Selector="Border.separator">
                             <Setter Property="Margin" Value="5 5 10 5" />
                             <Setter Property="BorderThickness" Value="0.5" />
-                            <Setter Property="BorderBrush" Value="#DFDFDF" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource ToolbarSeparatorBrush}" />
                             <Setter Property="Width" Value="1" />
                         </Style>
                     </StackPanel.Styles>
@@ -174,6 +174,18 @@
 
                     <Border Classes="separator" />
 
+                    <ComboBox ItemsSource="{Binding Themes}"
+                              SelectedItem="{Binding SelectedTheme}"
+                              Width="110">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <Border Classes="separator" />
+
                     <Button Command="{Binding SortAssembliesCommand}"
                             ToolTip.Tip="Sort assemblies">
                         <Image Width="16" Height="16" Source="/Assets/SortAssemblies.png" />
@@ -190,9 +202,9 @@
                     Classes="status-bar">
                 <Border.Styles>
                     <Style Selector="Border.status-bar">
-                        <Setter Property="Background" Value="#F6F6F6" />
+                        <Setter Property="Background" Value="{DynamicResource StatusBarBackgroundBrush}" />
                         <Setter Property="BorderThickness" Value="0 1 0 0" />
-                        <Setter Property="BorderBrush" Value="#DFDFDF" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource StatusBarBorderBrush}" />
                         <Setter Property="Padding" Value="10 0" />
                     </Style>
                     
@@ -201,7 +213,7 @@
                     </Style>
                     
                     <Style Selector="Border.status-bar-item:pointerover">
-                        <Setter Property="Background" Value="#DFDFDF" />
+                        <Setter Property="Background" Value="{DynamicResource StatusBarHoverBrush}" />
                         <Setter Property="Cursor" Value="Hand" />
                     </Style>
                 </Border.Styles>
@@ -240,10 +252,10 @@
                                 </Style>
                             </ListBox.Styles>
                             <ListBoxItem>
-                                <Svg Path="/Assets/Assembly.svg" />
+                                <Svg Path="{DynamicResource AssemblyIcon}" />
                             </ListBoxItem>
                             <ListBoxItem>
-                                <Svg Path="/Assets/Search.svg" />
+                                <Svg Path="{DynamicResource SearchIcon}" />
                             </ListBoxItem>
                         </ListBox>
                         <Grid>
@@ -265,31 +277,31 @@
                                 <TreeView.DataTemplates>
                                     <TreeDataTemplate DataType="nodes:AssemblyNode" ItemsSource="{Binding Children}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/Assembly.svg" />
+                                            <Svg Path="{DynamicResource AssemblyIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:ReferencesNode" ItemsSource="{Binding Items}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/ReferenceGroup.svg" />
+                                            <Svg Path="{DynamicResource ReferenceGroupIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:ResolvedReferenceNode">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/Reference.svg" />
+                                            <Svg Path="{DynamicResource ReferenceIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:UnresolvedReferenceNode">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/ReferenceWarning.svg" />
+                                            <Svg Path="{DynamicResource ReferenceWarningIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:NamespaceNode" ItemsSource="{Binding Types}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/Namespace.svg" />
+                                            <Svg Path="{DynamicResource NamespaceIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
@@ -325,7 +337,7 @@
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:PropertyNode">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/PropertyPublic.svg" />
+                                            <Svg Path="{DynamicResource PropertyIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
@@ -416,13 +428,13 @@
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:PropertyNameSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/PropertyPublic.svg" />
+                                                <Svg Path="{DynamicResource PropertyIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:PropertyTypeSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/PropertyPublic.svg" />
+                                                <Svg Path="{DynamicResource PropertyIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
