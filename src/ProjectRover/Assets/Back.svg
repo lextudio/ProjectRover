@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <defs>
+    <style>.canvas{fill: none; opacity: 0;}.light-defaultgrey{fill: #212121; opacity: 1;}</style>
+  </defs>
+  <title>Previous</title>
+  <g id="canvas">
+    <path class="canvas" d="M0,16V0H16V16Z" />
+    <path class="canvas" d="M0,16V0H16V16Z" />
+  </g>
+  <g id="level-1">
+    <path class="light-defaultgrey" d="M6.146,13.854l-5-5V8.146l5-5,.708.708L2.707,8H14V9H2.707l4.147,4.146Z" />
+  </g>
+</svg>

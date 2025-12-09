@@ -65,6 +65,23 @@
                     <x:String x:Key="ReferenceGroupIcon">/Assets/ReferenceGroup.svg</x:String>
                     <x:String x:Key="ReferenceIcon">/Assets/Reference.svg</x:String>
                     <x:String x:Key="ReferenceWarningIcon">/Assets/ReferenceWarning.svg</x:String>
+                    <x:String x:Key="BackIcon">/Assets/Back.svg</x:String>
+                    <x:String x:Key="ForwardIcon">/Assets/Forward.svg</x:String>
+                    <x:String x:Key="OpenIcon">/Assets/Open.svg</x:String>
+                    <x:String x:Key="ClearIcon">/Assets/Clear.svg</x:String>
+                    <x:String x:Key="SortIcon">/Assets/SortAssemblies.svg</x:String>
+                    <x:String x:Key="CollapseIcon">/Assets/CollapseAll.svg</x:String>
+                    <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
+                    <x:String x:Key="StructIcon">/Assets/StructurePublic.svg</x:String>
+                    <x:String x:Key="ClassIcon">/Assets/ClassPublic.svg</x:String>
+                    <x:String x:Key="InterfaceIcon">/Assets/InterfacePublic.svg</x:String>
+                    <x:String x:Key="FieldIcon">/Assets/FieldPublic.svg</x:String>
+                    <x:String x:Key="MethodIcon">/Assets/MethodPublic.svg</x:String>
+                    <x:String x:Key="ConstructorIcon">/Assets/MethodInstance.svg</x:String>
+                    <x:String x:Key="EventIcon">/Assets/EventPublic.svg</x:String>
+                    <x:String x:Key="ParameterIcon">/Assets/Parameter.svg</x:String>
+                    <x:String x:Key="LocalVariableIcon">/Assets/LocalVariable.svg</x:String>
+                    <x:String x:Key="StringIcon">/Assets/String.svg</x:String>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="ToolbarBackgroundBrush" Color="#1F1F1F" />
@@ -81,6 +98,23 @@
                     <x:String x:Key="ReferenceGroupIcon">/Assets/Dark/ReferenceGroup.svg</x:String>
                     <x:String x:Key="ReferenceIcon">/Assets/Dark/Reference.svg</x:String>
                     <x:String x:Key="ReferenceWarningIcon">/Assets/Dark/ReferenceWarning.svg</x:String>
+                    <x:String x:Key="BackIcon">/Assets/Dark/Back.svg</x:String>
+                    <x:String x:Key="ForwardIcon">/Assets/Dark/Forward.svg</x:String>
+                    <x:String x:Key="OpenIcon">/Assets/Open.svg</x:String>
+                    <x:String x:Key="ClearIcon">/Assets/Dark/Clear.svg</x:String>
+                    <x:String x:Key="SortIcon">/Assets/Dark/SortAssemblies.svg</x:String>
+                    <x:String x:Key="CollapseIcon">/Assets/Dark/CollapseAll.svg</x:String>
+                    <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
+                    <x:String x:Key="StructIcon">/Assets/StructurePublic.svg</x:String>
+                    <x:String x:Key="ClassIcon">/Assets/ClassPublic.svg</x:String>
+                    <x:String x:Key="InterfaceIcon">/Assets/InterfacePublic.svg</x:String>
+                    <x:String x:Key="FieldIcon">/Assets/FieldPublic.svg</x:String>
+                    <x:String x:Key="MethodIcon">/Assets/MethodPublic.svg</x:String>
+                    <x:String x:Key="ConstructorIcon">/Assets/MethodInstance.svg</x:String>
+                    <x:String x:Key="EventIcon">/Assets/EventPublic.svg</x:String>
+                    <x:String x:Key="ParameterIcon">/Assets/Parameter.svg</x:String>
+                    <x:String x:Key="LocalVariableIcon">/Assets/LocalVariable.svg</x:String>
+                    <x:String x:Key="StringIcon">/Assets/String.svg</x:String>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

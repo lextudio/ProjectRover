@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <defs>
+    <style>.canvas{fill: none; opacity: 0;}.light-defaultgrey{fill: #212121; opacity: 1;}.light-blue{fill: #005dba; opacity: 1;}</style>
+  </defs>
+  <title>IconLightSortDescending</title>
+  <g id="canvas">
+    <path class="canvas" d="M16,16H0V0H16Z" />
+    <path class="canvas" d="M16,16H0V0H16Z" />
+  </g>
+  <g id="level-1">
+    <path class="light-defaultgrey" d="M14,10l-3.5,3H14v1H9V13l3.5-3H9V9h5ZM12,2H11L9,7h1l.375-1h2.25L13,7h1ZM10.75,5l.75-2,.75,2Z" />
+    <path class="light-blue" d="M4.156,2.146h.707l2.5,2.5-.707.708L5,3.707V15H4V3.707L2.363,5.354l-.707-.708Z" />
+  </g>
+</svg>

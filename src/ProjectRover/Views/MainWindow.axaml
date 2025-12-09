@@ -134,22 +134,22 @@
                     
                     <Button Command="{Binding BackCommand}"
                             ToolTip.Tip="Back">
-                        <Image Width="16" Height="16" Source="/Assets/Back.png" />
+                        <Svg Width="16" Height="16" Path="{DynamicResource BackIcon}" />
                     </Button>
                     <Button Command="{Binding ForwardCommand}"
                             ToolTip.Tip="Forward">
-                        <Image Width="16" Height="16" Source="/Assets/Forward.png" />
+                        <Svg Width="16" Height="16" Path="{DynamicResource ForwardIcon}" />
                     </Button>
                     
                     <Border Classes="separator" />
                 
                     <Button Command="{Binding OpenFileCommand}"
                             ToolTip.Tip="Open assembly">
-                        <Image Width="16" Height="16" Source="/Assets/Open.png" />
+                        <Svg Width="16" Height="16" Path="{DynamicResource OpenIcon}" />
                     </Button>
                     <Button Command="{Binding ClearAssemblyListCommand}"
                             ToolTip.Tip="Close all">
-                        <Image Width="16" Height="16" Source="/Assets/ClearSearch.png" />
+                        <Svg Width="16" Height="16" Path="{DynamicResource ClearIcon}" />
                     </Button>
 
                     <Border Classes="separator" />
@@ -188,12 +188,12 @@
 
                     <Button Command="{Binding SortAssembliesCommand}"
                             ToolTip.Tip="Sort assemblies">
-                        <Image Width="16" Height="16" Source="/Assets/SortAssemblies.png" />
+                        <Svg Width="16" Height="16" Path="{DynamicResource SortIcon}" />
                     </Button>
 
                     <Button Command="{Binding CollapseAllCommand}"
                             ToolTip.Tip="Collapse all">
-                        <Image Width="16" Height="16" Source="/Assets/CollapseAll.png" />
+                        <Svg Width="16" Height="16" Path="{DynamicResource CollapseIcon}" />
                     </Button>
                 </StackPanel>
             </Border>
@@ -307,31 +307,31 @@
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:EnumNode" ItemsSource="{Binding Members}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/EnumerationItemPublic.svg" />
+                                            <Svg Path="{DynamicResource EnumIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:StructNode" ItemsSource="{Binding Members}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/StructurePublic.svg" />
+                                            <Svg Path="{DynamicResource StructIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:ClassNode" ItemsSource="{Binding Members}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/ClassPublic.svg" />
+                                            <Svg Path="{DynamicResource ClassIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:InterfaceNode" ItemsSource="{Binding Members}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/InterfacePublic.svg" />
+                                            <Svg Path="{DynamicResource InterfaceIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:FieldNode">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/FieldPublic.svg" />
+                                            <Svg Path="{DynamicResource FieldIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
@@ -343,19 +343,19 @@
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:ConstructorNode">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/MethodInstance.svg" />
+                                            <Svg Path="{DynamicResource ConstructorIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:MethodNode">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/MethodPublic.svg" />
+                                            <Svg Path="{DynamicResource MethodIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:EventNode">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="/Assets/EventPublic.svg" />
+                                            <Svg Path="{DynamicResource EventIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
@@ -398,31 +398,31 @@
                                     <ListBox.DataTemplates>
                                         <DataTemplate DataType="searchResults:TypeNameSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/ClassPublic.svg" />
+                                                <Svg Path="{DynamicResource ClassIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:EventNameSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/EventPublic.svg" />
+                                                <Svg Path="{DynamicResource EventIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:EventTypeSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/EventPublic.svg" />
+                                                <Svg Path="{DynamicResource EventIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:FieldNameSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/FieldPublic.svg" />
+                                                <Svg Path="{DynamicResource FieldIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:FieldTypeSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/FieldPublic.svg" />
+                                                <Svg Path="{DynamicResource FieldIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
@@ -440,50 +440,50 @@
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:MethodNameSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/MethodPublic.svg" />
+                                                <Svg Path="{DynamicResource MethodIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:MethodReturnTypeSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/MethodPublic.svg" />
+                                                <Svg Path="{DynamicResource MethodIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:ParameterNameSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/Parameter.svg" />
+                                                <Svg Path="{DynamicResource ParameterIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:ParameterTypeSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/Parameter.svg" />
+                                                <Svg Path="{DynamicResource ParameterIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:VariableNameSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/LocalVariable.svg" />
+                                                <Svg Path="{DynamicResource LocalVariableIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:VariableTypeSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/LocalVariable.svg" />
+                                                <Svg Path="{DynamicResource LocalVariableIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:StringLiteralSearchResult">
                                             <StackPanel Orientation="Horizontal">
-                                                <Svg Path="/Assets/String.svg" />
+                                                <Svg Path="{DynamicResource StringIcon}" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
                                         <DataTemplate DataType="searchResults:SearchResult">
                                             <StackPanel Orientation="Horizontal">
                                                 <!-- Used to keep the space unoccupied and align all elements vertically -->
-                                                <Svg Path="/Assets/LocalVariable.svg" Opacity="0" />
+                                                <Svg Path="{DynamicResource LocalVariableIcon}" Opacity="0" />
                                                 <TextBlock Text="{Binding MatchedString}" />
                                             </StackPanel>
                                         </DataTemplate>
