@@ -42,5 +42,7 @@ dotnet build ProjectRover.sln
 ## Status
 The UI opens assemblies and decompiles members via ILSpy's `CSharpDecompiler`. Project export and full-text search are stubbed out while the backend integration is completed.
 
+Currently, this project aims to replicate the core features of AvaloniaILSpy, with plans to expand functionality in the future.
+
 ## License
 This project is [AGPL](COPYING) licensed. It includes [ILSpy](extern/ILSpy) and [Mono.Cecil](https://github.com/jbevain/cecil) which are MIT licensed.
