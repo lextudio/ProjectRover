@@ -295,7 +295,8 @@
                                       SelectedItem="{Binding SelectedNode}" 
                                       AutoScrollToSelectedItem="True"
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                      Foreground="{DynamicResource ThemeForegroundBrush}">
+                                      Foreground="{DynamicResource ThemeForegroundBrush}"
+                                      DoubleTapped="TreeView_OnDoubleTapped">
                                 <TreeView.Styles>
                                     <Style Selector="TextBlock" x:DataType="nodes:Node">
                                         <Setter Property="Foreground" Value="{Binding IsPublicAPI, Converter={StaticResource ApiVisibilityToBrushConverter}}" />
@@ -423,6 +424,18 @@
                                     <TreeDataTemplate DataType="nodes:InterfaceNode" ItemsSource="{Binding Members}">
                                         <StackPanel Orientation="Horizontal">
                                             <Svg Path="{DynamicResource InterfaceIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:BaseTypesNode" ItemsSource="{Binding Items}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource ReferenceGroupIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:BaseTypeNode">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>

@@ -52,6 +52,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using MemberReference = Mono.Cecil.MemberReference;
+using TypeReference = Mono.Cecil.TypeReference;
 using TypeDefinition = Mono.Cecil.TypeDefinition;
 using FieldDefinition = Mono.Cecil.FieldDefinition;
 using MethodDefinition = Mono.Cecil.MethodDefinition;
@@ -226,6 +227,44 @@ public partial class MainWindowViewModel : ObservableObject
             Message = "Go to definition is not wired to the ILSpy backend yet.",
             Level = NotificationLevel.Information
         });
+    }
+
+    public void NavigateToType(TypeReference typeReference)
+    {
+        var typeDefinition = typeReference.Resolve();
+        if (typeDefinition == null)
+        {
+            notificationService.ShowNotification(new Notification
+            {
+                Message = $"Could not resolve type {typeReference.FullName}",
+                Level = NotificationLevel.Warning
+            });
+            return;
+        }
+
+        if (memberDefinitionToNodeMap.TryGetValue(typeDefinition, out var node))
+        {
+            SelectedNode = node;
+            ExpandParents(node);
+        }
+        else
+        {
+            notificationService.ShowNotification(new Notification
+            {
+                Message = $"Type {typeDefinition.FullName} not found in tree",
+                Level = NotificationLevel.Warning
+            });
+        }
+    }
+
+    private void ExpandParents(Node node)
+    {
+        var parent = node.Parent;
+        while (parent != null)
+        {
+            parent.IsExpanded = true;
+            parent = parent.Parent;
+        }
     }
 
     internal async void TryLoadUnresolvedReference(MemberReference memberReference)
@@ -534,6 +573,20 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
+        if (node is BaseTypesNode)
+        {
+            Document = new TextDocument($"// Base Types");
+            MainWindow.references.Clear();
+            return;
+        }
+
+        if (node is BaseTypeNode baseTypeNode)
+        {
+            Document = new TextDocument($"// Base Type: {baseTypeNode.TypeReference.FullName}{System.Environment.NewLine}// Double-click to navigate.");
+            MainWindow.references.Clear();
+            return;
+        }
+
         if (node is not MemberNode memberNode)
         {
             return;
@@ -612,6 +665,7 @@ public partial class MainWindowViewModel : ObservableObject
             ResourcesNode resourcesNode => resourcesNode.Items,
             NamespaceNode namespaceNode => namespaceNode.Types,
             TypeNode typeNode => typeNode.Members,
+            BaseTypesNode baseTypesNode => baseTypesNode.Items,
             _ => Enumerable.Empty<Node>()
         };
 
@@ -991,6 +1045,36 @@ public partial class MainWindowViewModel : ObservableObject
             },
             _ => throw new NotSupportedException()
         };
+
+        if (typeDefinition.BaseType != null || typeDefinition.HasInterfaces)
+        {
+            var baseTypesNode = new BaseTypesNode
+            {
+                Name = "Base Types",
+                Parent = typeNode
+            };
+            typeNode.Members.Add(baseTypesNode);
+
+            if (typeDefinition.BaseType != null)
+            {
+                baseTypesNode.Items.Add(new BaseTypeNode
+                {
+                    Name = typeDefinition.BaseType.Name,
+                    Parent = baseTypesNode,
+                    TypeReference = typeDefinition.BaseType
+                });
+            }
+
+            foreach (var interfaceImpl in typeDefinition.Interfaces)
+            {
+                baseTypesNode.Items.Add(new BaseTypeNode
+                {
+                    Name = interfaceImpl.InterfaceType.Name,
+                    Parent = baseTypesNode,
+                    TypeReference = interfaceImpl.InterfaceType
+                });
+            }
+        }
 
         foreach (var memberDefinition in GetMembers(typeDefinition))
         {

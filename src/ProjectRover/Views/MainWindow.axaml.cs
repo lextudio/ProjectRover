@@ -234,6 +234,14 @@ public partial class MainWindow : Window
         textMateInstallation.SetTheme(registryOptions.LoadTheme(textMateTheme));
     }
     
+    private void TreeView_OnDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (viewModel.SelectedNode is BaseTypeNode baseTypeNode)
+        {
+            viewModel.NavigateToType(baseTypeNode.TypeReference);
+        }
+    }
+
     private class ReferenceElementGenerator : VisualLineElementGenerator
     {
         public override int GetFirstInterestedOffset(int startOffset)
