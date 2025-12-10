@@ -29,7 +29,8 @@
       <TreeDataTemplate DataType="nodes:AssemblyNode" ItemsSource="{Binding Children}">
         <StackPanel Orientation="Horizontal">
           <Svg Path="{DynamicResource ReferenceIcon}" />
-          <TextBlock Text="{Binding Name}" />
+          <TextBlock Text="{Binding Name}"
+                     Foreground="{DynamicResource ThemeForegroundBrush}" />
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:MetadataNode" ItemsSource="{Binding Items}">

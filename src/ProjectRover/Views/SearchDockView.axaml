@@ -15,29 +15,35 @@
                    Background="Transparent"
                    CornerRadius="0" />
     </Grid>
-    <Grid DockPanel.Dock="Top" Margin="5">
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="5">
       <TextBox x:Name="SearchTextBox"
                Watermark="Search..."
                Text="{Binding SearchText}"
-               Padding="8 4 28 4" />
-      <Button HorizontalAlignment="Right"
-              VerticalAlignment="Center"
-              Margin="0 0 4 0"
-              Background="Transparent"
-              BorderBrush="{x:Null}"
-              Padding="2"
-              Click="OnClearSearchClick"
-              IsHitTestVisible="{Binding SearchText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
-              IsVisible="{Binding SearchText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
-        <Svg Path="{DynamicResource ClearIcon}" Width="14" Height="14" />
-      </Button>
-      <Svg HorizontalAlignment="Right"
-           VerticalAlignment="Center"
-           Margin="0 0 8 0"
-           Path="{DynamicResource SearchIcon}"
-           Width="14"
-           Height="14"
-           IsVisible="{Binding SearchText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}, ConverterParameter=False}" />
+               Margin="0,0,8,0">
+        <TextBox.InnerRightContent>
+          <Panel Margin="0,0,5,0">
+            <Button Background="Transparent"
+                    BorderBrush="{x:Null}"
+                    Padding="2"
+                    Click="OnClearSearchClick"
+                    IsVisible="{Binding SearchText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
+                    Cursor="Hand">
+              <Svg Path="{DynamicResource CloseIcon}" Width="14" Height="14" />
+            </Button>
+            <Svg Path="{DynamicResource SearchIcon}"
+                 Width="14"
+                 Height="14"
+                 IsVisible="{Binding SearchText, Converter={x:Static converters:StringConverters.IsNullOrEmpty}}" />
+          </Panel>
+        </TextBox.InnerRightContent>
+      </TextBox>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
+        <TextBlock Text="Search for:" VerticalAlignment="Center" />
+        <ComboBox Width="140"
+                  ItemsSource="{Binding SearchModes}"
+                  SelectedItem="{Binding SelectedSearchMode}"
+                  VerticalAlignment="Center" />
+      </StackPanel>
     </Grid>
     <TextBlock DockPanel.Dock="Top"
                Text="{Binding NumberOfResultsText}"
@@ -45,26 +51,42 @@
                Margin="10 5 0 5"
                Foreground="#919191"
                FontSize="12"/>
+    <Grid DockPanel.Dock="Top" Margin="5,0,5,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="150" />
+      </Grid.ColumnDefinitions>
+      <TextBlock Text="Name" FontWeight="Bold" />
+      <TextBlock Grid.Column="1" Text="Location" FontWeight="Bold" />
+      <TextBlock Grid.Column="2" Text="Assembly" FontWeight="Bold" />
+    </Grid>
     <ListBox ItemsSource="{Binding SearchResults}"
              SelectedItem="{Binding SelectedSearchResult}"
-             Background="Transparent">
+             Background="Transparent"
+             BorderBrush="{DynamicResource ToolbarBorderBrush}"
+             BorderThickness="1">
       <ListBox.Styles>
-        <Style Selector="Svg">
-          <Setter Property="Margin" Value="0 0 5 0" />
-        </Style>
         <Style Selector="ListBoxItem">
-          <Setter Property="Padding" Value="5" />
-          <Setter Property="Cursor" Value="Hand" />
+          <Setter Property="Foreground" Value="{DynamicResource ThemeForegroundBrush}" />
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderThickness" Value="0" />
         </Style>
       </ListBox.Styles>
-      <ListBox.DataTemplates>
+      <ListBox.ItemTemplate>
         <DataTemplate DataType="searchResults:SearchResult">
-          <StackPanel Orientation="Horizontal">
-            <Svg Path="{DynamicResource LocalVariableIcon}" Opacity="0" />
-            <TextBlock Text="{Binding MatchedString}" />
-          </StackPanel>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="200" />
+              <ColumnDefinition Width="200" />
+              <ColumnDefinition Width="150" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="0,0,5,0" Foreground="{DynamicResource ThemeForegroundBrush}" />
+            <TextBlock Grid.Column="1" Text="{Binding Location}" TextTrimming="CharacterEllipsis" Margin="0,0,5,0" Foreground="{DynamicResource ThemeForegroundBrush}" />
+            <TextBlock Grid.Column="2" Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource ThemeForegroundBrush}" />
+          </Grid>
         </DataTemplate>
-      </ListBox.DataTemplates>
+      </ListBox.ItemTemplate>
     </ListBox>
   </DockPanel>
 </UserControl>

@@ -24,4 +24,5 @@ namespace ProjectRover.Converters;
 public static class StringConverters
 {
     public static FuncValueConverter<string?, bool> IsNotNullOrEmpty { get; } = new(value => !string.IsNullOrEmpty(value));
+    public static FuncValueConverter<string?, bool> IsNullOrEmpty { get; } = new(string.IsNullOrEmpty);
 }

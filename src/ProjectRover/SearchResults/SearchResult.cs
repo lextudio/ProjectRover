@@ -22,4 +22,8 @@ namespace ProjectRover.SearchResults;
 public abstract class SearchResult
 {
     public required string MatchedString { get; init; }
+
+    public virtual string Name => MatchedString;
+    public virtual string Location => string.Empty;
+    public virtual string Assembly => string.Empty;
 }

@@ -117,6 +117,24 @@ public partial class MainWindowViewModel : ObservableObject
     public bool HasLanguageVersions => LanguageVersions.Count > 0;
 
     public ObservableCollection<SearchResult> SearchResults { get; } = new();
+    public ObservableCollection<string> SearchModes { get; } = new(new[]
+    {
+        "Types and Members",
+        "Type",
+        "Member",
+        "Method",
+        "Field",
+        "Property",
+        "Event",
+        "Constant",
+        "Metadata Token",
+        "Resource",
+        "Assembly",
+        "Namespace"
+    });
+
+    [ObservableProperty]
+    private string selectedSearchMode = "Types and Members";
 
     public bool SearchPaneSelected => SelectedPaneIndex == 1;
 
@@ -751,11 +769,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnSearchTextChanged(string value)
     {
-        // Search is not yet implemented on top of the ILSpy backend.
         SearchResults.Clear();
-        NumberOfResultsText = string.IsNullOrWhiteSpace(value)
-            ? null
-            : "Searching assemblies is not available yet.";
+        NumberOfResultsText = null;
         IsSearching = false;
     }
 

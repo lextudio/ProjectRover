@@ -74,6 +74,7 @@
                     <x:String x:Key="ForwardIcon">/Assets/Forward.svg</x:String>
                     <x:String x:Key="OpenIcon">/Assets/Open.svg</x:String>
                     <x:String x:Key="ClearIcon">/Assets/Clear.svg</x:String>
+                    <x:String x:Key="CloseIcon">/Assets/Close.svg</x:String>
                     <x:String x:Key="SortIcon">/Assets/SortAssemblies.svg</x:String>
                     <x:String x:Key="CollapseIcon">/Assets/CollapseAll.svg</x:String>
                     <x:String x:Key="MetadataIcon">/Assets/Metadata.svg</x:String>
@@ -125,6 +126,7 @@
                     <x:String x:Key="ForwardIcon">/Assets/Dark/Forward.svg</x:String>
                     <x:String x:Key="OpenIcon">/Assets/Dark/Open.svg</x:String>
                     <x:String x:Key="ClearIcon">/Assets/Dark/Clear.svg</x:String>
+                    <x:String x:Key="CloseIcon">/Assets/Dark/Close.svg</x:String>
                     <x:String x:Key="SortIcon">/Assets/Dark/SortAssemblies.svg</x:String>
                     <x:String x:Key="CollapseIcon">/Assets/Dark/CollapseAll.svg</x:String>
                     <x:String x:Key="MetadataIcon">/Assets/Dark/Metadata.svg</x:String>
