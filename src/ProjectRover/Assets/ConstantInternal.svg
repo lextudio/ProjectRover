@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <defs>
+    <style>.canvas{fill: none; opacity: 0;}.light-defaultgrey-10{fill: #212121; opacity: 0.1;}.light-defaultgrey{fill: #212121; opacity: 1;}.light-blue{fill: #005dba; opacity: 1;}</style>
+  </defs>
+  <title>IconLightConstantInternal</title>
+  <g id="canvas" class="canvas">
+    <path class="canvas" d="M16,16H0V0H16Z" />
+  </g>
+  <g id="level-1">
+    <path class="light-defaultgrey-10" d="M7,11.5H2.5v-8h9V8.167A3.421,3.421,0,0,0,10.5,8,3.5,3.5,0,0,0,7,11.5Z" />
+    <path class="light-defaultgrey" d="M7.054,12H2.5L2,11.5v-8L2.5,3h9l.5.5V8.343a3.483,3.483,0,0,0-1-.286V4H3v7H7.051A3.429,3.429,0,0,0,7,11.5,3.307,3.307,0,0,0,7.054,12Z" />
+    <path class="light-blue" d="M5,8H9v.351A3.478,3.478,0,0,0,8.058,9H5ZM5,6V7H9V6Z" />
+    <path class="light-defaultgrey-10" d="M15.5,11.5a1.994,1.994,0,0,1-.148.75l-.138.265c-.2.331-3.214,2.81-3.214,2.81s-3.018-2.479-3.214-2.81l-.138-.265A1.994,1.994,0,0,1,12,10.189,1.993,1.993,0,0,1,15.5,11.5Z" />
+    <path class="light-defaultgrey" d="M13.5,9a2.484,2.484,0,0,0-1.5.508A2.492,2.492,0,0,0,8,11.5a2.52,2.52,0,0,0,.2.978l.152.294a33.753,33.753,0,0,0,3.327,2.94l.317.26.317-.26a31.8,31.8,0,0,0,3.342-2.968l.156-.307A2.494,2.494,0,0,0,13.5,9ZM14.9,12.047l-.1.192c-.167.218-1.5,1.363-2.8,2.437C10.7,13.6,9.37,12.46,9.229,12.287l-.117-.225a1.494,1.494,0,0,1,2.512-1.544l.376.431.376-.431A1.495,1.495,0,0,1,14.9,12.047Z" />
+  </g>
+</svg>

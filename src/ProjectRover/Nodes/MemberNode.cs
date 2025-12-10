@@ -26,4 +26,5 @@ public abstract class MemberNode : Node
 {
     public required IEntity Entity { get; init; }
     public EntityHandle MetadataToken => Entity.MetadataToken;
+    public string IconKey { get; init; } = string.Empty;
 }

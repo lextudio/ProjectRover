@@ -24,6 +24,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -946,7 +947,7 @@ public partial class MainWindowViewModel : ObservableObject
                                     DisplayName = displayName,
                                     DisplayLocation = fullTypeName,
                                     DisplayAssembly = assemblyDisplayName,
-                                    IconPath = GetIcon(GetTypeIcon(member.Entity)),
+                                    IconPath = GetIcon(GetMemberIconKey(member.Entity)),
                                     LocationIconPath = nsIcon,
                                     AssemblyIconPath = assemblyIcon,
                                     TargetNode = member
@@ -966,16 +967,6 @@ public partial class MainWindowViewModel : ObservableObject
         NumberOfResultsText = $"Found {results.Count} result(s)";
 
         bool MatchesMode(string modeName) => string.Equals(SelectedSearchMode.Name, modeName, comparer);
-
-        static string GetTypeIcon(IEntity entity) => entity switch
-        {
-            ITypeDefinition => "ClassIcon",
-            IMethod => "MethodIcon",
-            IField => "FieldIcon",
-            IProperty => "PropertyIcon",
-            IEvent => "EventIcon",
-            _ => "MemberIcon"
-        };
 
         static string GetIcon(string key) => Application.Current?.TryGetResource(key, Application.Current.ActualThemeVariant, out var value) == true
             ? value as string ?? string.Empty
@@ -1087,6 +1078,15 @@ public partial class MainWindowViewModel : ObservableObject
     private static bool HasDebuggerNonUserCode(IEntity entity) =>
         entity.GetAttributes().Any(a => string.Equals(a.AttributeType.FullName, "System.Diagnostics.DebuggerNonUserCodeAttribute", StringComparison.Ordinal));
 
+    private static string GetAccessibilitySuffix(Accessibility accessibility) => accessibility switch
+    {
+        Accessibility.Public => "Public",
+        Accessibility.Protected or Accessibility.ProtectedOrInternal => "Protected",
+        Accessibility.Internal => "Internal",
+        Accessibility.Private or Accessibility.ProtectedAndInternal => "Private",
+        _ => "Public"
+    };
+
     private static string GetClassIconKey(ITypeDefinition typeDefinition)
     {
         if (typeDefinition.IsSealed && (typeDefinition.Accessibility == Accessibility.Public || typeDefinition.Accessibility == Accessibility.ProtectedOrInternal))
@@ -1098,6 +1098,26 @@ public partial class MainWindowViewModel : ObservableObject
             Accessibility.Internal => "ClassInternalIcon",
             _ => "ClassPrivateIcon"
         };
+    }
+
+    private string GetMemberIconKey(IEntity entity)
+    {
+        if (entity is IMethod { IsConstructor: true })
+            return "ConstructorIcon";
+
+        var suffix = GetAccessibilitySuffix(entity.Accessibility);
+
+        var prefix = entity switch
+        {
+            IField { IsConst: true } => "ConstantIcon",
+            IField => "FieldIcon",
+            IProperty => "PropertyIcon",
+            IEvent => "EventIcon",
+            IMethod => "MethodIcon",
+            _ => "MethodIcon"
+        };
+
+        return $"{prefix}{suffix}";
     }
 
     private static void BuildMetadataChildren(MetadataNode metadataNode, PEFile peFile)
@@ -1355,7 +1375,8 @@ public partial class MainWindowViewModel : ObservableObject
                         FieldDefinition = fieldDefinition,
                         Parent = typeNode,
                         Entity = fieldDefinition,
-                        IsPublicAPI = IsPublicApi(fieldDefinition)
+                        IsPublicAPI = IsPublicApi(fieldDefinition),
+                        IconKey = GetMemberIconKey(fieldDefinition)
                     };
                     typeNode.Members.Add(fieldNode);
                     RegisterHandle(fieldNode, fieldDefinition.MetadataToken);
@@ -1367,7 +1388,8 @@ public partial class MainWindowViewModel : ObservableObject
                         MethodDefinition = methodDefinition,
                         Parent = typeNode,
                         Entity = methodDefinition,
-                        IsPublicAPI = IsPublicApi(methodDefinition)
+                        IsPublicAPI = IsPublicApi(methodDefinition),
+                        IconKey = GetMemberIconKey(methodDefinition)
                     };
                     typeNode.Members.Add(ctorNode);
                     RegisterHandle(ctorNode, methodDefinition.MetadataToken);
@@ -1379,7 +1401,8 @@ public partial class MainWindowViewModel : ObservableObject
                         MethodDefinition = methodDefinition,
                         Parent = typeNode,
                         Entity = methodDefinition,
-                        IsPublicAPI = IsPublicApi(methodDefinition)
+                        IsPublicAPI = IsPublicApi(methodDefinition),
+                        IconKey = GetMemberIconKey(methodDefinition)
                     };
                     typeNode.Members.Add(methodNode);
                     RegisterHandle(methodNode, methodDefinition.MetadataToken);
@@ -1391,7 +1414,8 @@ public partial class MainWindowViewModel : ObservableObject
                         PropertyDefinition = propertyDefinition,
                         Parent = typeNode,
                         Entity = propertyDefinition,
-                        IsPublicAPI = IsPublicApi(propertyDefinition)
+                        IsPublicAPI = IsPublicApi(propertyDefinition),
+                        IconKey = GetMemberIconKey(propertyDefinition)
                     };
                     typeNode.Members.Add(propNode);
                     RegisterHandle(propNode, propertyDefinition.MetadataToken);
@@ -1403,7 +1427,8 @@ public partial class MainWindowViewModel : ObservableObject
                         EventDefinition = eventDefinition,
                         Parent = typeNode,
                         Entity = eventDefinition,
-                        IsPublicAPI = IsPublicApi(eventDefinition)
+                        IsPublicAPI = IsPublicApi(eventDefinition),
+                        IconKey = GetMemberIconKey(eventDefinition)
                     };
                     typeNode.Members.Add(evtNode);
                     RegisterHandle(evtNode, eventDefinition.MetadataToken);
@@ -1430,18 +1455,35 @@ public partial class MainWindowViewModel : ObservableObject
             members.OrderBy(m => MetadataTokens.GetToken(m.MetadataToken));
 
         var fields = OrderByToken(Filter(typeDefinition.Fields));
-        var constructors = OrderByToken(Filter(typeDefinition.Methods.Where(m => m.IsConstructor)));
-        var otherMethods = OrderByToken(Filter(typeDefinition.Methods.Where(m => !m.IsConstructor)));
         var properties = OrderByToken(Filter(typeDefinition.Properties));
+        var constructors = OrderByToken(Filter(typeDefinition.Methods.Where(m => m.IsConstructor)));
+        var methods = OrderByToken(Filter(typeDefinition.Methods.Where(m => !m.IsConstructor)));
         var events = OrderByToken(Filter(typeDefinition.Events));
         var nestedTypes = OrderByToken(Filter(typeDefinition.NestedTypes));
 
-        return fields
-            .Concat<IEntity>(constructors)
-            .Concat(otherMethods)
-            .Concat(properties)
-            .Concat(events)
-            .Concat(nestedTypes);
+        var fieldList = fields.ToList();
+        var constants = fieldList.Where(f => ((IField)f).IsConst);
+        var instanceFields = fieldList.Where(f => ((IField)f).IsConst == false && !((IField)f).IsStatic);
+        var staticFields = fieldList.Where(f => ((IField)f).IsConst == false && ((IField)f).IsStatic);
+
+        var propertyList = properties.ToList();
+        var instanceProperties = propertyList.Where(p => !((IProperty)p).IsStatic);
+        var staticProperties = propertyList.Where(p => ((IProperty)p).IsStatic);
+
+        var methodList = methods.ToList();
+        var instanceMethods = methodList.Where(m => !((IMethod)m).IsStatic);
+        var staticMethods = methodList.Where(m => ((IMethod)m).IsStatic);
+
+        return nestedTypes
+            .Concat<IEntity>(constants)
+            .Concat(instanceFields)
+            .Concat(staticFields)
+            .Concat(instanceProperties)
+            .Concat(staticProperties)
+            .Concat(constructors)
+            .Concat(instanceMethods)
+            .Concat(staticMethods)
+            .Concat(events);
     }
 
     private void RegisterHandle(Node node, EntityHandle metadataToken)

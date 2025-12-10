@@ -26,5 +26,4 @@ public abstract class TypeNode : MemberNode
 {
     public required ITypeDefinition TypeDefinition { get; init; }
     public ObservableCollection<Node> Members { get; } = new();
-    public string IconKey { get; init; } = "ClassIcon";
 }

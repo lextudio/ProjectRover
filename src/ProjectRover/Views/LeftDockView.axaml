@@ -158,31 +158,31 @@
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:FieldNode">
         <StackPanel Orientation="Horizontal">
-          <Svg Path="{DynamicResource FieldIcon}" />
+          <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:PropertyNode">
         <StackPanel Orientation="Horizontal">
-          <Svg Path="{DynamicResource PropertyIcon}" />
+          <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:ConstructorNode">
         <StackPanel Orientation="Horizontal">
-          <Svg Path="{DynamicResource ConstructorIcon}" />
+          <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:MethodNode">
         <StackPanel Orientation="Horizontal">
-          <Svg Path="{DynamicResource MethodIcon}" />
+          <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:EventNode">
         <StackPanel Orientation="Horizontal">
-          <Svg Path="{DynamicResource EventIcon}" />
+          <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
