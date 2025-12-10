@@ -68,13 +68,13 @@
         <ColumnDefinition Width="4" />
         <ColumnDefinition Width="150" />
       </Grid.ColumnDefinitions>
-      <TextBlock Grid.Column="0" Text="Name" FontWeight="Bold" />
-      <Rectangle Grid.Column="1" Fill="#40808080" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
-      <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
-      <TextBlock Grid.Column="2" Text="Location" FontWeight="Bold" />
-      <Rectangle Grid.Column="3" Fill="#40808080" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
-      <GridSplitter Grid.Column="3" Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
-      <TextBlock Grid.Column="4" Text="Assembly" FontWeight="Bold" />
+      <TextBlock Grid.Column="0" Text="Name" FontWeight="Bold" HorizontalAlignment="Center" />
+      <Rectangle Grid.Column="1" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
+      <GridSplitter Grid.Column="1" Background="{DynamicResource ThemeForegroundLowBrush}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+      <TextBlock Grid.Column="2" Text="Location" FontWeight="Bold" HorizontalAlignment="Center" />
+      <Rectangle Grid.Column="3" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
+      <GridSplitter Grid.Column="3" Background="{DynamicResource ThemeForegroundLowBrush}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+      <TextBlock Grid.Column="4" Text="Assembly" FontWeight="Bold" HorizontalAlignment="Center" />
     </Grid>
     <ListBox ItemsSource="{Binding SearchResults}"
              SelectedItem="{Binding SelectedSearchResult}"
@@ -94,12 +94,12 @@
                <Svg Width="16" Height="16" Path="{Binding IconPath}" Margin="0,0,6,0" />
                <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" VerticalAlignment="Center" />
             </Grid>
-            <Rectangle Grid.Column="1" Fill="#40808080" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
+            <Rectangle Grid.Column="1" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
             <Grid Grid.Column="2" ColumnDefinitions="Auto,*">
                <Svg Width="16" Height="16" Path="{Binding LocationIconPath}" Margin="0,0,6,0" />
                <TextBlock Grid.Column="1" Text="{Binding Location}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Location}" VerticalAlignment="Center" />
             </Grid>
-            <Rectangle Grid.Column="3" Fill="#40808080" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
+            <Rectangle Grid.Column="3" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
             <Grid Grid.Column="4" ColumnDefinitions="Auto,*">
                <Svg Width="16" Height="16" Path="{Binding AssemblyIconPath}" Margin="0,0,6,0" />
                <TextBlock Grid.Column="1" Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Assembly}" VerticalAlignment="Center" />
