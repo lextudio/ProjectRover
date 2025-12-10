@@ -860,6 +860,19 @@ public partial class MainWindowViewModel : ObservableObject
         || typeDefinition.IsNestedFamily
         || typeDefinition.IsNestedFamilyOrAssembly;
 
+    private static string GetClassIconKey(TypeDefinition typeDefinition)
+    {
+        if (typeDefinition.IsSealed && (typeDefinition.IsPublic || typeDefinition.IsNestedPublic))
+            return "ClassSealedIcon";
+        if (typeDefinition.IsPublic || typeDefinition.IsNestedPublic || typeDefinition.IsNestedFamilyOrAssembly)
+            return "ClassIcon";
+        if (typeDefinition.IsNestedFamily)
+            return "ClassProtectedIcon";
+        if (typeDefinition.IsNestedAssembly || typeDefinition.IsNestedFamilyAndAssembly)
+            return "ClassInternalIcon";
+        return "ClassPrivateIcon";
+    }
+
     private static void BuildMetadataChildren(MetadataNode metadataNode, PEFile peFile)
     {
         var reader = peFile.Metadata;
@@ -948,25 +961,33 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 Name = typeDefinition.Name,
                 Parent = parentNode,
-                TypeDefinition = typeDefinition
+                TypeDefinition = typeDefinition,
+                IsPublicAPI = IsPublicApiType(typeDefinition),
+                IconKey = GetClassIconKey(typeDefinition)
             },
             { IsValueType: true } => new StructNode
             {
                 Name = typeDefinition.Name,
                 Parent = parentNode,
-                TypeDefinition = typeDefinition
+                TypeDefinition = typeDefinition,
+                IsPublicAPI = IsPublicApiType(typeDefinition),
+                IconKey = GetClassIconKey(typeDefinition)
             },
             { IsClass: true } => new ClassNode
             {
                 Name = typeDefinition.Name,
                 Parent = parentNode,
-                TypeDefinition = typeDefinition
+                TypeDefinition = typeDefinition,
+                IsPublicAPI = IsPublicApiType(typeDefinition),
+                IconKey = GetClassIconKey(typeDefinition)
             },
             { IsInterface: true } => new InterfaceNode
             {
                 Name = typeDefinition.Name,
                 Parent = parentNode,
-                TypeDefinition = typeDefinition
+                TypeDefinition = typeDefinition,
+                IsPublicAPI = IsPublicApiType(typeDefinition),
+                IconKey = GetClassIconKey(typeDefinition)
             },
             _ => throw new NotSupportedException()
         };

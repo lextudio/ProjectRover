@@ -89,6 +89,10 @@
                     <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
                     <x:String x:Key="StructIcon">/Assets/StructurePublic.svg</x:String>
                     <x:String x:Key="ClassIcon">/Assets/ClassPublic.svg</x:String>
+                    <x:String x:Key="ClassInternalIcon">/Assets/ClassInternal.svg</x:String>
+                    <x:String x:Key="ClassProtectedIcon">/Assets/ClassProtected.svg</x:String>
+                    <x:String x:Key="ClassPrivateIcon">/Assets/ClassPrivate.svg</x:String>
+                    <x:String x:Key="ClassSealedIcon">/Assets/ClassSealed.svg</x:String>
                     <x:String x:Key="InterfaceIcon">/Assets/InterfacePublic.svg</x:String>
                     <x:String x:Key="FieldIcon">/Assets/FieldPublic.svg</x:String>
                     <x:String x:Key="MethodIcon">/Assets/MethodPublic.svg</x:String>
@@ -136,6 +140,10 @@
                     <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
                     <x:String x:Key="StructIcon">/Assets/StructurePublic.svg</x:String>
                     <x:String x:Key="ClassIcon">/Assets/ClassPublic.svg</x:String>
+                    <x:String x:Key="ClassInternalIcon">/Assets/ClassInternal.svg</x:String>
+                    <x:String x:Key="ClassProtectedIcon">/Assets/ClassProtected.svg</x:String>
+                    <x:String x:Key="ClassPrivateIcon">/Assets/ClassPrivate.svg</x:String>
+                    <x:String x:Key="ClassSealedIcon">/Assets/ClassSealed.svg</x:String>
                     <x:String x:Key="InterfaceIcon">/Assets/InterfacePublic.svg</x:String>
                     <x:String x:Key="FieldIcon">/Assets/FieldPublic.svg</x:String>
                     <x:String x:Key="MethodIcon">/Assets/MethodPublic.svg</x:String>
@@ -149,6 +157,7 @@
             <converters:ApiVisibilityToBrushConverter x:Key="ApiVisibilityToBrushConverter" />
             <converters:ThemeEqualityConverter x:Key="ThemeEqualityConverter" />
             <converters:EqualityMultiConverter x:Key="EqualityMultiConverter" />
+            <converters:IconKeyToPathConverter x:Key="IconKeyToPathConverter" />
         </ResourceDictionary>
     </Application.Resources>
     

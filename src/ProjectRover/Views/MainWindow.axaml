@@ -416,7 +416,7 @@
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:ClassNode" ItemsSource="{Binding Members}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="{DynamicResource ClassIcon}" />
+                                            <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
