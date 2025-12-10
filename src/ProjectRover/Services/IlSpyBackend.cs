@@ -31,62 +31,36 @@ using ICSharpCode.Decompiler.Disassembler;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.Output;
 using ICSharpCode.Decompiler.TypeSystem;
+using ICSharpCode.ILSpyX;
+using ICSharpCode.ILSpyX.Settings;
 
 namespace ProjectRover.Services;
 
 public sealed class IlSpyBackend : IDisposable
 {
-    private readonly HashSet<string> searchDirectories = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, IlSpyAssembly> loadedAssemblies = new(StringComparer.OrdinalIgnoreCase);
+    private readonly AssemblyList assemblyList;
 
     public IlSpyBackend()
     {
-        var runtimeDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
-        if (!string.IsNullOrEmpty(runtimeDir))
-        {
-            AddSearchDirectory(runtimeDir);
-        }
+        var settings = ILSpySettings.Load();
+        var manager = new AssemblyListManager(settings);
+        assemblyList = manager.LoadList(AssemblyListManager.DefaultListName);
     }
 
     public IlSpyAssembly? LoadAssembly(string filePath)
     {
-        if (loadedAssemblies.TryGetValue(filePath, out var existing))
-            return existing;
-
         if (!File.Exists(filePath))
             return null;
 
-        var directory = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(directory))
-        {
-            AddSearchDirectory(directory);
-        }
+        var loaded = assemblyList.OpenAssembly(filePath);
+        var metadata = loaded.GetMetadataFileOrNull();
+        if (metadata is not PEFile peFile)
+            return null;
 
-        PEFile peFile;
-        using (var peStream = File.OpenRead(filePath))
-        {
-            peFile = new PEFile(filePath, peStream, PEStreamOptions.PrefetchEntireImage);
-        }
-
-        var targetFramework = peFile.Metadata.DetectTargetFrameworkId(filePath);
-        var runtimePack = peFile.DetectRuntimePack();
-        var resolver = new UniversalAssemblyResolver(
-            filePath,
-            throwOnError: false,
-            targetFramework,
-            runtimePack,
-            PEStreamOptions.PrefetchEntireImage);
-
-        foreach (var dir in searchDirectories)
-        {
-            resolver.AddSearchDirectory(dir);
-        }
-
+        var resolver = loaded.GetAssemblyResolver();
         var typeSystem = new DecompilerTypeSystem(peFile, resolver, new DecompilerSettings(LanguageVersion.Latest));
 
-        var ilSpyAssembly = new IlSpyAssembly(filePath, peFile, resolver, typeSystem);
-        loadedAssemblies[filePath] = ilSpyAssembly;
-        return ilSpyAssembly;
+        return new IlSpyAssembly(filePath, peFile, resolver, typeSystem, loaded);
     }
 
     public string DecompileMember(IlSpyAssembly assembly, EntityHandle handle, DecompilationLanguage language, DecompilerSettings? settings = null)
@@ -105,8 +79,7 @@ public sealed class IlSpyBackend : IDisposable
 
     public void Clear()
     {
-        loadedAssemblies.Clear();
-        searchDirectories.Clear();
+        assemblyList.Clear();
     }
 
     public void Dispose()
@@ -190,16 +163,7 @@ public sealed class IlSpyBackend : IDisposable
         return output.ToString();
     }
 
-    private void AddSearchDirectory(string directory)
-    {
-        if (searchDirectories.Add(directory))
-        {
-            foreach (var asm in loadedAssemblies.Values)
-            {
-                asm.Resolver.AddSearchDirectory(directory);
-            }
-        }
     }
 }
 
-public record IlSpyAssembly(string FilePath, PEFile PeFile, UniversalAssemblyResolver Resolver, DecompilerTypeSystem TypeSystem);
+public record IlSpyAssembly(string FilePath, PEFile PeFile, IAssemblyResolver Resolver, DecompilerTypeSystem TypeSystem, LoadedAssembly LoadedAssembly);
