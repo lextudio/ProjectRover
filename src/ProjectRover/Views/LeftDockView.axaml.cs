@@ -11,6 +11,4 @@ public partial class LeftDockView : UserControl
     }
 
     public TreeView ExplorerTreeView => TreeView;
-
-    public TextBox SearchTextBoxControl => SearchTextBox;
 }

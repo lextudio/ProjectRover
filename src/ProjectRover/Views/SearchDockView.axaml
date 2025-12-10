@@ -1,0 +1,70 @@
+﻿<UserControl x:Class="ProjectRover.Views.SearchDockView"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProjectRover.ViewModels"
+             xmlns:searchResults="clr-namespace:ProjectRover.SearchResults"
+             xmlns:converters="clr-namespace:ProjectRover.Converters"
+             x:DataType="vm:MainWindowViewModel">
+  <DockPanel>
+    <Grid DockPanel.Dock="Top"
+          Height="2">
+      <ProgressBar IsVisible="{Binding IsSearching}"
+                   IsIndeterminate="True"
+                   Height="2"
+                   MinHeight="2"
+                   Background="Transparent"
+                   CornerRadius="0" />
+    </Grid>
+    <Grid DockPanel.Dock="Top" Margin="5">
+      <TextBox x:Name="SearchTextBox"
+               Watermark="Search..."
+               Text="{Binding SearchText}"
+               Padding="8 4 28 4" />
+      <Button HorizontalAlignment="Right"
+              VerticalAlignment="Center"
+              Margin="0 0 4 0"
+              Background="Transparent"
+              BorderBrush="{x:Null}"
+              Padding="2"
+              Click="OnClearSearchClick"
+              IsHitTestVisible="{Binding SearchText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
+              IsVisible="{Binding SearchText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
+        <Svg Path="{DynamicResource ClearIcon}" Width="14" Height="14" />
+      </Button>
+      <Svg HorizontalAlignment="Right"
+           VerticalAlignment="Center"
+           Margin="0 0 8 0"
+           Path="{DynamicResource SearchIcon}"
+           Width="14"
+           Height="14"
+           IsVisible="{Binding SearchText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}, ConverterParameter=False}" />
+    </Grid>
+    <TextBlock DockPanel.Dock="Top"
+               Text="{Binding NumberOfResultsText}"
+               IsVisible="{Binding NumberOfResultsText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
+               Margin="10 5 0 5"
+               Foreground="#919191"
+               FontSize="12"/>
+    <ListBox ItemsSource="{Binding SearchResults}"
+             SelectedItem="{Binding SelectedSearchResult}"
+             Background="Transparent">
+      <ListBox.Styles>
+        <Style Selector="Svg">
+          <Setter Property="Margin" Value="0 0 5 0" />
+        </Style>
+        <Style Selector="ListBoxItem">
+          <Setter Property="Padding" Value="5" />
+          <Setter Property="Cursor" Value="Hand" />
+        </Style>
+      </ListBox.Styles>
+      <ListBox.DataTemplates>
+        <DataTemplate DataType="searchResults:SearchResult">
+          <StackPanel Orientation="Horizontal">
+            <Svg Path="{DynamicResource LocalVariableIcon}" Opacity="0" />
+            <TextBlock Text="{Binding MatchedString}" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.DataTemplates>
+    </ListBox>
+  </DockPanel>
+</UserControl>

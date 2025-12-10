@@ -226,6 +226,11 @@
                             ToolTip.Tip="Collapse all">
                         <Svg Width="16" Height="16" Path="{DynamicResource CollapseIcon}" />
                     </Button>
+
+                    <Button Click="OnSearchButtonClick"
+                            ToolTip.Tip="Search">
+                        <Svg Width="16" Height="16" Path="{DynamicResource SearchIcon}" />
+                    </Button>
                 </StackPanel>
             </Border>
             

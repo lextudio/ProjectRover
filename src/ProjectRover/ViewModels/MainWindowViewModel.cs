@@ -157,6 +157,9 @@ public partial class MainWindowViewModel : ObservableObject
     private bool isSearching;
 
     [ObservableProperty]
+    private bool isSearchDockVisible;
+
+    [ObservableProperty]
     private string searchText = string.Empty;
 
     [ObservableProperty]
@@ -691,6 +694,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         public string[] LastAssemblies { get; set; } = Array.Empty<string>();
         public string? Theme { get; set; }
+        public bool IsSearchDockVisible { get; set; }
     }
 
     private void RestoreLastAssemblies()
@@ -714,6 +718,7 @@ public partial class MainWindowViewModel : ObservableObject
             return;
 
         LoadAssemblies(state.LastAssemblies);
+        IsSearchDockVisible = state.IsSearchDockVisible;
     }
 
     private void PersistLastAssemblies()
@@ -726,7 +731,8 @@ public partial class MainWindowViewModel : ObservableObject
         SaveStartupState(new StartupState
         {
             LastAssemblies = files!,
-            Theme = SelectedTheme?.Variant.ToString()
+            Theme = SelectedTheme?.Variant.ToString(),
+            IsSearchDockVisible = IsSearchDockVisible
         });
     }
 
@@ -759,6 +765,11 @@ public partial class MainWindowViewModel : ObservableObject
             return;
 
         // Navigation from search results will be added once ILSpy search is wired up.
+    }
+
+    partial void OnIsSearchDockVisibleChanged(bool _)
+    {
+        PersistLastAssemblies();
     }
 
     [RelayCommand(CanExecute = nameof(CanGenerateProject))]

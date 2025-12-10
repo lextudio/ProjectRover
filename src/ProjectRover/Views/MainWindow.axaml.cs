@@ -18,6 +18,7 @@
 */
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -25,9 +26,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
@@ -56,11 +59,17 @@ public partial class MainWindow : Window
     private readonly TextMate.Installation textMateInstallation;
     private LeftDockView leftDockView = null!;
     private CenterDockView centerDockView = null!;
+    private SearchDockView searchDockView = null!;
     private Document? documentHost;
+    private ToolDock? searchDock;
+    private ProportionalDockSplitter? searchSplitter;
+    private ProportionalDock? verticalLayout;
+    private ProportionalDock? rightDock;
+    private Factory dockFactory = null!;
 
     private AvaloniaEdit.TextEditor TextEditor => centerDockView.Editor;
     private TreeView TreeView => leftDockView.ExplorerTreeView;
-    public TextBox SearchTextBox => leftDockView.SearchTextBoxControl;
+    public TextBox SearchTextBox => searchDockView.SearchTextBoxControl;
     
     public MainWindow(ILogger<MainWindow> logger, MainWindowViewModel mainWindowViewModel,
         IAnalyticsService analyticsService, IAutoUpdateService autoUpdateService, IAppInformationProvider appInformationProvider)
@@ -198,6 +207,7 @@ public partial class MainWindow : Window
     {
         leftDockView = new LeftDockView { DataContext = viewModel };
         centerDockView = new CenterDockView { DataContext = viewModel };
+        searchDockView = new SearchDockView { DataContext = viewModel };
 
         documentHost = new Document
         {
@@ -214,7 +224,7 @@ public partial class MainWindow : Window
         {
             Id = "DocumentDock",
             Title = "DocumentDock",
-            VisibleDockables = new List<IDockable> { documentHost },
+            VisibleDockables = new ObservableCollection<IDockable> { documentHost },
             ActiveDockable = documentHost
         };
 
@@ -234,41 +244,90 @@ public partial class MainWindow : Window
             Id = "LeftDock",
             Title = "LeftDock",
             Alignment = Alignment.Left,
-            VisibleDockables = new List<IDockable> { tool },
+            VisibleDockables = new ObservableCollection<IDockable> { tool },
             ActiveDockable = tool
         };
 
         toolDock.Proportion = 0.3;
         documentDock.Proportion = 0.7;
 
+        rightDock = new ProportionalDock
+        {
+            Id = "RightDock",
+            Orientation = Orientation.Vertical,
+            VisibleDockables = new ObservableCollection<IDockable>
+            {
+                documentDock
+            },
+            ActiveDockable = documentDock
+        };
+
         var mainLayout = new ProportionalDock
         {
             Id = "MainLayout",
             Orientation = Orientation.Horizontal,
-            VisibleDockables = new List<IDockable>
+            VisibleDockables = new ObservableCollection<IDockable>
             {
                 toolDock,
                 new ProportionalDockSplitter { CanResize = true },
-                documentDock
+                rightDock
             },
-            ActiveDockable = documentDock
+            ActiveDockable = rightDock
+        };
+
+        var searchTool = new Tool
+        {
+            Id = "SearchTool",
+            Title = "Search",
+            Content = searchDockView,
+            Context = viewModel,
+            CanClose = false,
+            CanFloat = false,
+            CanPin = false
+        };
+
+        searchDock = new ToolDock
+        {
+            Id = "SearchDock",
+            Title = "Search",
+            Alignment = Alignment.Top,
+            VisibleDockables = new ObservableCollection<IDockable> { searchTool },
+            ActiveDockable = searchTool
+        };
+        searchDock.Proportion = 0.25;
+        searchSplitter = new ProportionalDockSplitter { CanResize = true };
+
+        verticalLayout = new ProportionalDock
+        {
+            Id = "VerticalLayout",
+            Orientation = Orientation.Vertical,
+            VisibleDockables = new ObservableCollection<IDockable>
+            {
+                mainLayout
+            },
+            ActiveDockable = mainLayout
         };
 
         var rootDock = new RootDock
         {
             Id = "Root",
             Title = "Root",
-            VisibleDockables = new List<IDockable> { mainLayout },
-            ActiveDockable = mainLayout
+            VisibleDockables = new ObservableCollection<IDockable> { verticalLayout },
+            ActiveDockable = verticalLayout
         };
 
-        var factory = new Factory();
-        DockHost.Factory = factory;
+        dockFactory = new Factory();
+        DockHost.Factory = dockFactory;
         DockHost.Layout = rootDock;
         DockHost.InitializeFactory = true;
         DockHost.InitializeLayout = true;
 
         UpdateDocumentTitle();
+
+        if (viewModel.IsSearchDockVisible)
+        {
+            ShowSearchDock();
+        }
     }
 
     private string GetDocumentTitle() =>
@@ -289,6 +348,37 @@ public partial class MainWindow : Window
 
         var name = viewModel.SelectedNode?.Name;
         documentHost.Title = string.IsNullOrWhiteSpace(name) ? "New Tab" : name;
+    }
+
+    private void ShowSearchDock()
+    {
+        if (rightDock == null || searchDock == null || searchSplitter == null)
+            return;
+
+        var docks = rightDock.VisibleDockables;
+
+        if (docks != null && !docks.Contains(searchDock))
+        {
+            dockFactory.InsertDockable(rightDock, searchDock, 0);
+            dockFactory.InsertDockable(rightDock, searchSplitter, 1);
+        }
+
+        dockFactory.SetActiveDockable(searchDock);
+        dockFactory.SetFocusedDockable(rightDock, searchDock);
+
+        if (searchDock.ActiveDockable == null && searchDock.VisibleDockables?.Count > 0)
+        {
+            dockFactory.SetActiveDockable(searchDock.VisibleDockables[0]);
+        }
+
+        Dispatcher.UIThread.Post(() => SearchTextBox.Focus());
+
+        viewModel.IsSearchDockVisible = true;
+    }
+
+    private void OnSearchButtonClick(object? sender, RoutedEventArgs e)
+    {
+        ShowSearchDock();
     }
 
     private void OnTreeViewDoubleTapped(object? sender, TappedEventArgs e)
