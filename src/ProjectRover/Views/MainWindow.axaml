@@ -71,11 +71,13 @@
                     <NativeMenuItem Header="Theme">
                         <NativeMenu>
                             <NativeMenuItem Header="Light"
-                                            IsChecked="{Binding SelectedTheme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={Binding Themes[0]}, Mode=OneWay}"
+                                            ToggleType="Radio"
+                                            IsChecked="{Binding SelectedTheme.Name, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter=Light, Mode=OneWay}"
                                             Command="{Binding SetThemeCommand}"
                                             CommandParameter="{Binding Themes[0]}" />
                             <NativeMenuItem Header="Dark"
-                                            IsChecked="{Binding SelectedTheme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={Binding Themes[1]}, Mode=OneWay}"
+                                            ToggleType="Radio"
+                                            IsChecked="{Binding SelectedTheme.Name, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter=Dark, Mode=OneWay}"
                                             Command="{Binding SetThemeCommand}"
                                             CommandParameter="{Binding Themes[1]}" />
                         </NativeMenu>
@@ -127,9 +129,15 @@
                                         <MenuItem Header="{Binding Name}"
                                                   ToggleType="Radio"
                                                   x:CompileBindings="False"
-                                                  IsChecked="{Binding DataContext.SelectedTheme, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={Binding}}"
                                                   Command="{Binding DataContext.SetThemeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  CommandParameter="{Binding}" />
+                                                  CommandParameter="{Binding}">
+                                            <MenuItem.IsChecked>
+                                                <MultiBinding Converter="{StaticResource EqualityMultiConverter}" Mode="OneWay">
+                                                    <Binding Path="DataContext.SelectedTheme" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                    <Binding Path="." />
+                                                </MultiBinding>
+                                            </MenuItem.IsChecked>
+                                        </MenuItem>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -286,7 +294,8 @@
                                       SelectionMode="Single"
                                       SelectedItem="{Binding SelectedNode}" 
                                       AutoScrollToSelectedItem="True"
-                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                      Foreground="{DynamicResource ThemeForegroundBrush}">
                                 <TreeView.Styles>
                                     <Style Selector="TextBlock" x:DataType="nodes:Node">
                                         <Setter Property="Foreground" Value="{Binding IsPublicAPI, Converter={StaticResource ApiVisibilityToBrushConverter}}" />

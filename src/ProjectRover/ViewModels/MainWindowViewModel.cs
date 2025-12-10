@@ -755,12 +755,13 @@ public partial class MainWindowViewModel : ObservableObject
             });
         }
 
-        foreach (var namespaceGroup in assembly.AssemblyDefinition.MainModule.Types.GroupBy(t => t.Namespace).OrderBy(g => g.Key))
+        foreach (var namespaceGroup in assembly.AssemblyDefinition.MainModule.Types.GroupBy(t => t.Namespace).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
         {
             var namespaceNode = new NamespaceNode
             {
-                Name = namespaceGroup.Key == string.Empty ? "<Default namespace>" : namespaceGroup.Key,
-                Parent = assemblyNode
+                Name = string.IsNullOrEmpty(namespaceGroup.Key) ? "-" : namespaceGroup.Key,
+                Parent = assemblyNode,
+                IsPublicAPI = namespaceGroup.Any(IsPublicApiType)
             };
 
             foreach (var typeDefinition in namespaceGroup.OrderBy(t => t.Name))
@@ -775,6 +776,12 @@ public partial class MainWindowViewModel : ObservableObject
 
         return assemblyNode;
     }
+
+    private static bool IsPublicApiType(TypeDefinition typeDefinition) =>
+        typeDefinition.IsPublic
+        || typeDefinition.IsNestedPublic
+        || typeDefinition.IsNestedFamily
+        || typeDefinition.IsNestedFamilyOrAssembly;
 
     private static void BuildMetadataChildren(MetadataNode metadataNode, PEFile peFile)
     {

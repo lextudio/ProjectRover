@@ -148,6 +148,7 @@
             </ResourceDictionary.ThemeDictionaries>
             <converters:ApiVisibilityToBrushConverter x:Key="ApiVisibilityToBrushConverter" />
             <converters:ThemeEqualityConverter x:Key="ThemeEqualityConverter" />
+            <converters:EqualityMultiConverter x:Key="EqualityMultiConverter" />
         </ResourceDictionary>
     </Application.Resources>
     

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Data.Converters;
@@ -39,9 +40,20 @@ public class ThemeEqualityConverter : IValueConverter
         if (parameter is null)
             return false;
 
-        return ReferenceEquals(value, parameter);
+        return Object.Equals(value, parameter);
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
+}
+
+public class EqualityMultiConverter : IMultiValueConverter
+{
+    public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (values.Count < 2)
+            return false;
+        
+        return Object.Equals(values[0], values[1]);
+    }
 }
