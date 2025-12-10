@@ -45,4 +45,4 @@ The UI opens assemblies and decompiles members via ILSpy's `CSharpDecompiler`. P
 Currently, this project aims to replicate the core features of AvaloniaILSpy, with plans to expand functionality in the future.
 
 ## License
-This project is [AGPL](COPYING) licensed. It includes [ILSpy](extern/ILSpy) and [Mono.Cecil](https://github.com/jbevain/cecil) which are MIT licensed.
+This project is [AGPL](COPYING) licensed. It includes [ILSpy](extern/ILSpy), which is MIT licensed.
