@@ -169,6 +169,49 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool isResolving;
 
+    public void RemoveAssembly(AssemblyNode assemblyNode)
+    {
+        if (!AssemblyNodes.Remove(assemblyNode))
+            return;
+
+        if (assemblyLookup.TryGetValue(assemblyNode, out var ilSpyAssembly))
+        {
+            assemblyLookup.Remove(assemblyNode);
+            ilSpyAssembly.AssemblyDefinition.Dispose();
+        }
+
+        var toRemove = memberDefinitionToNodeMap
+            .Where(kvp => GetAssemblyNode(kvp.Value) == assemblyNode)
+            .Select(kvp => kvp.Key)
+            .ToList();
+        foreach (var key in toRemove)
+        {
+            memberDefinitionToNodeMap.Remove(key);
+        }
+
+        FilterStack(backStack);
+        FilterStack(forwardStack);
+        BackCommand.NotifyCanExecuteChanged();
+        ForwardCommand.NotifyCanExecuteChanged();
+
+        if (SelectedNode is null || GetAssemblyNode(SelectedNode) == assemblyNode)
+        {
+            SelectedNode = AssemblyNodes.FirstOrDefault();
+        }
+
+        PersistLastAssemblies();
+
+        void FilterStack(Stack<Node> stack)
+        {
+            var filtered = stack.Where(n => GetAssemblyNode(n) != assemblyNode).Reverse().ToList();
+            stack.Clear();
+            foreach (var node in filtered)
+            {
+                stack.Push(node);
+            }
+        }
+    }
+
     [RelayCommand]
     private void SetTheme(ThemeOption theme)
     {
@@ -255,8 +298,14 @@ public partial class MainWindowViewModel : ObservableObject
 
     private bool CanGoForward() => forwardStack.Any();
 
-    internal void LoadAssemblies(IEnumerable<string> filePaths, bool loadDependencies = false)
+    internal AssemblyNode? FindAssemblyNodeByFilePath(string filePath)
     {
+        return assemblyLookup.FirstOrDefault(kvp => string.Equals(kvp.Value.FilePath, filePath, StringComparison.OrdinalIgnoreCase)).Key;
+    }
+
+    internal IReadOnlyList<AssemblyNode> LoadAssemblies(IEnumerable<string> filePaths, bool loadDependencies = false)
+    {
+        var addedAssemblies = new List<AssemblyNode>();
         var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var filePath in filePaths)
@@ -290,6 +339,7 @@ public partial class MainWindowViewModel : ObservableObject
                 var assemblyNode = BuildAssemblyNode(assembly);
                 AssemblyNodes.Add(assemblyNode);
                 assemblyLookup[assemblyNode] = assembly;
+                addedAssemblies.Add(assemblyNode);
             }
 
             if (loadDependencies)
@@ -299,6 +349,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         PersistLastAssemblies();
+        return addedAssemblies;
     }
 
     [RelayCommand(CanExecute = nameof(CanClearAssemblyList))]
@@ -743,7 +794,12 @@ public partial class MainWindowViewModel : ObservableObject
                 {
                     var resolved = cecilResolver?.Resolve(reference);
                     node = resolved is not null
-                        ? new ResolvedReferenceNode { Name = reference.Name, Parent = assemblyNode.References }
+                        ? new ResolvedReferenceNode
+                        {
+                            Name = reference.Name,
+                            Parent = assemblyNode.References,
+                            FilePath = resolved.MainModule.FileName
+                        }
                         : new UnresolvedReferenceNode { Name = reference.Name, Parent = assemblyNode.References };
                 }
                 catch

@@ -21,4 +21,5 @@ namespace ProjectRover.Nodes;
 
 public class ResolvedReferenceNode : Node
 {
+    public string? FilePath { get; init; }
 }

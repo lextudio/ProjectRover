@@ -34,9 +34,11 @@ using ProjectRover.Extensions;
 using ProjectRover.Providers;
 using ProjectRover.Services;
 using ProjectRover.ViewModels;
+using ProjectRover.Nodes;
 using Microsoft.Extensions.Logging;
 using Mono.Cecil;
 using TextMateSharp.Grammars;
+using System.IO;
 
 using static AvaloniaEdit.Utils.ExtensionMethods;
 
@@ -150,6 +152,9 @@ public partial class MainWindow : Window
 
             args.Handled = true;
         });
+
+        TreeView.DoubleTapped += OnTreeViewDoubleTapped;
+        TreeView.KeyDown += OnTreeViewKeyDown;
         
         PointerReleased += (_, args) =>
         {
@@ -169,6 +174,47 @@ public partial class MainWindow : Window
                 args.Handled = true;
             }
         };
+    }
+
+    private void OnTreeViewDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Handled)
+            return;
+
+        if (TreeView.SelectedItem is ResolvedReferenceNode resolved
+            && !string.IsNullOrEmpty(resolved.FilePath)
+            && File.Exists(resolved.FilePath))
+        {
+            var existing = viewModel.FindAssemblyNodeByFilePath(resolved.FilePath);
+            if (existing is not null)
+            {
+                viewModel.SelectedNode = existing;
+                TreeView.Focus();
+                e.Handled = true;
+                return;
+            }
+
+            var added = viewModel.LoadAssemblies(new[] { resolved.FilePath }, loadDependencies: true);
+            var newAssembly = added.FirstOrDefault();
+            if (newAssembly is not null)
+            {
+                viewModel.SelectedNode = newAssembly;
+                TreeView.Focus();
+            }
+            e.Handled = true;
+        }
+    }
+
+    private void OnTreeViewKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Handled)
+            return;
+
+        if (e.Key == Key.Delete && TreeView.SelectedItem is AssemblyNode assemblyNode)
+        {
+            viewModel.RemoveAssembly(assemblyNode);
+            e.Handled = true;
+        }
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)

@@ -311,7 +311,7 @@
                                 <TreeView.DataTemplates>
                                     <TreeDataTemplate DataType="nodes:AssemblyNode" ItemsSource="{Binding Children}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="{DynamicResource AssemblyIcon}" />
+                                            <Svg Path="{DynamicResource ReferenceIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
