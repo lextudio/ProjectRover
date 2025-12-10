@@ -455,17 +455,17 @@ public partial class MainWindowViewModel : ObservableObject
 
     private bool CanClearAssemblyList() => assemblyLookup.Any();
 
-    partial void OnSelectedNodeChanged(Node? oldNode, Node? newNode)
+    partial void OnSelectedNodeChanged(Node? oldValue, Node? newValue)
     {
-        if (!isBackForwardNavigation && oldNode != null)
+        if (!isBackForwardNavigation && oldValue != null)
         {
-            backStack.Push(oldNode);
+            backStack.Push(oldValue);
             forwardStack.Clear();
             BackCommand.NotifyCanExecuteChanged();
             ForwardCommand.NotifyCanExecuteChanged();
         }
 
-        Decompile(newNode);
+        Decompile(newValue);
         isBackForwardNavigation = false;
     }
 
@@ -487,12 +487,12 @@ public partial class MainWindowViewModel : ObservableObject
         Decompile(SelectedNode);
     }
 
-    partial void OnSelectedThemeChanged(ThemeOption _)
+    partial void OnSelectedThemeChanged(ThemeOption value)
     {
         PersistLastAssemblies();
     }
 
-    partial void OnShowCompilerGeneratedMembersChanged(bool _)
+    partial void OnShowCompilerGeneratedMembersChanged(bool value)
     {
         // Rebuild the tree to account for the new filter.
         var openedAssemblies = assemblyLookup.Values.Select(a => a.FilePath).ToArray();
@@ -787,7 +787,7 @@ public partial class MainWindowViewModel : ObservableObject
         });
     }
 
-    partial void OnSelectedPaneIndexChanged(int _)
+    partial void OnSelectedPaneIndexChanged(int value)
     {
         if (!SearchPaneSelected)
             return;
@@ -995,7 +995,7 @@ public partial class MainWindowViewModel : ObservableObject
             : string.Empty;
     }
 
-    partial void OnIsSearchDockVisibleChanged(bool _)
+    partial void OnIsSearchDockVisibleChanged(bool value)
     {
         PersistLastAssemblies();
     }

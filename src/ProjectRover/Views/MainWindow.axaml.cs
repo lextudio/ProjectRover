@@ -54,9 +54,9 @@ namespace ProjectRover.Views;
 public partial class MainWindow : Window
 {
     internal static readonly TextSegmentCollection<ReferenceTextSegment> references = new();
-    private MainWindowViewModel viewModel;
-    private readonly RegistryOptions registryOptions;
-    private readonly TextMate.Installation textMateInstallation;
+    private MainWindowViewModel? viewModel;
+    private readonly RegistryOptions? registryOptions;
+    private readonly TextMate.Installation? textMateInstallation;
     private LeftDockView leftDockView = null!;
     private CenterDockView centerDockView = null!;
     private SearchDockView searchDockView = null!;
@@ -71,6 +71,11 @@ public partial class MainWindow : Window
     private TreeView TreeView => leftDockView.ExplorerTreeView;
     public TextBox SearchTextBox => searchDockView.SearchTextBoxControl;
     
+    public MainWindow()
+    {
+        InitializeComponent();
+    }
+
     public MainWindow(ILogger<MainWindow> logger, MainWindowViewModel mainWindowViewModel,
         IAnalyticsService analyticsService, IAutoUpdateService autoUpdateService, IAppInformationProvider appInformationProvider)
     {
@@ -133,7 +138,9 @@ public partial class MainWindow : Window
             if (args.Handled)
                 return;
             
-            if (args.Data.Contains(DataFormats.Files))
+#pragma warning disable CS0618 // Type or member is obsolete
+            var data = args.Data;
+            if (data?.Contains(DataFormats.FileNames) == true)
             {
                 args.DragEffects &= DragDropEffects.Copy;
             }
@@ -141,6 +148,7 @@ public partial class MainWindow : Window
             {
                 args.DragEffects &= DragDropEffects.None;
             }
+#pragma warning restore CS0618 // Type or member is obsolete
         });
         
         AddHandler(DragDrop.DragEnterEvent, (_, args) =>
@@ -148,10 +156,13 @@ public partial class MainWindow : Window
             if (args.Handled)
                 return;
             
-            if (args.Data.Contains(DataFormats.Files))
+#pragma warning disable CS0618 // Type or member is obsolete
+            var data = args.Data;
+            if (data?.Contains(DataFormats.FileNames) == true)
             {
                 DragDropLabel.IsVisible = true;
             }
+#pragma warning restore CS0618 // Type or member is obsolete
         });
         
         AddHandler(DragDrop.DragLeaveEvent, (_, args) =>
@@ -169,13 +180,19 @@ public partial class MainWindow : Window
             
             DragDropLabel.IsVisible = false;
             
-            if (!args.Data.Contains(DataFormats.Files))
+#pragma warning disable CS0618 // Type or member is obsolete
+            var data = args.Data;
+            if (data?.Contains(DataFormats.FileNames) != true)
                 return;
 
             analyticsService.TrackEventAsync(AnalyticsEvents.OpenViaDragDrop);
-            
-            var files = args.Data.GetFiles()!;
-            viewModel.LoadAssemblies(files.Select(file => file.Path.LocalPath));
+
+            var files = data.GetFiles();
+            if (files != null)
+            {
+                viewModel?.LoadAssemblies(files.Select(file => file.Path.LocalPath));
+            }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             args.Handled = true;
         });
@@ -324,14 +341,14 @@ public partial class MainWindow : Window
 
         UpdateDocumentTitle();
 
-        if (viewModel.IsSearchDockVisible)
+        if (viewModel?.IsSearchDockVisible == true)
         {
             ShowSearchDock();
         }
     }
 
     private string GetDocumentTitle() =>
-        viewModel.AssemblyNodes.Count == 0 ? "New Tab" : "Document";
+        viewModel?.AssemblyNodes.Count == 0 ? "New Tab" : "Document";
 
     private void ViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -346,7 +363,7 @@ public partial class MainWindow : Window
         if (documentHost == null)
             return;
 
-        var name = viewModel.SelectedNode?.Name;
+        var name = viewModel?.SelectedNode?.Name;
         documentHost.Title = string.IsNullOrWhiteSpace(name) ? "New Tab" : name;
     }
 
@@ -373,7 +390,10 @@ public partial class MainWindow : Window
 
         Dispatcher.UIThread.Post(() => SearchTextBox.Focus());
 
-        viewModel.IsSearchDockVisible = true;
+        if (viewModel != null)
+        {
+            viewModel.IsSearchDockVisible = true;
+        }
     }
 
     private void OnSearchButtonClick(object? sender, RoutedEventArgs e)
@@ -390,20 +410,26 @@ public partial class MainWindow : Window
             && !string.IsNullOrEmpty(resolved.FilePath)
             && File.Exists(resolved.FilePath))
         {
-            var existing = viewModel.FindAssemblyNodeByFilePath(resolved.FilePath);
+            var existing = viewModel?.FindAssemblyNodeByFilePath(resolved.FilePath);
             if (existing is not null)
             {
-                viewModel.SelectedNode = existing;
+                if (viewModel != null)
+                {
+                    viewModel.SelectedNode = existing;
+                }
                 TreeView.Focus();
                 e.Handled = true;
                 return;
             }
 
-            var added = viewModel.LoadAssemblies(new[] { resolved.FilePath }, loadDependencies: true);
-            var newAssembly = added.FirstOrDefault();
+            var added = viewModel?.LoadAssemblies(new[] { resolved.FilePath }, loadDependencies: true);
+            var newAssembly = added?.FirstOrDefault();
             if (newAssembly is not null)
             {
-                viewModel.SelectedNode = newAssembly;
+                if (viewModel != null)
+                {
+                    viewModel.SelectedNode = newAssembly;
+                }
                 TreeView.Focus();
             }
             e.Handled = true;
@@ -417,7 +443,7 @@ public partial class MainWindow : Window
 
         if (e.Key == Key.Delete && TreeView.SelectedItem is AssemblyNode assemblyNode)
         {
-            viewModel.RemoveAssembly(assemblyNode);
+            viewModel?.RemoveAssembly(assemblyNode);
             e.Handled = true;
         }
     }
@@ -426,7 +452,7 @@ public partial class MainWindow : Window
     {
         if (e.PropertyName == nameof(MainWindowViewModel.SelectedTheme))
         {
-            ApplyTheme(viewModel.SelectedTheme);
+            ApplyTheme(viewModel?.SelectedTheme);
         }
     }
 
@@ -436,7 +462,10 @@ public partial class MainWindow : Window
         Application.Current!.RequestedThemeVariant = variant;
 
         var textMateTheme = variant == ThemeVariant.Dark ? ThemeName.DarkPlus : ThemeName.LightPlus;
-        textMateInstallation.SetTheme(registryOptions.LoadTheme(textMateTheme));
+        if (textMateInstallation != null && registryOptions != null)
+        {
+            textMateInstallation.SetTheme(registryOptions.LoadTheme(textMateTheme));
+        }
     }
     
     private void TreeView_OnDoubleTapped(object? sender, TappedEventArgs e)
@@ -589,12 +618,12 @@ public partial class MainWindow : Window
                 {
                     if (memberReference is System.Reflection.Metadata.EntityHandle handle)
                     {
-                        mainWindow.viewModel.SelectNodeByMemberReference(handle);
+                        mainWindow.viewModel?.SelectNodeByMemberReference(handle);
                     }
                 }
                 else
                 {
-                    mainWindow.viewModel.TryLoadUnresolvedReference();
+                    mainWindow.viewModel?.TryLoadUnresolvedReference();
                 }
                 
                 pressed = null;
