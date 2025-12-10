@@ -594,17 +594,30 @@
                                   ResizeDirection="Columns"
                                   Margin="0 0 5 0" />
                     
-                    <!-- Empty grid to fill the space when the TextEditor is hidden to enable drag/drop events -->
-                    <Grid Grid.Column="2"
-                          Background="Transparent" />
-                
-                    <avaloniaEdit:TextEditor Grid.Column="2"
-                                             Name="TextEditor"
-                                             ShowLineNumbers="True"
-                                             FontFamily="Consolas,Menlo,Courier New,Monospace"
-                                             IsReadOnly="True"
-                                             Document="{Binding Document}"
-                                             IsVisible="{Binding Document, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <Panel Grid.Column="2">
+                        <Grid>
+                            <!-- Empty grid to fill the space when the TextEditor is hidden to enable drag/drop events -->
+                            <Grid Background="Transparent" />
+
+                            <avaloniaEdit:TextEditor Name="TextEditor"
+                                                     ShowLineNumbers="True"
+                                                     FontFamily="Consolas,Menlo,Courier New,Monospace"
+                                                     IsReadOnly="True"
+                                                     Document="{Binding Document}"
+                                                     IsVisible="{Binding Document, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        </Grid>
+                        
+                        <Border Background="#66000000"
+                                IsVisible="{Binding IsResolving}"
+                                IsHitTestVisible="True">
+                            <StackPanel HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Spacing="8">
+                                <ProgressBar Width="160" IsIndeterminate="True" />
+                                <TextBlock Text="Resolving references..." />
+                            </StackPanel>
+                        </Border>
+                    </Panel>
                 </Grid>
                 
                 <Grid Name="DragDropLabel"

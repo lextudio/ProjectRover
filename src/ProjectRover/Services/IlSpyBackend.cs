@@ -42,6 +42,15 @@ public sealed class IlSpyBackend : IDisposable
     private readonly HashSet<string> searchDirectories = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, IlSpyAssembly> loadedAssemblies = new(StringComparer.OrdinalIgnoreCase);
 
+    public IlSpyBackend()
+    {
+        var runtimeDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
+        if (!string.IsNullOrEmpty(runtimeDir))
+        {
+            AddSearchDirectory(runtimeDir);
+        }
+    }
+
     public IlSpyAssembly? LoadAssembly(string filePath)
     {
         if (loadedAssemblies.TryGetValue(filePath, out var existing))

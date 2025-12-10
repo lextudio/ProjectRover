@@ -166,6 +166,9 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private string searchText = string.Empty;
 
+    [ObservableProperty]
+    private bool isResolving;
+
     [RelayCommand]
     private void SetTheme(ThemeOption theme)
     {
@@ -729,13 +732,31 @@ public partial class MainWindowViewModel : ObservableObject
         assemblyNode.Children.Add(debugMetadataNode);
         assemblyNode.Children.Add(assemblyNode.References);
 
-        foreach (var reference in assembly.AssemblyDefinition.MainModule.AssemblyReferences.OrderBy(r => r.Name))
+        var cecilResolver = assembly.AssemblyDefinition.MainModule.AssemblyResolver;
+        IsResolving = true;
+        try
         {
-            assemblyNode.References.Items.Add(new UnresolvedReferenceNode
+            foreach (var reference in assembly.AssemblyDefinition.MainModule.AssemblyReferences.OrderBy(r => r.Name))
             {
-                Name = reference.Name,
-                Parent = assemblyNode.References
-            });
+                Node node;
+                try
+                {
+                    var resolved = cecilResolver?.Resolve(reference);
+                    node = resolved is not null
+                        ? new ResolvedReferenceNode { Name = reference.Name, Parent = assemblyNode.References }
+                        : new UnresolvedReferenceNode { Name = reference.Name, Parent = assemblyNode.References };
+                }
+                catch
+                {
+                    node = new UnresolvedReferenceNode { Name = reference.Name, Parent = assemblyNode.References };
+                }
+
+                assemblyNode.References.Items.Add(node);
+            }
+        }
+        finally
+        {
+            IsResolving = false;
         }
 
         var resourcesNode = new ResourcesNode
