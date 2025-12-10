@@ -931,17 +931,16 @@ public partial class MainWindowViewModel : ObservableObject
                         var isProperty = propertyNode is not null;
                         var returnKind = propertyNode?.PropertyDefinition.ReturnType.Kind;
                         var isDelegateProperty = returnKind == TypeKind.Delegate || returnKind == TypeKind.FunctionPointer;
+                        var isEvent = member is EventNode;
 
-                        var isMatchMode =
-                            MatchesMode("Member")
-                            || MatchesMode("Types and Members")
-                            || MatchesMode("Method") && member is MethodNode or ConstructorNode
-                            || MatchesMode("Field") && isField
-                            || MatchesMode("Property") && isProperty && !isDelegateProperty
-                            || MatchesMode("Event") && member is EventNode
-                            || MatchesMode("Constant") && isConstant;
+                        var isMemberMode = MatchesMode("Member") || MatchesMode("Types and Members");
+                        var isMethodMode = MatchesMode("Method") && member is MethodNode or ConstructorNode;
+                        var isFieldMode = MatchesMode("Field") && isField;
+                        var isPropertyMode = MatchesMode("Property") && isProperty && !isDelegateProperty;
+                        var isEventMode = MatchesMode("Event") && isEvent;
+                        var isConstantMode = MatchesMode("Constant") && isConstant;
 
-                        if (isMatchMode)
+                        if (isMemberMode || isMethodMode || isFieldMode || isPropertyMode || isEventMode || isConstantMode)
                         {
                             var isConstructor = member is ConstructorNode;
                             var displayName = isConstructor ? $"{typeName}()" : $"{typeName}.{member.Name}";
