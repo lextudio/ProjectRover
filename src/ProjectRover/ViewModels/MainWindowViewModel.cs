@@ -358,6 +358,7 @@ public partial class MainWindowViewModel : ObservableObject
                 AssemblyNodes.Add(assemblyNode);
                 assemblyLookup[assemblyNode] = assembly;
                 addedAssemblies.Add(assemblyNode);
+                SelectedNode = assemblyNode;
             }
 
             if (loadDependencies)
@@ -555,6 +556,14 @@ public partial class MainWindowViewModel : ObservableObject
         if (node is BaseTypesNode)
         {
             Document = new TextDocument($"// Base Types");
+            MainWindow.references.Clear();
+            return;
+        }
+
+        if (node is NamespaceNode nsNode)
+        {
+            var content = nsNode.Name == "-" ? "//" : $"// {nsNode.Name}";
+            Document = new TextDocument(content);
             MainWindow.references.Clear();
             return;
         }

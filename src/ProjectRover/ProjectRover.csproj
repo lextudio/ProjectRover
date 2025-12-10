@@ -57,6 +57,11 @@
       <PackageReference Include="ICSharpCode.Decompiler" Version="10.0.0.8079-preview1" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Dock.Avalonia" Version="11.3.2" />
+      <PackageReference Include="Dock.Model.Avalonia" Version="11.3.2" />
+      <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="11.3.2" />
+    </ItemGroup>
 
     <ItemGroup>
       <EmbeddedResource Include="appsettings*.json" />

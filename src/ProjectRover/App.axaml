@@ -21,12 +21,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:editing="https://github.com/avaloniaui/avaloniaedit"
              xmlns:converters="clr-namespace:ProjectRover.Converters"
+             xmlns:dockThemes="clr-namespace:Dock.Avalonia.Themes.Fluent;assembly=Dock.Avalonia.Themes.Fluent"
              x:Class="ProjectRover.App"
              RequestedThemeVariant="Light"
              Name="ProjectRover">
 
     <Application.Styles>
         <FluentTheme />
+        <dockThemes:DockFluentTheme />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         
         <Style Selector="TreeViewItem">

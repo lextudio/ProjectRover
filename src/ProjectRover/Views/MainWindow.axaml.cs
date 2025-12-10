@@ -17,6 +17,7 @@
     along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
 */
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -35,6 +36,10 @@ using ProjectRover.Providers;
 using ProjectRover.Services;
 using ProjectRover.ViewModels;
 using ProjectRover.Nodes;
+using Dock.Avalonia.Controls;
+using Dock.Model.Avalonia;
+using Dock.Model.Avalonia.Controls;
+using Dock.Model.Core;
 using Microsoft.Extensions.Logging;
 using TextMateSharp.Grammars;
 using System.IO;
@@ -49,6 +54,13 @@ public partial class MainWindow : Window
     private static MainWindowViewModel viewModel;
     private readonly RegistryOptions registryOptions;
     private readonly TextMate.Installation textMateInstallation;
+    private LeftDockView leftDockView = null!;
+    private CenterDockView centerDockView = null!;
+    private Document? documentHost;
+
+    private AvaloniaEdit.TextEditor TextEditor => centerDockView.Editor;
+    private TreeView TreeView => leftDockView.ExplorerTreeView;
+    public TextBox SearchTextBox => leftDockView.SearchTextBoxControl;
     
     public MainWindow(ILogger<MainWindow> logger, MainWindowViewModel mainWindowViewModel,
         IAnalyticsService analyticsService, IAutoUpdateService autoUpdateService, IAppInformationProvider appInformationProvider)
@@ -63,6 +75,8 @@ public partial class MainWindow : Window
         viewModel = mainWindowViewModel;
         DataContext = viewModel;
 
+        ConfigureDockLayout();
+
         _ = analyticsService.TrackEventAsync(AnalyticsEvents.Startup);
         // Swallowing the exceptions on purpose to avoid problems in the auto-update or remote additional info taking down the entire app
         _ = autoUpdateService.CheckForNewerVersionAsync();
@@ -75,6 +89,8 @@ public partial class MainWindow : Window
         textMateInstallation.SetGrammar(registryOptions.GetScopeByLanguageId(registryOptions.GetLanguageByExtension(".cs").Id));
         ApplyTheme(viewModel.SelectedTheme);
         viewModel.PropertyChanged += ViewModelOnPropertyChanged;
+        viewModel.PropertyChanged += ViewModelPropertyChanged;
+        UpdateDocumentTitle();
 
         TextEditor.KeyDown += (_, args) =>
         {
@@ -176,6 +192,103 @@ public partial class MainWindow : Window
                 args.Handled = true;
             }
         };
+    }
+
+    private void ConfigureDockLayout()
+    {
+        leftDockView = new LeftDockView { DataContext = viewModel };
+        centerDockView = new CenterDockView { DataContext = viewModel };
+
+        documentHost = new Document
+        {
+            Id = "DocumentPane",
+            Title = GetDocumentTitle(),
+            Content = centerDockView,
+            Context = viewModel,
+            CanClose = false,
+            CanFloat = false,
+            CanPin = false
+        };
+
+        var documentDock = new DocumentDock
+        {
+            Id = "DocumentDock",
+            Title = "DocumentDock",
+            VisibleDockables = new List<IDockable> { documentHost },
+            ActiveDockable = documentHost
+        };
+
+        var tool = new Tool
+        {
+            Id = "Explorer",
+            Title = "Explorer",
+            Content = leftDockView,
+            Context = viewModel,
+            CanClose = false,
+            CanFloat = false,
+            CanPin = false
+        };
+
+        var toolDock = new ToolDock
+        {
+            Id = "LeftDock",
+            Title = "LeftDock",
+            Alignment = Alignment.Left,
+            VisibleDockables = new List<IDockable> { tool },
+            ActiveDockable = tool
+        };
+
+        toolDock.Proportion = 0.3;
+        documentDock.Proportion = 0.7;
+
+        var mainLayout = new ProportionalDock
+        {
+            Id = "MainLayout",
+            Orientation = Orientation.Horizontal,
+            VisibleDockables = new List<IDockable>
+            {
+                toolDock,
+                new ProportionalDockSplitter { CanResize = true },
+                documentDock
+            },
+            ActiveDockable = documentDock
+        };
+
+        var rootDock = new RootDock
+        {
+            Id = "Root",
+            Title = "Root",
+            VisibleDockables = new List<IDockable> { mainLayout },
+            ActiveDockable = mainLayout
+        };
+
+        var factory = new Factory();
+        DockHost.Factory = factory;
+        DockHost.Layout = rootDock;
+        DockHost.InitializeFactory = true;
+        DockHost.InitializeLayout = true;
+
+        UpdateDocumentTitle();
+    }
+
+    private string GetDocumentTitle() =>
+        viewModel.AssemblyNodes.Count == 0 ? "New Tab" : "Document";
+
+    private void ViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowViewModel.SelectedNode))
+        {
+            UpdateDocumentTitle();
+        }
+    }
+
+    private void UpdateDocumentTitle()
+    {
+        if (documentHost == null)
+            return;
+
+        var name = viewModel.SelectedNode?.Name;
+        documentHost.Title = string.IsNullOrWhiteSpace(name) ? "New Tab" : name;
     }
 
     private void OnTreeViewDoubleTapped(object? sender, TappedEventArgs e)
