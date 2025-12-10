@@ -67,6 +67,8 @@
         <ColumnDefinition Width="220" />
         <ColumnDefinition Width="4" />
         <ColumnDefinition Width="150" />
+        <ColumnDefinition Width="4" />
+        <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
       <TextBlock Grid.Column="0" Text="Name" FontWeight="Bold" HorizontalAlignment="Center" />
       <Rectangle Grid.Column="1" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
@@ -75,12 +77,22 @@
       <Rectangle Grid.Column="3" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
       <GridSplitter Grid.Column="3" Background="{DynamicResource ThemeForegroundLowBrush}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
       <TextBlock Grid.Column="4" Text="Assembly" FontWeight="Bold" HorizontalAlignment="Center" />
+      <Rectangle Grid.Column="5" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
+      <GridSplitter Grid.Column="5" Background="{DynamicResource ThemeForegroundLowBrush}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
     </Grid>
     <ListBox ItemsSource="{Binding SearchResults}"
              SelectedItem="{Binding SelectedSearchResult}"
              Background="Transparent"
              BorderThickness="0"
+             Margin="5,0,5,0"
              DoubleTapped="OnSearchResultDoubleTapped">
+      <ListBox.Styles>
+        <Style Selector="ListBoxItem">
+          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="Margin" Value="0" />
+        </Style>
+      </ListBox.Styles>
       <ListBox.ItemTemplate>
         <DataTemplate DataType="searchResults:BasicSearchResult">
           <Grid>
@@ -90,6 +102,8 @@
               <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[2].Width}" />
               <ColumnDefinition Width="4" />
               <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[4].Width}" />
+              <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[5].Width}" />
+              <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[6].Width}" />
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0" ColumnDefinitions="Auto,*">
                <Svg Width="16" Height="16" Path="{Binding IconPath}" Margin="0,0,6,0" />
@@ -105,6 +119,7 @@
                <Svg Width="16" Height="16" Path="{Binding AssemblyIconPath}" Margin="0,0,6,0" />
                <TextBlock Grid.Column="1" Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Assembly}" VerticalAlignment="Center" />
             </Grid>
+            <Rectangle Grid.Column="5" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
           </Grid>
         </DataTemplate>
       </ListBox.ItemTemplate>
