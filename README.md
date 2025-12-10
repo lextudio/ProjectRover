@@ -37,10 +37,9 @@ dotnet build ProjectRover.sln
 ## Layout
 - `src/ProjectRover` – Avalonia application and view models.
 - `src/AvaloniaEdit` – bundled text editor control.
-- `extern/ILSpy` – ILSpy source pulled in as a submodule for reference.
 
 ## Status
 The UI opens assemblies and decompiles members via ILSpy's `CSharpDecompiler`. Project export and full-text search are stubbed out while the backend integration is completed.
 
 ## License
-This project is [AGPL](COPYING) licensed. It includes [ILSpy](extern/ILSpy), which is MIT licensed.
+This project is [AGPL](COPYING) licensed. It uses the ILSpy decompiler via the `ICSharpCode.Decompiler` NuGet package, which is MIT licensed.
