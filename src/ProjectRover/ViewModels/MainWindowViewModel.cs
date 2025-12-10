@@ -823,6 +823,35 @@ public partial class MainWindowViewModel : ObservableObject
         || entity.Accessibility == Accessibility.Protected
         || entity.Accessibility == Accessibility.ProtectedOrInternal;
 
+    private bool IsCompilerGenerated(IEntity entity)
+    {
+        // TODO: far from enough
+        if (HasDebuggerNonUserCode(entity))
+            return true;
+
+        if (entity is ITypeDefinition stateMachine && ImplementsAsyncStateMachine(stateMachine))
+            return true;
+
+        var name = entity switch
+        {
+            ITypeDefinition typeDef => typeDef.MetadataName ?? typeDef.Name,
+            _ => entity.Name
+        };
+
+        if (string.IsNullOrEmpty(name))
+            return false;
+
+        return name.StartsWith("<>", StringComparison.Ordinal)
+               || name.StartsWith("__App_", StringComparison.Ordinal)
+               || name.StartsWith("__StaticArrayInitTypeSize", StringComparison.Ordinal);
+    }
+
+    private static bool ImplementsAsyncStateMachine(ITypeDefinition typeDefinition) =>
+        typeDefinition.DirectBaseTypes.Any(t => t.FullName == "System.Runtime.CompilerServices.IAsyncStateMachine");
+
+    private static bool HasDebuggerNonUserCode(IEntity entity) =>
+        entity.GetAttributes().Any(a => string.Equals(a.AttributeType.FullName, "System.Diagnostics.DebuggerNonUserCodeAttribute", StringComparison.Ordinal));
+
     private static string GetClassIconKey(ITypeDefinition typeDefinition)
     {
         if (typeDefinition.IsSealed && (typeDefinition.Accessibility == Accessibility.Public || typeDefinition.Accessibility == Accessibility.ProtectedOrInternal))
@@ -980,29 +1009,43 @@ public partial class MainWindowViewModel : ObservableObject
     {
         var typeSystem = assembly.TypeSystem;
         var module = typeSystem.MainModule;
-        var types = module.TypeDefinitions;
+        var types = module.TypeDefinitions
+            .Where(t => ShowCompilerGeneratedMembers || !IsCompilerGenerated(t));
 
         foreach (var namespaceGroup in types.GroupBy(t => t.Namespace).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
         {
+            var typesInNamespace = namespaceGroup.OrderBy(t => t.Name).ToList();
+            if (typesInNamespace.Count == 0)
+                continue;
+
             var namespaceNode = new NamespaceNode
             {
                 Name = string.IsNullOrEmpty(namespaceGroup.Key) ? "-" : namespaceGroup.Key,
                 Parent = assemblyNode,
-                IsPublicAPI = namespaceGroup.Any(IsPublicApi)
+                IsPublicAPI = typesInNamespace.Any(IsPublicApi)
             };
 
-            foreach (var typeDefinition in namespaceGroup.OrderBy(t => t.Name))
+            foreach (var typeDefinition in typesInNamespace)
             {
                 var typeNode = BuildTypeSubtree(typeDefinition, namespaceNode, assembly);
-                namespaceNode.Types.Add(typeNode);
+                if (typeNode != null)
+                {
+                    namespaceNode.Types.Add(typeNode);
+                }
             }
 
-            assemblyNode.AddNamespace(namespaceNode);
+            if (namespaceNode.Types.Count > 0)
+            {
+                assemblyNode.AddNamespace(namespaceNode);
+            }
         }
     }
 
-    private TypeNode BuildTypeSubtree(ITypeDefinition typeDefinition, Node parentNode, IlSpyAssembly assembly)
+    private TypeNode? BuildTypeSubtree(ITypeDefinition typeDefinition, Node parentNode, IlSpyAssembly assembly)
     {
+        if (!ShowCompilerGeneratedMembers && IsCompilerGenerated(typeDefinition))
+            return null;
+
         TypeNode typeNode = typeDefinition.Kind switch
         {
             TypeKind.Enum => new EnumNode
@@ -1132,7 +1175,10 @@ public partial class MainWindowViewModel : ObservableObject
                     break;
                 case ITypeDefinition nestedTypeDefinition:
                     var nested = BuildTypeSubtree(nestedTypeDefinition, typeNode, assembly);
-                    typeNode.Members.Add(nested);
+                    if (nested != null)
+                    {
+                        typeNode.Members.Add(nested);
+                    }
                     break;
             }
         }
@@ -1147,6 +1193,11 @@ public partial class MainWindowViewModel : ObservableObject
             .Concat(typeDefinition.Properties)
             .Concat(typeDefinition.Events)
             .Concat(typeDefinition.NestedTypes);
+
+        if (!ShowCompilerGeneratedMembers)
+        {
+            members = members.Where(m => !IsCompilerGenerated(m));
+        }
 
         return members.OrderBy(m => MetadataTokens.GetToken(m.MetadataToken));
     }
