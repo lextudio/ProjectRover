@@ -53,6 +53,8 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace ProjectRover.ViewModels;
 
+public record SearchMode(string Name, string IconKey);
+
 public partial class MainWindowViewModel : ObservableObject
 {
     private readonly IlSpyBackend ilSpyBackend;
@@ -102,6 +104,8 @@ public partial class MainWindowViewModel : ObservableObject
         };
         selectedTheme = Themes[0];
 
+        selectedSearchMode = SearchModes[0];
+
         LanguageVersions.CollectionChanged += OnLanguageVersionsChanged;
         UpdateLanguageVersions(selectedLanguage.Language);
 
@@ -117,24 +121,24 @@ public partial class MainWindowViewModel : ObservableObject
     public bool HasLanguageVersions => LanguageVersions.Count > 0;
 
     public ObservableCollection<SearchResult> SearchResults { get; } = new();
-    public ObservableCollection<string> SearchModes { get; } = new(new[]
+    public ObservableCollection<SearchMode> SearchModes { get; } = new(new[]
     {
-        "Types and Members",
-        "Type",
-        "Member",
-        "Method",
-        "Field",
-        "Property",
-        "Event",
-        "Constant",
-        "Metadata Token",
-        "Resource",
-        "Assembly",
-        "Namespace"
+        new SearchMode("Types and Members", "ClassIcon"),
+        new SearchMode("Type", "ClassIcon"),
+        new SearchMode("Member", "MemberIcon"),
+        new SearchMode("Method", "MethodIcon"),
+        new SearchMode("Field", "FieldIcon"),
+        new SearchMode("Property", "PropertyIcon"),
+        new SearchMode("Event", "EventIcon"),
+        new SearchMode("Constant", "LocalVariableIcon"),
+        new SearchMode("Metadata Token", "MetadataIcon"),
+        new SearchMode("Resource", "ResourceFileIcon"),
+        new SearchMode("Assembly", "ReferenceIcon"),
+        new SearchMode("Namespace", "NamespaceIcon")
     });
 
     [ObservableProperty]
-    private string selectedSearchMode = "Types and Members";
+    private SearchMode selectedSearchMode;
 
     public bool SearchPaneSelected => SelectedPaneIndex == 1;
 
@@ -633,6 +637,11 @@ public partial class MainWindowViewModel : ObservableObject
         return settings;
     }
 
+    partial void OnSelectedSearchModeChanged(SearchMode value)
+    {
+        RunSearch();
+    }
+
     [RelayCommand]
     private void OpenSearchPane()
     {
@@ -772,6 +781,7 @@ public partial class MainWindowViewModel : ObservableObject
         SearchResults.Clear();
         NumberOfResultsText = null;
         IsSearching = false;
+        RunSearch();
     }
 
     partial void OnSelectedSearchResultChanged(SearchResult? value)
@@ -779,7 +789,120 @@ public partial class MainWindowViewModel : ObservableObject
         if (value == null)
             return;
 
-        // Navigation from search results will be added once ILSpy search is wired up.
+        if (value is BasicSearchResult basic && basic.TargetNode is { } target)
+        {
+            SelectedNode = target;
+            ExpandParents(target);
+        }
+    }
+
+    private void RunSearch()
+    {
+        var term = SearchText?.Trim();
+        if (string.IsNullOrWhiteSpace(term))
+        {
+            SearchResults.Clear();
+            NumberOfResultsText = null;
+            return;
+        }
+
+        var comparer = StringComparison.OrdinalIgnoreCase;
+        var results = new List<SearchResult>();
+
+        foreach (var assemblyNode in AssemblyNodes)
+        {
+            var assemblyName = assemblyLookup.TryGetValue(assemblyNode, out var asm)
+                ? asm.PeFile?.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? asm.FilePath
+                : assemblyNode.Name;
+            var assemblyIcon = GetIcon("ReferenceIcon");
+            var assemblyDisplayName = assemblyNode.Name;
+
+            var namespaces = assemblyNode.Children.OfType<NamespaceNode>().ToList();
+            foreach (var ns in namespaces)
+            {
+                var nsIcon = GetIcon("NamespaceIcon");
+                if (MatchesMode("Namespace") && ns.Name != "-" && ns.Name.Contains(term, comparer))
+                {
+                    results.Add(new BasicSearchResult
+                    {
+                        MatchedString = ns.Name,
+                        DisplayName = ns.Name,
+                        DisplayLocation = assemblyName,
+                        DisplayAssembly = assemblyDisplayName,
+                        IconPath = nsIcon,
+                        LocationIconPath = assemblyIcon,
+                        AssemblyIconPath = assemblyIcon,
+                        TargetNode = ns
+                    });
+                }
+
+                foreach (var type in ns.Types)
+                {
+                    if (MatchesMode("Type") && type.Name.Contains(term, comparer))
+                    {
+                        results.Add(new BasicSearchResult
+                        {
+                            MatchedString = type.Name,
+                            DisplayName = type.Name,
+                            DisplayLocation = ns.Name,
+                            DisplayAssembly = assemblyDisplayName,
+                            IconPath = GetIcon("ClassIcon"),
+                            LocationIconPath = nsIcon,
+                            AssemblyIconPath = assemblyIcon,
+                            TargetNode = type
+                        });
+                    }
+
+                    foreach (var member in type.Members.OfType<MemberNode>())
+                    {
+                        if (MatchesMode("Member") || MatchesMode("Method") && member is MethodNode or ConstructorNode
+                            || MatchesMode("Field") && member is FieldNode
+                            || MatchesMode("Property") && member is PropertyNode
+                            || MatchesMode("Event") && member is EventNode
+                            || MatchesMode("Types and Members"))
+                        {
+                            if (member.Name.Contains(term, comparer))
+                            {
+                                results.Add(new BasicSearchResult
+                                {
+                                    MatchedString = member.Name,
+                                    DisplayName = member.Name,
+                                    DisplayLocation = $"{ns.Name}.{type.Name}",
+                                    DisplayAssembly = assemblyDisplayName,
+                                    IconPath = GetIcon(GetTypeIcon(member.Entity)),
+                                    LocationIconPath = nsIcon,
+                                    AssemblyIconPath = assemblyIcon,
+                                    TargetNode = member
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        SearchResults.Clear();
+        foreach (var r in results)
+        {
+            SearchResults.Add(r);
+        }
+        NumberOfResultsText = $"Found {results.Count} result(s)";
+
+        bool MatchesMode(string modeName) => string.Equals(SelectedSearchMode.Name, modeName, comparer);
+
+        static string GetTypeIcon(IEntity entity) => entity switch
+        {
+            ITypeDefinition => "ClassIcon",
+            IMethod => "MethodIcon",
+            IField => "FieldIcon",
+            IProperty => "PropertyIcon",
+            IEvent => "EventIcon",
+            _ => "MemberIcon"
+        };
+
+        static string GetIcon(string key) => Application.Current?.TryGetResource(key, Application.Current.ActualThemeVariant, out var value) == true
+            ? value as string ?? string.Empty
+            : string.Empty;
     }
 
     partial void OnIsSearchDockVisibleChanged(bool _)

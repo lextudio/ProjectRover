@@ -42,7 +42,16 @@
         <ComboBox Width="140"
                   ItemsSource="{Binding SearchModes}"
                   SelectedItem="{Binding SelectedSearchMode}"
-                  VerticalAlignment="Center" />
+                  VerticalAlignment="Center">
+          <ComboBox.ItemTemplate>
+            <DataTemplate DataType="vm:SearchMode">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Svg Width="16" Height="16" Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
+                <TextBlock Text="{Binding Name}" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
       </StackPanel>
     </Grid>
     <TextBlock DockPanel.Dock="Top"
@@ -53,8 +62,8 @@
                FontSize="12"/>
     <Grid DockPanel.Dock="Top" Margin="5,0,5,0">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="200" />
-        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="220" />
+        <ColumnDefinition Width="220" />
         <ColumnDefinition Width="150" />
       </Grid.ColumnDefinitions>
       <TextBlock Text="Name" FontWeight="Bold" />
@@ -64,26 +73,27 @@
     <ListBox ItemsSource="{Binding SearchResults}"
              SelectedItem="{Binding SelectedSearchResult}"
              Background="Transparent"
-             BorderBrush="{DynamicResource ToolbarBorderBrush}"
-             BorderThickness="1">
-      <ListBox.Styles>
-        <Style Selector="ListBoxItem">
-          <Setter Property="Foreground" Value="{DynamicResource ThemeForegroundBrush}" />
-          <Setter Property="Background" Value="Transparent" />
-          <Setter Property="BorderThickness" Value="0" />
-        </Style>
-      </ListBox.Styles>
+             BorderThickness="0">
       <ListBox.ItemTemplate>
-        <DataTemplate DataType="searchResults:SearchResult">
+        <DataTemplate DataType="searchResults:BasicSearchResult">
           <Grid>
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="200" />
-              <ColumnDefinition Width="200" />
+              <ColumnDefinition Width="220" />
+              <ColumnDefinition Width="220" />
               <ColumnDefinition Width="150" />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="0,0,5,0" Foreground="{DynamicResource ThemeForegroundBrush}" />
-            <TextBlock Grid.Column="1" Text="{Binding Location}" TextTrimming="CharacterEllipsis" Margin="0,0,5,0" Foreground="{DynamicResource ThemeForegroundBrush}" />
-            <TextBlock Grid.Column="2" Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource ThemeForegroundBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+               <Svg Width="16" Height="16" Path="{Binding IconPath}" />
+               <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+               <Svg Width="16" Height="16" Path="{Binding LocationIconPath}" />
+               <TextBlock Text="{Binding Location}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+               <Svg Width="16" Height="16" Path="{Binding AssemblyIconPath}" />
+               <TextBlock Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
           </Grid>
         </DataTemplate>
       </ListBox.ItemTemplate>
