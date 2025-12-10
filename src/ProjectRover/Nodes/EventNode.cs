@@ -17,12 +17,11 @@
     along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
 */
 
-using Mono.Cecil;
+using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ProjectRover.Nodes;
 
 public class EventNode : MemberNode
 {
-    public required EventDefinition EventDefinition { get; init; }
-    public override IMemberDefinition MemberDefinition => EventDefinition;
+    public required IEvent EventDefinition { get; init; }
 }

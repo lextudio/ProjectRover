@@ -4,5 +4,5 @@ namespace ProjectRover.Nodes;
 
 public class ResourcesNode : Node
 {
-    public ObservableCollection<ResourceNode> Items { get; } = new();
+    public ObservableCollection<ResourceEntryNode> Items { get; } = new();
 }

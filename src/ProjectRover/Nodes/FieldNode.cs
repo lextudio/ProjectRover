@@ -17,12 +17,11 @@
     along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
 */
 
-using Mono.Cecil;
+using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ProjectRover.Nodes;
 
 public class FieldNode : MemberNode
 {
-    public required FieldDefinition FieldDefinition { get; init; }
-    public override IMemberDefinition MemberDefinition => FieldDefinition;
+    public required IField FieldDefinition { get; init; }
 }

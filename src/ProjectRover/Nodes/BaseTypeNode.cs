@@ -1,9 +1,10 @@
-using Mono.Cecil;
+using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ProjectRover.Nodes;
 
 public class BaseTypeNode : Node
 {
-    public required TypeReference TypeReference { get; init; }
-    public string IconKey => TypeReference.Resolve()?.IsInterface == true ? "InterfaceIcon" : "ClassIcon";
+    public required IType Type { get; init; }
+
+    public string IconKey => Type.Kind == TypeKind.Interface ? "InterfaceIcon" : "ClassIcon";
 }

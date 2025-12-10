@@ -30,15 +30,12 @@ using ICSharpCode.Decompiler.DebugInfo;
 using ICSharpCode.Decompiler.Disassembler;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.Output;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
-using CecilAssemblyDefinition = Mono.Cecil.AssemblyDefinition;
+using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ProjectRover.Services;
 
 public sealed class IlSpyBackend : IDisposable
 {
-    private readonly DefaultAssemblyResolver cecilResolver = new();
     private readonly HashSet<string> searchDirectories = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, IlSpyAssembly> loadedAssemblies = new(StringComparer.OrdinalIgnoreCase);
 
@@ -65,35 +62,6 @@ public sealed class IlSpyBackend : IDisposable
             AddSearchDirectory(directory);
         }
 
-        var readerParameters = new ReaderParameters
-        {
-            AssemblyResolver = cecilResolver,
-            InMemory = true,
-            ReadSymbols = true,
-            ReadingMode = ReadingMode.Deferred,
-            SymbolReaderProvider = new DefaultSymbolReaderProvider(false)
-        };
-
-        CecilAssemblyDefinition assemblyDefinition;
-        try
-        {
-            using var assemblyStream = File.OpenRead(filePath);
-            assemblyDefinition = CecilAssemblyDefinition.ReadAssembly(assemblyStream, readerParameters);
-        }
-        catch (SymbolsNotFoundException)
-        {
-            var fallbackParameters = new ReaderParameters
-            {
-                AssemblyResolver = cecilResolver,
-                InMemory = true,
-                ReadSymbols = false,
-                ReadingMode = ReadingMode.Deferred
-            };
-
-            using var assemblyStream = File.OpenRead(filePath);
-            assemblyDefinition = CecilAssemblyDefinition.ReadAssembly(assemblyStream, fallbackParameters);
-        }
-
         PEFile peFile;
         using (var peStream = File.OpenRead(filePath))
         {
@@ -109,23 +77,23 @@ public sealed class IlSpyBackend : IDisposable
             runtimePack,
             PEStreamOptions.PrefetchEntireImage);
 
-        // Make sure every resolver knows all the search paths we've collected so far.
         foreach (var dir in searchDirectories)
         {
             resolver.AddSearchDirectory(dir);
         }
 
-        var ilSpyAssembly = new IlSpyAssembly(filePath, assemblyDefinition, peFile, resolver);
+        var typeSystem = new DecompilerTypeSystem(peFile, resolver, new DecompilerSettings(LanguageVersion.Latest));
+
+        var ilSpyAssembly = new IlSpyAssembly(filePath, peFile, resolver, typeSystem);
         loadedAssemblies[filePath] = ilSpyAssembly;
         return ilSpyAssembly;
     }
 
-    public string DecompileMember(IlSpyAssembly assembly, IMemberDefinition memberDefinition, DecompilationLanguage language, DecompilerSettings? settings = null)
+    public string DecompileMember(IlSpyAssembly assembly, EntityHandle handle, DecompilationLanguage language, DecompilerSettings? settings = null)
     {
-        var handle = ToHandle(memberDefinition);
         if (handle.IsNil)
         {
-            return $"// Unable to map member token: {memberDefinition.FullName}";
+            return "// Unable to map member token.";
         }
 
         return language switch
@@ -137,11 +105,6 @@ public sealed class IlSpyBackend : IDisposable
 
     public void Clear()
     {
-        foreach (var asm in loadedAssemblies.Values)
-        {
-            asm.AssemblyDefinition.Dispose();
-        }
-
         loadedAssemblies.Clear();
         searchDirectories.Clear();
     }
@@ -227,25 +190,10 @@ public sealed class IlSpyBackend : IDisposable
         return output.ToString();
     }
 
-    private static EntityHandle ToHandle(IMemberDefinition memberDefinition)
-    {
-        var token = memberDefinition.MetadataToken;
-        return token.TokenType switch
-        {
-            TokenType.TypeDef => MetadataTokens.TypeDefinitionHandle((int)token.RID),
-            TokenType.Field => MetadataTokens.FieldDefinitionHandle((int)token.RID),
-            TokenType.Method => MetadataTokens.MethodDefinitionHandle((int)token.RID),
-            TokenType.Property => MetadataTokens.PropertyDefinitionHandle((int)token.RID),
-            TokenType.Event => MetadataTokens.EventDefinitionHandle((int)token.RID),
-            _ => default
-        };
-    }
-
     private void AddSearchDirectory(string directory)
     {
         if (searchDirectories.Add(directory))
         {
-            cecilResolver.AddSearchDirectory(directory);
             foreach (var asm in loadedAssemblies.Values)
             {
                 asm.Resolver.AddSearchDirectory(directory);
@@ -254,4 +202,4 @@ public sealed class IlSpyBackend : IDisposable
     }
 }
 
-public record IlSpyAssembly(string FilePath, CecilAssemblyDefinition AssemblyDefinition, PEFile PeFile, UniversalAssemblyResolver Resolver);
+public record IlSpyAssembly(string FilePath, PEFile PeFile, UniversalAssemblyResolver Resolver, DecompilerTypeSystem TypeSystem);

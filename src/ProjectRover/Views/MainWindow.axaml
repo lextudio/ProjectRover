@@ -379,7 +379,7 @@
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
-                                    <TreeDataTemplate DataType="nodes:ResourceNode">
+                                    <TreeDataTemplate DataType="nodes:ResourceEntryNode">
                                         <StackPanel Orientation="Horizontal">
                                             <Svg Path="{DynamicResource ResourceFileIcon}" />
                                             <TextBlock Text="{Binding Name}" />
@@ -506,90 +506,6 @@
                                         </Style>
                                     </ListBox.Styles>
                                     <ListBox.DataTemplates>
-                                        <DataTemplate DataType="searchResults:TypeNameSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource ClassIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:EventNameSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource EventIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:EventTypeSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource EventIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:FieldNameSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource FieldIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:FieldTypeSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource FieldIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:PropertyNameSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource PropertyIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:PropertyTypeSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource PropertyIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:MethodNameSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource MethodIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:MethodReturnTypeSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource MethodIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:ParameterNameSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource ParameterIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:ParameterTypeSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource ParameterIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:VariableNameSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource LocalVariableIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:VariableTypeSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource LocalVariableIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="searchResults:StringLiteralSearchResult">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Svg Path="{DynamicResource StringIcon}" />
-                                                <TextBlock Text="{Binding MatchedString}" />
-                                            </StackPanel>
-                                        </DataTemplate>
                                         <DataTemplate DataType="searchResults:SearchResult">
                                             <StackPanel Orientation="Horizontal">
                                                 <!-- Used to keep the space unoccupied and align all elements vertically -->

@@ -18,8 +18,6 @@
 */
 
 using System.Collections.ObjectModel;
-using Mono.Cecil;
-
 namespace ProjectRover.Nodes;
 
 public class AssemblyNode : Node
@@ -33,8 +31,7 @@ public class AssemblyNode : Node
         };
         Children.Add(References);
     }
-    
-    public required AssemblyDefinition AssemblyDefinition { get; init; }
+
     public ReferencesNode References { get; }
     public ObservableCollection<Node> Children { get; } = new();
 

@@ -18,14 +18,13 @@
 */
 
 using System.Collections.ObjectModel;
-using Mono.Cecil;
+using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ProjectRover.Nodes;
 
 public abstract class TypeNode : MemberNode
 {
-    public required TypeDefinition TypeDefinition { get; init; }
+    public required ITypeDefinition TypeDefinition { get; init; }
     public ObservableCollection<Node> Members { get; } = new();
-    public override IMemberDefinition MemberDefinition => TypeDefinition;
     public string IconKey { get; init; } = "ClassIcon";
 }

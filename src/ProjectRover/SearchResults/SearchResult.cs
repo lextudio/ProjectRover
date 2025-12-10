@@ -17,12 +17,9 @@
     along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
 */
 
-using Mono.Cecil;
-
 namespace ProjectRover.SearchResults;
 
 public abstract class SearchResult
 {
-    public required TypeDefinition DeclaringType { get; init; }
     public required string MatchedString { get; init; }
 }

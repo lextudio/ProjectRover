@@ -45,19 +45,11 @@ using CommunityToolkit.Mvvm.Input;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.Metadata;
+using ICSharpCode.Decompiler.TypeSystem;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Mono.Cecil;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-
-using MemberReference = Mono.Cecil.MemberReference;
-using TypeReference = Mono.Cecil.TypeReference;
-using TypeDefinition = Mono.Cecil.TypeDefinition;
-using FieldDefinition = Mono.Cecil.FieldDefinition;
-using MethodDefinition = Mono.Cecil.MethodDefinition;
-using PropertyDefinition = Mono.Cecil.PropertyDefinition;
-using EventDefinition = Mono.Cecil.EventDefinition;
 
 namespace ProjectRover.ViewModels;
 
@@ -75,7 +67,7 @@ public partial class MainWindowViewModel : ObservableObject
         "startup.json");
 
     private readonly Dictionary<AssemblyNode, IlSpyAssembly> assemblyLookup = new();
-    private readonly Dictionary<IMemberDefinition, Node> memberDefinitionToNodeMap = new();
+    private readonly Dictionary<EntityHandle, Node> handleToNodeMap = new();
     private readonly Stack<Node> backStack = new();
     private readonly Stack<Node> forwardStack = new();
 
@@ -178,16 +170,15 @@ public partial class MainWindowViewModel : ObservableObject
         if (assemblyLookup.TryGetValue(assemblyNode, out var ilSpyAssembly))
         {
             assemblyLookup.Remove(assemblyNode);
-            ilSpyAssembly.AssemblyDefinition.Dispose();
         }
 
-        var toRemove = memberDefinitionToNodeMap
+        var toRemove = handleToNodeMap
             .Where(kvp => GetAssemblyNode(kvp.Value) == assemblyNode)
             .Select(kvp => kvp.Key)
             .ToList();
         foreach (var key in toRemove)
         {
-            memberDefinitionToNodeMap.Remove(key);
+            handleToNodeMap.Remove(key);
         }
 
         FilterStack(backStack);
@@ -219,9 +210,8 @@ public partial class MainWindowViewModel : ObservableObject
         SelectedTheme = theme;
     }
 
-    internal void SelectNodeByMemberReference(MemberReference memberReference)
+    internal void SelectNodeByMemberReference(EntityHandle handle)
     {
-        // Placeholder for reference navigation; ILSpy mapping will be added later.
         notificationService.ShowNotification(new Notification
         {
             Message = "Go to definition is not wired to the ILSpy backend yet.",
@@ -229,20 +219,9 @@ public partial class MainWindowViewModel : ObservableObject
         });
     }
 
-    public void NavigateToType(TypeReference typeReference)
+    public void NavigateToType(EntityHandle typeHandle)
     {
-        var typeDefinition = typeReference.Resolve();
-        if (typeDefinition == null)
-        {
-            notificationService.ShowNotification(new Notification
-            {
-                Message = $"Could not resolve type {typeReference.FullName}",
-                Level = NotificationLevel.Warning
-            });
-            return;
-        }
-
-        if (memberDefinitionToNodeMap.TryGetValue(typeDefinition, out var node))
+        if (handleToNodeMap.TryGetValue(typeHandle, out var node))
         {
             SelectedNode = node;
             ExpandParents(node);
@@ -251,7 +230,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             notificationService.ShowNotification(new Notification
             {
-                Message = $"Type {typeDefinition.FullName} not found in tree",
+                Message = $"Type not found in tree",
                 Level = NotificationLevel.Warning
             });
         }
@@ -267,12 +246,12 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    internal async void TryLoadUnresolvedReference(MemberReference memberReference)
+    internal async void TryLoadUnresolvedReference()
     {
         var storageProvider = (App.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.MainWindow!.StorageProvider;
         var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = $"Load {memberReference.DeclaringType?.FullName ?? "reference"}",
+            Title = "Load reference",
             AllowMultiple = false,
             FileTypeFilter = new[]
             {
@@ -398,7 +377,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         SelectedNode = null;
         AssemblyNodes.Clear();
-        memberDefinitionToNodeMap.Clear();
+        handleToNodeMap.Clear();
         assemblyLookup.Clear();
 
         ClearHistory();
@@ -547,28 +526,28 @@ public partial class MainWindowViewModel : ObservableObject
 
         if (node is AssemblyNode)
         {
-            Document = new TextDocument($"// Assembly: {assembly.AssemblyDefinition.Name.FullName}{System.Environment.NewLine}// Select a type or member to decompile.");
+            Document = new TextDocument($"// Assembly: {assembly.PeFile.FileName}{System.Environment.NewLine}// Select a type or member to decompile.");
             MainWindow.references.Clear();
             return;
         }
 
         if (node is MetadataNode metadataNode)
         {
-            Document = new TextDocument($"// Metadata for {metadataNode.AssemblyDefinition.Name.FullName}{System.Environment.NewLine}// TODO: Display metadata details.");
+            Document = new TextDocument($"// Metadata for {metadataNode.PeFile.FileName}{System.Environment.NewLine}// TODO: Display metadata details.");
             MainWindow.references.Clear();
             return;
         }
 
         if (node is DebugMetadataNode debugMetadataNode)
         {
-            Document = new TextDocument($"// Debug metadata for {debugMetadataNode.AssemblyDefinition.Name.FullName}{System.Environment.NewLine}// TODO: Display debug symbols or PDB info.");
+            Document = new TextDocument($"// Debug metadata for {debugMetadataNode.PeFile.FileName}{System.Environment.NewLine}// TODO: Display debug symbols or PDB info.");
             MainWindow.references.Clear();
             return;
         }
 
-        if (node is ResourceNode resourceNode)
+        if (node is ResourceEntryNode resourceNode)
         {
-            Document = new TextDocument($"// Resource: {resourceNode.Name}{System.Environment.NewLine}// Type: {resourceNode.Resource.ResourceType}{System.Environment.NewLine}// Embedded resource viewing is not implemented yet.");
+            Document = new TextDocument($"// Resource: {resourceNode.Name}{System.Environment.NewLine}// Embedded resource viewing is not implemented yet.");
             MainWindow.references.Clear();
             return;
         }
@@ -576,13 +555,6 @@ public partial class MainWindowViewModel : ObservableObject
         if (node is BaseTypesNode)
         {
             Document = new TextDocument($"// Base Types");
-            MainWindow.references.Clear();
-            return;
-        }
-
-        if (node is BaseTypeNode baseTypeNode)
-        {
-            Document = new TextDocument($"// Base Type: {baseTypeNode.TypeReference.FullName}{System.Environment.NewLine}// Double-click to navigate.");
             MainWindow.references.Clear();
             return;
         }
@@ -595,7 +567,7 @@ public partial class MainWindowViewModel : ObservableObject
         try
         {
             var settings = BuildDecompilerSettings();
-            var text = ilSpyBackend.DecompileMember(assembly, memberNode.MemberDefinition, selectedLanguage.Language, settings);
+            var text = ilSpyBackend.DecompileMember(assembly, memberNode.MetadataToken, selectedLanguage.Language, settings);
             Document = new TextDocument(text);
             MainWindow.references.Clear();
         }
@@ -808,27 +780,29 @@ public partial class MainWindowViewModel : ObservableObject
 
     private AssemblyNode BuildAssemblyNode(IlSpyAssembly assembly)
     {
+        var reader = assembly.PeFile.Metadata;
+        var assemblyName = reader.IsAssembly ? reader.GetString(reader.GetAssemblyDefinition().Name) : Path.GetFileNameWithoutExtension(assembly.FilePath);
+        var assemblyVersion = reader.IsAssembly ? reader.GetAssemblyDefinition().Version.ToString() : string.Empty;
+
         var assemblyNode = new AssemblyNode
         {
-            Name = $"{assembly.AssemblyDefinition.Name.Name} ({assembly.AssemblyDefinition.Name.Version})",
-            Parent = null,
-            AssemblyDefinition = assembly.AssemblyDefinition
+            Name = string.IsNullOrEmpty(assemblyVersion) ? assemblyName : $"{assemblyName} ({assemblyVersion})",
+            Parent = null
         };
 
-        // Clear default children (References) to re-order
         assemblyNode.Children.Clear();
 
         var metadataNode = new MetadataNode
         {
             Name = "Metadata",
             Parent = assemblyNode,
-            AssemblyDefinition = assembly.AssemblyDefinition
+            PeFile = assembly.PeFile
         };
         var debugMetadataNode = new DebugMetadataNode
         {
             Name = "Debug Metadata",
             Parent = assemblyNode,
-            AssemblyDefinition = assembly.AssemblyDefinition
+            PeFile = assembly.PeFile
         };
         BuildMetadataChildren(metadataNode, assembly.PeFile);
         BuildDebugMetadataChildren(debugMetadataNode, assembly.PeFile);
@@ -837,94 +811,29 @@ public partial class MainWindowViewModel : ObservableObject
         assemblyNode.Children.Add(debugMetadataNode);
         assemblyNode.Children.Add(assemblyNode.References);
 
-        var cecilResolver = assembly.AssemblyDefinition.MainModule.AssemblyResolver;
-        IsResolving = true;
-        try
-        {
-            foreach (var reference in assembly.AssemblyDefinition.MainModule.AssemblyReferences.OrderBy(r => r.Name))
-            {
-                Node node;
-                try
-                {
-                    var resolved = cecilResolver?.Resolve(reference);
-                    node = resolved is not null
-                        ? new ResolvedReferenceNode
-                        {
-                            Name = reference.Name,
-                            Parent = assemblyNode.References,
-                            FilePath = resolved.MainModule.FileName
-                        }
-                        : new UnresolvedReferenceNode { Name = reference.Name, Parent = assemblyNode.References };
-                }
-                catch
-                {
-                    node = new UnresolvedReferenceNode { Name = reference.Name, Parent = assemblyNode.References };
-                }
-
-                assemblyNode.References.Items.Add(node);
-            }
-        }
-        finally
-        {
-            IsResolving = false;
-        }
-
-        var resourcesNode = new ResourcesNode
-        {
-            Name = "Resources",
-            Parent = assemblyNode
-        };
-        assemblyNode.Children.Add(resourcesNode);
-
-        foreach (var resource in assembly.AssemblyDefinition.MainModule.Resources.OrderBy(r => r.Name))
-        {
-            resourcesNode.Items.Add(new ResourceNode
-            {
-                Name = resource.Name,
-                Parent = resourcesNode,
-                Resource = resource
-            });
-        }
-
-        foreach (var namespaceGroup in assembly.AssemblyDefinition.MainModule.Types.GroupBy(t => t.Namespace).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            var namespaceNode = new NamespaceNode
-            {
-                Name = string.IsNullOrEmpty(namespaceGroup.Key) ? "-" : namespaceGroup.Key,
-                Parent = assemblyNode,
-                IsPublicAPI = namespaceGroup.Any(IsPublicApiType)
-            };
-
-            foreach (var typeDefinition in namespaceGroup.OrderBy(t => t.Name))
-            {
-                var typeNode = BuildTypeSubtree(typeDefinition, namespaceNode);
-                namespaceNode.Types.Add(typeNode);
-                memberDefinitionToNodeMap[typeDefinition] = typeNode;
-            }
-
-            assemblyNode.AddNamespace(namespaceNode);
-        }
+        BuildReferences(assembly, assemblyNode);
+        BuildResources(assembly, assemblyNode);
+        BuildTypes(assembly, assemblyNode);
 
         return assemblyNode;
     }
 
-    private static bool IsPublicApiType(TypeDefinition typeDefinition) =>
-        typeDefinition.IsPublic
-        || typeDefinition.IsNestedPublic
-        || typeDefinition.IsNestedFamily
-        || typeDefinition.IsNestedFamilyOrAssembly;
+    private static bool IsPublicApi(IEntity entity) =>
+        entity.Accessibility == Accessibility.Public
+        || entity.Accessibility == Accessibility.Protected
+        || entity.Accessibility == Accessibility.ProtectedOrInternal;
 
-    private static string GetClassIconKey(TypeDefinition typeDefinition)
+    private static string GetClassIconKey(ITypeDefinition typeDefinition)
     {
-        if (typeDefinition.IsSealed && (typeDefinition.IsPublic || typeDefinition.IsNestedPublic))
+        if (typeDefinition.IsSealed && (typeDefinition.Accessibility == Accessibility.Public || typeDefinition.Accessibility == Accessibility.ProtectedOrInternal))
             return "ClassSealedIcon";
-        if (typeDefinition.IsPublic || typeDefinition.IsNestedPublic || typeDefinition.IsNestedFamilyOrAssembly)
-            return "ClassIcon";
-        if (typeDefinition.IsNestedFamily)
-            return "ClassProtectedIcon";
-        if (typeDefinition.IsNestedAssembly || typeDefinition.IsNestedFamilyAndAssembly)
-            return "ClassInternalIcon";
-        return "ClassPrivateIcon";
+        return typeDefinition.Accessibility switch
+        {
+            Accessibility.Public or Accessibility.ProtectedOrInternal => "ClassIcon",
+            Accessibility.Protected => "ClassProtectedIcon",
+            Accessibility.Internal => "ClassInternalIcon",
+            _ => "ClassPrivateIcon"
+        };
     }
 
     private static void BuildMetadataChildren(MetadataNode metadataNode, PEFile peFile)
@@ -1007,46 +916,137 @@ public partial class MainWindowViewModel : ObservableObject
         return tablesNode;
     }
 
-    private TypeNode BuildTypeSubtree(TypeDefinition typeDefinition, Node parentNode)
+    private void BuildReferences(IlSpyAssembly assembly, AssemblyNode assemblyNode)
     {
-        TypeNode typeNode = typeDefinition switch
+        var reader = assembly.PeFile.Metadata;
+        var resolver = assembly.Resolver;
+        IsResolving = true;
+        try
         {
-            { IsEnum: true } => new EnumNode
+            foreach (var handle in reader.AssemblyReferences)
+            {
+                var reference = reader.GetAssemblyReference(handle);
+                var name = reader.GetString(reference.Name);
+                Node node;
+                try
+                {
+                    var metadataRef = new MetadataAssemblyReference(reference, reader);
+                    var resolved = resolver.Resolve(metadataRef);
+                    node = resolved is not null
+                        ? new ResolvedReferenceNode { Name = name, Parent = assemblyNode.References, FilePath = resolved.FileName }
+                        : new UnresolvedReferenceNode { Name = name, Parent = assemblyNode.References };
+                }
+                catch
+                {
+                    node = new UnresolvedReferenceNode { Name = name, Parent = assemblyNode.References };
+                }
+
+                assemblyNode.References.Items.Add(node);
+            }
+        }
+        finally
+        {
+            IsResolving = false;
+        }
+    }
+
+    private void BuildResources(IlSpyAssembly assembly, AssemblyNode assemblyNode)
+    {
+        var reader = assembly.PeFile.Metadata;
+        if (!reader.ManifestResources.Any())
+            return;
+
+        var resourcesNode = new ResourcesNode
+        {
+            Name = "Resources",
+            Parent = assemblyNode
+        };
+        assemblyNode.Children.Add(resourcesNode);
+
+        foreach (var handle in reader.ManifestResources)
+        {
+            var resource = reader.GetManifestResource(handle);
+            var name = reader.GetString(resource.Name);
+            resourcesNode.Items.Add(new ResourceEntryNode
+            {
+                Name = name,
+                Parent = resourcesNode,
+                ResourceName = name
+            });
+        }
+    }
+
+    private void BuildTypes(IlSpyAssembly assembly, AssemblyNode assemblyNode)
+    {
+        var typeSystem = assembly.TypeSystem;
+        var module = typeSystem.MainModule;
+        var types = module.TypeDefinitions;
+
+        foreach (var namespaceGroup in types.GroupBy(t => t.Namespace).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            var namespaceNode = new NamespaceNode
+            {
+                Name = string.IsNullOrEmpty(namespaceGroup.Key) ? "-" : namespaceGroup.Key,
+                Parent = assemblyNode,
+                IsPublicAPI = namespaceGroup.Any(IsPublicApi)
+            };
+
+            foreach (var typeDefinition in namespaceGroup.OrderBy(t => t.Name))
+            {
+                var typeNode = BuildTypeSubtree(typeDefinition, namespaceNode, assembly);
+                namespaceNode.Types.Add(typeNode);
+            }
+
+            assemblyNode.AddNamespace(namespaceNode);
+        }
+    }
+
+    private TypeNode BuildTypeSubtree(ITypeDefinition typeDefinition, Node parentNode, IlSpyAssembly assembly)
+    {
+        TypeNode typeNode = typeDefinition.Kind switch
+        {
+            TypeKind.Enum => new EnumNode
             {
                 Name = typeDefinition.Name,
                 Parent = parentNode,
                 TypeDefinition = typeDefinition,
-                IsPublicAPI = IsPublicApiType(typeDefinition),
-                IconKey = GetClassIconKey(typeDefinition)
+                IsPublicAPI = IsPublicApi(typeDefinition),
+                IconKey = GetClassIconKey(typeDefinition),
+                Entity = typeDefinition
             },
-            { IsValueType: true } => new StructNode
+            TypeKind.Struct => new StructNode
             {
                 Name = typeDefinition.Name,
                 Parent = parentNode,
                 TypeDefinition = typeDefinition,
-                IsPublicAPI = IsPublicApiType(typeDefinition),
-                IconKey = GetClassIconKey(typeDefinition)
+                IsPublicAPI = IsPublicApi(typeDefinition),
+                IconKey = GetClassIconKey(typeDefinition),
+                Entity = typeDefinition
             },
-            { IsClass: true } => new ClassNode
+            TypeKind.Interface => new InterfaceNode
             {
                 Name = typeDefinition.Name,
                 Parent = parentNode,
                 TypeDefinition = typeDefinition,
-                IsPublicAPI = IsPublicApiType(typeDefinition),
-                IconKey = GetClassIconKey(typeDefinition)
+                IsPublicAPI = IsPublicApi(typeDefinition),
+                IconKey = GetClassIconKey(typeDefinition),
+                Entity = typeDefinition
             },
-            { IsInterface: true } => new InterfaceNode
+            _ => new ClassNode
             {
                 Name = typeDefinition.Name,
                 Parent = parentNode,
                 TypeDefinition = typeDefinition,
-                IsPublicAPI = IsPublicApiType(typeDefinition),
-                IconKey = GetClassIconKey(typeDefinition)
-            },
-            _ => throw new NotSupportedException()
+                IsPublicAPI = IsPublicApi(typeDefinition),
+                IconKey = GetClassIconKey(typeDefinition),
+                Entity = typeDefinition
+            }
         };
 
-        if (typeDefinition.BaseType != null || typeDefinition.HasInterfaces)
+        RegisterHandle(typeNode, typeDefinition.MetadataToken);
+
+        var directBases = typeDefinition.DirectBaseTypes.Where(t => t.Kind != TypeKind.Unknown).ToList();
+        if (directBases.Count > 0)
         {
             var baseTypesNode = new BaseTypesNode
             {
@@ -1055,91 +1055,108 @@ public partial class MainWindowViewModel : ObservableObject
             };
             typeNode.Members.Add(baseTypesNode);
 
-            if (typeDefinition.BaseType != null)
+            foreach (var baseType in directBases)
             {
                 baseTypesNode.Items.Add(new BaseTypeNode
                 {
-                    Name = typeDefinition.BaseType.Name,
+                    Name = baseType.FullName,
                     Parent = baseTypesNode,
-                    TypeReference = typeDefinition.BaseType
-                });
-            }
-
-            foreach (var interfaceImpl in typeDefinition.Interfaces)
-            {
-                baseTypesNode.Items.Add(new BaseTypeNode
-                {
-                    Name = interfaceImpl.InterfaceType.Name,
-                    Parent = baseTypesNode,
-                    TypeReference = interfaceImpl.InterfaceType
+                    Type = baseType
                 });
             }
         }
 
-        foreach (var memberDefinition in GetMembers(typeDefinition))
+        foreach (var member in GetMembers(typeDefinition))
         {
-            MemberNode node = memberDefinition switch
+            switch (member)
             {
-                FieldDefinition fieldDefinition => new FieldNode
-                {
-                    Name = fieldDefinition.Name,
-                    FieldDefinition = fieldDefinition,
-                    Parent = typeNode
-                },
-                MethodDefinition { IsConstructor: true } methodDefinition => new ConstructorNode
-                {
-                    Name = methodDefinition.Name,
-                    MethodDefinition = methodDefinition,
-                    Parent = typeNode
-                },
-                PropertyDefinition propertyDefinition => new PropertyNode
-                {
-                    Name = propertyDefinition.Name,
-                    PropertyDefinition = propertyDefinition,
-                    Parent = typeNode
-                },
-                MethodDefinition methodDefinition => new MethodNode
-                {
-                    Name = methodDefinition.Name,
-                    MethodDefinition = methodDefinition,
-                    Parent = typeNode
-                },
-                EventDefinition eventDefinition => new EventNode
-                {
-                    Name = eventDefinition.Name,
-                    EventDefinition = eventDefinition,
-                    Parent = typeNode
-                },
-                TypeDefinition nestedTypeDefinition => BuildTypeSubtree(nestedTypeDefinition, typeNode),
-                _ => throw new NotSupportedException()
-            };
-
-            typeNode.Members.Add(node);
-            memberDefinitionToNodeMap[memberDefinition] = node;
+                case IField fieldDefinition:
+                    var fieldNode = new FieldNode
+                    {
+                        Name = fieldDefinition.Name,
+                        FieldDefinition = fieldDefinition,
+                        Parent = typeNode,
+                        Entity = fieldDefinition,
+                        IsPublicAPI = IsPublicApi(fieldDefinition)
+                    };
+                    typeNode.Members.Add(fieldNode);
+                    RegisterHandle(fieldNode, fieldDefinition.MetadataToken);
+                    break;
+                case IMethod { IsConstructor: true } methodDefinition:
+                    var ctorNode = new ConstructorNode
+                    {
+                        Name = methodDefinition.Name,
+                        MethodDefinition = methodDefinition,
+                        Parent = typeNode,
+                        Entity = methodDefinition,
+                        IsPublicAPI = IsPublicApi(methodDefinition)
+                    };
+                    typeNode.Members.Add(ctorNode);
+                    RegisterHandle(ctorNode, methodDefinition.MetadataToken);
+                    break;
+                case IMethod methodDefinition:
+                    var methodNode = new MethodNode
+                    {
+                        Name = methodDefinition.Name,
+                        MethodDefinition = methodDefinition,
+                        Parent = typeNode,
+                        Entity = methodDefinition,
+                        IsPublicAPI = IsPublicApi(methodDefinition)
+                    };
+                    typeNode.Members.Add(methodNode);
+                    RegisterHandle(methodNode, methodDefinition.MetadataToken);
+                    break;
+                case IProperty propertyDefinition:
+                    var propNode = new PropertyNode
+                    {
+                        Name = propertyDefinition.Name,
+                        PropertyDefinition = propertyDefinition,
+                        Parent = typeNode,
+                        Entity = propertyDefinition,
+                        IsPublicAPI = IsPublicApi(propertyDefinition)
+                    };
+                    typeNode.Members.Add(propNode);
+                    RegisterHandle(propNode, propertyDefinition.MetadataToken);
+                    break;
+                case IEvent eventDefinition:
+                    var evtNode = new EventNode
+                    {
+                        Name = eventDefinition.Name,
+                        EventDefinition = eventDefinition,
+                        Parent = typeNode,
+                        Entity = eventDefinition,
+                        IsPublicAPI = IsPublicApi(eventDefinition)
+                    };
+                    typeNode.Members.Add(evtNode);
+                    RegisterHandle(evtNode, eventDefinition.MetadataToken);
+                    break;
+                case ITypeDefinition nestedTypeDefinition:
+                    var nested = BuildTypeSubtree(nestedTypeDefinition, typeNode, assembly);
+                    typeNode.Members.Add(nested);
+                    break;
+            }
         }
 
         return typeNode;
     }
 
-    private IEnumerable<IMemberDefinition> GetMembers(TypeDefinition typeDefinition)
+    private IEnumerable<IEntity> GetMembers(ITypeDefinition typeDefinition)
     {
-        IEnumerable<IMemberDefinition> members = typeDefinition.Fields
-            .Cast<IMemberDefinition>()
-            .Concat(typeDefinition.Methods)
+        IEnumerable<IEntity> members = typeDefinition.Fields
+            .Concat<IEntity>(typeDefinition.Methods)
             .Concat(typeDefinition.Properties)
             .Concat(typeDefinition.Events)
             .Concat(typeDefinition.NestedTypes);
 
-        if (!ShowCompilerGeneratedMembers)
-        {
-            members = members.Where(m => !IsCompilerGenerated(m));
-        }
-
-        return members.OrderBy(m => m.MetadataToken.RID);
+        return members.OrderBy(m => MetadataTokens.GetToken(m.MetadataToken));
     }
 
-    private static bool IsCompilerGenerated(ICustomAttributeProvider provider) =>
-        provider.CustomAttributes.Any(attr => attr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute");
+    private void RegisterHandle(Node node, EntityHandle metadataToken)
+    {
+        if (metadataToken.IsNil)
+            return;
+        handleToNodeMap[metadataToken] = node;
+    }
 
     public record ThemeOption(string Name, ThemeVariant Variant);
 

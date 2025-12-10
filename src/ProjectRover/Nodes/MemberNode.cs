@@ -17,11 +17,13 @@
     along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
 */
 
-using Mono.Cecil;
+using ICSharpCode.Decompiler.TypeSystem;
+using System.Reflection.Metadata;
 
 namespace ProjectRover.Nodes;
 
 public abstract class MemberNode : Node
 {
-    public abstract IMemberDefinition MemberDefinition { get; }
+    public required IEntity Entity { get; init; }
+    public EntityHandle MetadataToken => Entity.MetadataToken;
 }

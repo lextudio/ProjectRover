@@ -36,7 +36,6 @@ using ProjectRover.Services;
 using ProjectRover.ViewModels;
 using ProjectRover.Nodes;
 using Microsoft.Extensions.Logging;
-using Mono.Cecil;
 using TextMateSharp.Grammars;
 using System.IO;
 
@@ -89,14 +88,17 @@ public partial class MainWindow : Window
             if (reference == null)
                 return;
             
-            if (reference.Resolved)
-            {
-                viewModel.SelectNodeByMemberReference(reference.MemberReference);
-            }
-            else
-            {
-                viewModel.TryLoadUnresolvedReference(reference.MemberReference);
-            }
+                if (reference.Resolved)
+                {
+                    if (reference.MemberReference is System.Reflection.Metadata.EntityHandle handle)
+                    {
+                        viewModel.SelectNodeByMemberReference(handle);
+                    }
+                }
+                else
+                {
+                    viewModel.TryLoadUnresolvedReference();
+                }
                     
             args.Handled = true;
         };
@@ -236,10 +238,6 @@ public partial class MainWindow : Window
     
     private void TreeView_OnDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (viewModel.SelectedNode is BaseTypeNode baseTypeNode)
-        {
-            viewModel.NavigateToType(baseTypeNode.TypeReference);
-        }
     }
 
     private class ReferenceElementGenerator : VisualLineElementGenerator
@@ -261,10 +259,10 @@ public partial class MainWindow : Window
         private static readonly KeyModifiers NavigateToKeyModifier =
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? KeyModifiers.Meta : KeyModifiers.Control;
         private static ReferenceVisualLineText? pressed;
-        private readonly MemberReference memberReference;
+        private readonly object memberReference;
         private readonly bool resolved;
         
-        public ReferenceVisualLineText(VisualLine parentVisualLine, int length, MemberReference memberReference, bool resolved)
+        public ReferenceVisualLineText(VisualLine parentVisualLine, int length, object memberReference, bool resolved)
             : base(parentVisualLine, length)
         {
             this.memberReference = memberReference;
@@ -386,11 +384,14 @@ public partial class MainWindow : Window
 
                 if (resolved)
                 {
-                    viewModel.SelectNodeByMemberReference(memberReference);
+                    if (memberReference is System.Reflection.Metadata.EntityHandle handle)
+                    {
+                        viewModel.SelectNodeByMemberReference(handle);
+                    }
                 }
                 else
                 {
-                    viewModel.TryLoadUnresolvedReference(memberReference);
+                    viewModel.TryLoadUnresolvedReference();
                 }
                 
                 pressed = null;
@@ -404,6 +405,6 @@ public partial class MainWindow : Window
 
 public class ReferenceTextSegment : TextSegment
 {
-    public required MemberReference MemberReference { get; init; }
+    public required object MemberReference { get; init; }
     public required bool Resolved { get; init; }
 }
