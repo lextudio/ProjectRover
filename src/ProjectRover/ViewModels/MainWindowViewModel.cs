@@ -894,15 +894,19 @@ public partial class MainWindowViewModel : ObservableObject
 
                 foreach (var type in ns.Types)
                 {
-                    if (MatchesMode("Type") && type.Name.Contains(term, comparer))
+                    var typeName = type.TypeDefinition.Name;
+                    var typeNamespace = ns.Name;
+                    var typeIcon = GetIcon(type.IconKey);
+
+                    if ((MatchesMode("Type") || MatchesMode("Types and Members")) && typeName.Contains(term, comparer))
                     {
                         results.Add(new BasicSearchResult
                         {
-                            MatchedString = type.Name,
-                            DisplayName = type.Name,
-                            DisplayLocation = ns.Name,
+                            MatchedString = typeName,
+                            DisplayName = typeName,
+                            DisplayLocation = typeNamespace,
                             DisplayAssembly = assemblyDisplayName,
-                            IconPath = GetIcon("ClassIcon"),
+                            IconPath = typeIcon,
                             LocationIconPath = nsIcon,
                             AssemblyIconPath = assemblyIcon,
                             TargetNode = type
