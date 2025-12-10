@@ -37,7 +37,6 @@ public class AssemblyNode : Node
     public required AssemblyDefinition AssemblyDefinition { get; init; }
     public ReferencesNode References { get; }
     public ObservableCollection<Node> Children { get; } = new();
-    public bool DependenciesLoaded { get; set; }
 
     public void AddNamespace(NamespaceNode @namespace) => Children.Add(@namespace);
 }

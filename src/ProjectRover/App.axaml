@@ -20,6 +20,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:editing="https://github.com/avaloniaui/avaloniaedit"
+             xmlns:converters="clr-namespace:ProjectRover.Converters"
              x:Class="ProjectRover.App"
              RequestedThemeVariant="Light"
              Name="ProjectRover">
@@ -57,6 +58,8 @@
                     <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#F6F6F6" />
                     <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#DFDFDF" />
                     <SolidColorBrush x:Key="StatusBarHoverBrush" Color="#DFDFDF" />
+                    <SolidColorBrush x:Key="GrayTextBrush" Color="#717171" />
+                    <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#000000" />
 
                     <x:String x:Key="AssemblyIcon">/Assets/Assembly.svg</x:String>
                     <x:String x:Key="SearchIcon">/Assets/Search.svg</x:String>
@@ -71,6 +74,14 @@
                     <x:String x:Key="ClearIcon">/Assets/Clear.svg</x:String>
                     <x:String x:Key="SortIcon">/Assets/SortAssemblies.svg</x:String>
                     <x:String x:Key="CollapseIcon">/Assets/CollapseAll.svg</x:String>
+                    <x:String x:Key="MetadataIcon">/Assets/Metadata.svg</x:String>
+                    <x:String x:Key="DebugMetadataIcon">/Assets/Metadata.svg</x:String>
+                    <x:String x:Key="HeaderIcon">/Assets/Header.svg</x:String>
+                    <x:String x:Key="ResourcesIcon">/Assets/Resources.svg</x:String>
+                    <x:String x:Key="DirectoryTableIcon">/Assets/DirectoryTable.svg</x:String>
+                    <x:String x:Key="TablesIcon">/Assets/Tables.svg</x:String>
+                    <x:String x:Key="HeapIcon">/Assets/Heap.svg</x:String>
+                    <x:String x:Key="ResourceFileIcon">/Assets/ResourceFile.svg</x:String>
                     <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
                     <x:String x:Key="StructIcon">/Assets/StructurePublic.svg</x:String>
                     <x:String x:Key="ClassIcon">/Assets/ClassPublic.svg</x:String>
@@ -90,6 +101,8 @@
                     <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#1F1F1F" />
                     <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#3A3A3A" />
                     <SolidColorBrush x:Key="StatusBarHoverBrush" Color="#3A3A3A" />
+                    <SolidColorBrush x:Key="GrayTextBrush" Color="#999999" />
+                    <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#FFFFFF" />
 
                     <x:String x:Key="AssemblyIcon">/Assets/Dark/Assembly.svg</x:String>
                     <x:String x:Key="SearchIcon">/Assets/Dark/Search.svg</x:String>
@@ -100,10 +113,18 @@
                     <x:String x:Key="ReferenceWarningIcon">/Assets/Dark/ReferenceWarning.svg</x:String>
                     <x:String x:Key="BackIcon">/Assets/Dark/Back.svg</x:String>
                     <x:String x:Key="ForwardIcon">/Assets/Dark/Forward.svg</x:String>
-                    <x:String x:Key="OpenIcon">/Assets/Open.svg</x:String>
+                    <x:String x:Key="OpenIcon">/Assets/Dark/Open.svg</x:String>
                     <x:String x:Key="ClearIcon">/Assets/Dark/Clear.svg</x:String>
                     <x:String x:Key="SortIcon">/Assets/Dark/SortAssemblies.svg</x:String>
                     <x:String x:Key="CollapseIcon">/Assets/Dark/CollapseAll.svg</x:String>
+                    <x:String x:Key="MetadataIcon">/Assets/Dark/Metadata.svg</x:String>
+                    <x:String x:Key="DebugMetadataIcon">/Assets/Dark/Metadata.svg</x:String>
+                    <x:String x:Key="HeaderIcon">/Assets/Dark/Header.svg</x:String>
+                    <x:String x:Key="ResourcesIcon">/Assets/Dark/Resources.svg</x:String>
+                    <x:String x:Key="DirectoryTableIcon">/Assets/Dark/DirectoryTable.svg</x:String>
+                    <x:String x:Key="TablesIcon">/Assets/Dark/Tables.svg</x:String>
+                    <x:String x:Key="HeapIcon">/Assets/Dark/Heap.svg</x:String>
+                    <x:String x:Key="ResourceFileIcon">/Assets/Dark/ResourceFile.svg</x:String>
                     <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
                     <x:String x:Key="StructIcon">/Assets/StructurePublic.svg</x:String>
                     <x:String x:Key="ClassIcon">/Assets/ClassPublic.svg</x:String>
@@ -117,6 +138,8 @@
                     <x:String x:Key="StringIcon">/Assets/String.svg</x:String>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+            <converters:ApiVisibilityToBrushConverter x:Key="ApiVisibilityToBrushConverter" />
+            <converters:ThemeEqualityConverter x:Key="ThemeEqualityConverter" />
         </ResourceDictionary>
     </Application.Resources>
     

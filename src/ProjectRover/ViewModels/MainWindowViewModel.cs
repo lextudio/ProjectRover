@@ -44,9 +44,19 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
+using ICSharpCode.Decompiler.Metadata;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Mono.Cecil;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+
+using MemberReference = Mono.Cecil.MemberReference;
+using TypeDefinition = Mono.Cecil.TypeDefinition;
+using FieldDefinition = Mono.Cecil.FieldDefinition;
+using MethodDefinition = Mono.Cecil.MethodDefinition;
+using PropertyDefinition = Mono.Cecil.PropertyDefinition;
+using EventDefinition = Mono.Cecil.EventDefinition;
 
 namespace ProjectRover.ViewModels;
 
@@ -155,6 +165,12 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private string searchText = string.Empty;
+
+    [RelayCommand]
+    private void SetTheme(ThemeOption theme)
+    {
+        SelectedTheme = theme;
+    }
 
     internal void SelectNodeByMemberReference(MemberReference memberReference)
     {
@@ -269,7 +285,6 @@ public partial class MainWindowViewModel : ObservableObject
             if (!assemblyLookup.Any(kvp => string.Equals(kvp.Value.FilePath, assembly.FilePath, StringComparison.OrdinalIgnoreCase)))
             {
                 var assemblyNode = BuildAssemblyNode(assembly);
-                assemblyNode.PropertyChanged += OnAssemblyNodePropertyChanged;
                 AssemblyNodes.Add(assemblyNode);
                 assemblyLookup[assemblyNode] = assembly;
             }
@@ -444,6 +459,27 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
+        if (node is MetadataNode metadataNode)
+        {
+            Document = new TextDocument($"// Metadata for {metadataNode.AssemblyDefinition.Name.FullName}{System.Environment.NewLine}// TODO: Display metadata details.");
+            MainWindow.references.Clear();
+            return;
+        }
+
+        if (node is DebugMetadataNode debugMetadataNode)
+        {
+            Document = new TextDocument($"// Debug metadata for {debugMetadataNode.AssemblyDefinition.Name.FullName}{System.Environment.NewLine}// TODO: Display debug symbols or PDB info.");
+            MainWindow.references.Clear();
+            return;
+        }
+
+        if (node is ResourceNode resourceNode)
+        {
+            Document = new TextDocument($"// Resource: {resourceNode.Name}{System.Environment.NewLine}// Type: {resourceNode.Resource.ResourceType}{System.Environment.NewLine}// Embedded resource viewing is not implemented yet.");
+            MainWindow.references.Clear();
+            return;
+        }
+
         if (node is not MemberNode memberNode)
         {
             return;
@@ -519,64 +555,11 @@ public partial class MainWindowViewModel : ObservableObject
         {
             AssemblyNode assemblyNode => assemblyNode.Children,
             ReferencesNode referencesNode => referencesNode.Items,
+            ResourcesNode resourcesNode => resourcesNode.Items,
             NamespaceNode namespaceNode => namespaceNode.Types,
             TypeNode typeNode => typeNode.Members,
             _ => Enumerable.Empty<Node>()
         };
-
-    private void OnAssemblyNodePropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (sender is not AssemblyNode assemblyNode)
-            return;
-
-        if (e.PropertyName == nameof(Node.IsExpanded)
-            && assemblyNode.IsExpanded
-            && !assemblyNode.DependenciesLoaded)
-        {
-            if (assemblyLookup.TryGetValue(assemblyNode, out var assembly))
-            {
-                logger.LogInformation("Loading dependencies for {Assembly}", assembly.AssemblyDefinition.Name.FullName);
-                LoadDependencies(assembly);
-                assemblyNode.DependenciesLoaded = true;
-            }
-        }
-    }
-
-    private void LoadDependencies(IlSpyAssembly assembly)
-    {
-        var metadata = assembly.PeFile.Metadata;
-        var handles = metadata.AssemblyReferences;
-        if (handles.Count == 0)
-            return;
-
-        var dependencyPaths = new List<string>();
-        foreach (var handle in handles)
-        {
-            try
-            {
-                var reference = new ICSharpCode.Decompiler.Metadata.AssemblyReference(assembly.PeFile, handle);
-                var path = assembly.Resolver.FindAssemblyFile(reference);
-                if (!string.IsNullOrEmpty(path) && File.Exists(path))
-                {
-                    dependencyPaths.Add(path);
-                    logger.LogInformation("Adding dependency {Dependency} discovered from {Assembly}", path, assembly.AssemblyDefinition.Name.FullName);
-                }
-                else
-                {
-                    logger.LogInformation("Could not resolve dependency {DependencyName} for {Assembly}", reference.FullName, assembly.AssemblyDefinition.Name.FullName);
-                }
-            }
-            catch
-            {
-                // ignore resolution failures
-            }
-        }
-
-        if (dependencyPaths.Count > 0)
-        {
-            LoadAssemblies(dependencyPaths, loadDependencies: false);
-        }
-    }
 
     private StartupState LoadStartupState()
     {
@@ -724,12 +707,51 @@ public partial class MainWindowViewModel : ObservableObject
             AssemblyDefinition = assembly.AssemblyDefinition
         };
 
+        // Clear default children (References) to re-order
+        assemblyNode.Children.Clear();
+
+        var metadataNode = new MetadataNode
+        {
+            Name = "Metadata",
+            Parent = assemblyNode,
+            AssemblyDefinition = assembly.AssemblyDefinition
+        };
+        var debugMetadataNode = new DebugMetadataNode
+        {
+            Name = "Debug Metadata",
+            Parent = assemblyNode,
+            AssemblyDefinition = assembly.AssemblyDefinition
+        };
+        BuildMetadataChildren(metadataNode, assembly.PeFile);
+        BuildDebugMetadataChildren(debugMetadataNode, assembly.PeFile);
+
+        assemblyNode.Children.Add(metadataNode);
+        assemblyNode.Children.Add(debugMetadataNode);
+        assemblyNode.Children.Add(assemblyNode.References);
+
         foreach (var reference in assembly.AssemblyDefinition.MainModule.AssemblyReferences.OrderBy(r => r.Name))
         {
             assemblyNode.References.Items.Add(new UnresolvedReferenceNode
             {
                 Name = reference.Name,
-                Parent = assemblyNode
+                Parent = assemblyNode.References
+            });
+        }
+
+        var resourcesNode = new ResourcesNode
+        {
+            Name = "Resources",
+            Parent = assemblyNode
+        };
+        assemblyNode.Children.Add(resourcesNode);
+
+        foreach (var resource in assembly.AssemblyDefinition.MainModule.Resources.OrderBy(r => r.Name))
+        {
+            resourcesNode.Items.Add(new ResourceNode
+            {
+                Name = resource.Name,
+                Parent = resourcesNode,
+                Resource = resource
             });
         }
 
@@ -752,6 +774,65 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         return assemblyNode;
+    }
+
+    private static void BuildMetadataChildren(MetadataNode metadataNode, PEFile peFile)
+    {
+        metadataNode.Items.Add(new MetadataHeaderNode { Name = "DOS Header", Parent = metadataNode });
+        metadataNode.Items.Add(new MetadataHeaderNode { Name = "COFF Header", Parent = metadataNode });
+        metadataNode.Items.Add(new MetadataHeaderNode { Name = "Optional Header", Parent = metadataNode });
+        metadataNode.Items.Add(new MetadataDirectoryNode { Name = "Data Directories", Parent = metadataNode });
+        metadataNode.Items.Add(new MetadataDirectoryNode { Name = "Debug Directory", Parent = metadataNode });
+        metadataNode.Items.Add(new MetadataTablesNode { Name = "Tables", Parent = metadataNode });
+
+        var reader = peFile.Metadata;
+        metadataNode.Items.Add(new MetadataHeapNode
+        {
+            Name = $"String Heap ({reader.GetHeapSize(HeapIndex.String)})",
+            Parent = metadataNode
+        });
+        metadataNode.Items.Add(new MetadataHeapNode
+        {
+            Name = $"UserString Heap ({reader.GetHeapSize(HeapIndex.UserString)})",
+            Parent = metadataNode
+        });
+        metadataNode.Items.Add(new MetadataHeapNode
+        {
+            Name = $"Guid Heap ({reader.GetHeapSize(HeapIndex.Guid)})",
+            Parent = metadataNode
+        });
+        metadataNode.Items.Add(new MetadataHeapNode
+        {
+            Name = $"Blob Heap ({reader.GetHeapSize(HeapIndex.Blob)})",
+            Parent = metadataNode
+        });
+    }
+
+    private static void BuildDebugMetadataChildren(DebugMetadataNode debugMetadataNode, PEFile peFile)
+    {
+        debugMetadataNode.Items.Add(new MetadataTablesNode { Name = "Tables", Parent = debugMetadataNode });
+
+        var reader = peFile.Metadata;
+        debugMetadataNode.Items.Add(new MetadataHeapNode
+        {
+            Name = $"String Heap ({reader.GetHeapSize(HeapIndex.String)})",
+            Parent = debugMetadataNode
+        });
+        debugMetadataNode.Items.Add(new MetadataHeapNode
+        {
+            Name = $"UserString Heap ({reader.GetHeapSize(HeapIndex.UserString)})",
+            Parent = debugMetadataNode
+        });
+        debugMetadataNode.Items.Add(new MetadataHeapNode
+        {
+            Name = $"Guid Heap ({reader.GetHeapSize(HeapIndex.Guid)})",
+            Parent = debugMetadataNode
+        });
+        debugMetadataNode.Items.Add(new MetadataHeapNode
+        {
+            Name = $"Blob Heap ({reader.GetHeapSize(HeapIndex.Blob)})",
+            Parent = debugMetadataNode
+        });
     }
 
     private TypeNode BuildTypeSubtree(TypeDefinition typeDefinition, Node parentNode)

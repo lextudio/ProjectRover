@@ -26,6 +26,19 @@ public abstract class Node : INotifyPropertyChanged
     public required string Name { get; init; }
     public required Node? Parent { get; init; }
 
+    private bool isPublicAPI = true;
+    public bool IsPublicAPI
+    {
+        get => isPublicAPI;
+        set
+        {
+            if (isPublicAPI == value)
+                return;
+            isPublicAPI = value;
+            OnPropertyChanged(nameof(IsPublicAPI));
+        }
+    }
+
     private bool isExpanded;
     public bool IsExpanded
     {

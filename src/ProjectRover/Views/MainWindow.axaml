@@ -66,6 +66,22 @@
                                     Gesture="Cmd+Shift+F" />
                 </NativeMenu>
             </NativeMenuItem>
+            <NativeMenuItem Header="View">
+                <NativeMenu>
+                    <NativeMenuItem Header="Theme">
+                        <NativeMenu>
+                            <NativeMenuItem Header="Light"
+                                            IsChecked="{Binding SelectedTheme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={Binding Themes[0]}, Mode=OneWay}"
+                                            Command="{Binding SetThemeCommand}"
+                                            CommandParameter="{Binding Themes[0]}" />
+                            <NativeMenuItem Header="Dark"
+                                            IsChecked="{Binding SelectedTheme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={Binding Themes[1]}, Mode=OneWay}"
+                                            Command="{Binding SetThemeCommand}"
+                                            CommandParameter="{Binding Themes[1]}" />
+                        </NativeMenu>
+                    </NativeMenuItem>
+                </NativeMenu>
+            </NativeMenuItem>
         </NativeMenu>
     </NativeMenu.Menu>
 
@@ -101,6 +117,24 @@
                               Command="{Binding OpenSearchPaneCommand}"
                               HotKey="Ctrl+Shift+F"
                               InputGesture="Ctrl+Shift+F" />
+                </MenuItem>
+                <MenuItem Header="_View">
+                    <MenuItem Header="_Theme">
+                        <MenuItem.Items>
+                            <ItemsControl ItemsSource="{Binding Themes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <MenuItem Header="{Binding Name}"
+                                                  ToggleType="Radio"
+                                                  x:CompileBindings="False"
+                                                  IsChecked="{Binding DataContext.SelectedTheme, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={Binding}}"
+                                                  Command="{Binding DataContext.SetThemeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                  CommandParameter="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </MenuItem.Items>
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_About"
@@ -165,18 +199,6 @@
                     <ComboBox ItemsSource="{Binding LanguageVersions}"
                               SelectedItem="{Binding SelectedLanguageVersion}"
                               IsVisible="{Binding HasLanguageVersions}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Name}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-
-                    <Border Classes="separator" />
-
-                    <ComboBox ItemsSource="{Binding Themes}"
-                              SelectedItem="{Binding SelectedTheme}"
-                              Width="110">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Name}" />
@@ -266,6 +288,9 @@
                                       AutoScrollToSelectedItem="True"
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <TreeView.Styles>
+                                    <Style Selector="TextBlock" x:DataType="nodes:Node">
+                                        <Setter Property="Foreground" Value="{Binding IsPublicAPI, Converter={StaticResource ApiVisibilityToBrushConverter}}" />
+                                    </Style>
                                     <Style Selector="Svg">
                                         <Setter Property="Margin" Value="0 0 5 0" />
                                     </Style>
@@ -281,9 +306,63 @@
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:MetadataNode" ItemsSource="{Binding Items}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource MetadataIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:DebugMetadataNode" ItemsSource="{Binding Items}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource DebugMetadataIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:MetadataTablesNode">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource TablesIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:MetadataHeaderNode">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource HeaderIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:MetadataDirectoryNode">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource DirectoryTableIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:MetadataHeapNode">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource HeapIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:MetadataLeafNode">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource MetadataIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:ReferencesNode" ItemsSource="{Binding Items}">
                                         <StackPanel Orientation="Horizontal">
                                             <Svg Path="{DynamicResource ReferenceGroupIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:ResourcesNode" ItemsSource="{Binding Items}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource ResourcesIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:ResourceNode">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource ResourceFileIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
