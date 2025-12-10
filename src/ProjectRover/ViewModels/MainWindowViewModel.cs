@@ -848,6 +848,31 @@ public partial class MainWindowViewModel : ObservableObject
                 });
             }
 
+            if (MatchesMode("Resource"))
+            {
+                var resourcesNode = assemblyNode.Children.OfType<ResourcesNode>().FirstOrDefault();
+                if (resourcesNode != null)
+                {
+                    foreach (var resource in resourcesNode.Items)
+                    {
+                        if (!resource.Name.Contains(term, comparer))
+                            continue;
+
+                        results.Add(new BasicSearchResult
+                        {
+                            MatchedString = resource.Name,
+                            DisplayName = resource.Name,
+                            DisplayLocation = "Resources",
+                            DisplayAssembly = assemblyDisplayName,
+                            IconPath = GetIcon("ResourceFileIcon"),
+                            LocationIconPath = GetIcon("ResourcesIcon"),
+                            AssemblyIconPath = assemblyIcon,
+                            TargetNode = resource
+                        });
+                    }
+                }
+            }
+
             var namespaces = assemblyNode.Children.OfType<NamespaceNode>().ToList();
             foreach (var ns in namespaces)
             {
