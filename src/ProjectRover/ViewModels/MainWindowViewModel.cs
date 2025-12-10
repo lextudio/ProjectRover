@@ -131,7 +131,7 @@ public partial class MainWindowViewModel : ObservableObject
         new SearchMode("Field", "FieldIcon"),
         new SearchMode("Property", "PropertyIcon"),
         new SearchMode("Event", "EventIcon"),
-        new SearchMode("Constant", "LocalVariableIcon"),
+        new SearchMode("Constant", "ConstantIcon"),
         new SearchMode("Metadata Token", "MetadataIcon"),
         new SearchMode("Resource", "ResourceFileIcon"),
         new SearchMode("Assembly", "ReferenceIcon"),
@@ -924,11 +924,20 @@ public partial class MainWindowViewModel : ObservableObject
 
                     foreach (var member in type.Members.OfType<MemberNode>())
                     {
-                        if (MatchesMode("Member") || MatchesMode("Method") && member is MethodNode or ConstructorNode
-                            || MatchesMode("Field") && member is FieldNode
+                        var fieldNode = member as FieldNode;
+                        var isField = fieldNode is not null;
+                        var isConstant = fieldNode?.FieldDefinition.IsConst == true;
+
+                        var isMatchMode =
+                            MatchesMode("Member")
+                            || MatchesMode("Types and Members")
+                            || MatchesMode("Method") && member is MethodNode or ConstructorNode
+                            || MatchesMode("Field") && isField
                             || MatchesMode("Property") && member is PropertyNode
                             || MatchesMode("Event") && member is EventNode
-                            || MatchesMode("Types and Members"))
+                            || MatchesMode("Constant") && isConstant;
+
+                        if (isMatchMode)
                         {
                             var isConstructor = member is ConstructorNode;
                             var displayName = isConstructor ? $"{typeName}()" : $"{typeName}.{member.Name}";
