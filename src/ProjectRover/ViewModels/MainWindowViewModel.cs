@@ -927,13 +927,17 @@ public partial class MainWindowViewModel : ObservableObject
                         var fieldNode = member as FieldNode;
                         var isField = fieldNode is not null;
                         var isConstant = fieldNode?.FieldDefinition.IsConst == true;
+                        var propertyNode = member as PropertyNode;
+                        var isProperty = propertyNode is not null;
+                        var returnKind = propertyNode?.PropertyDefinition.ReturnType.Kind;
+                        var isDelegateProperty = returnKind == TypeKind.Delegate || returnKind == TypeKind.FunctionPointer;
 
                         var isMatchMode =
                             MatchesMode("Member")
                             || MatchesMode("Types and Members")
                             || MatchesMode("Method") && member is MethodNode or ConstructorNode
                             || MatchesMode("Field") && isField
-                            || MatchesMode("Property") && member is PropertyNode
+                            || MatchesMode("Property") && isProperty && !isDelegateProperty
                             || MatchesMode("Event") && member is EventNode
                             || MatchesMode("Constant") && isConstant;
 
