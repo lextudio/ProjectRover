@@ -78,8 +78,12 @@
                     <x:String x:Key="DebugMetadataIcon">/Assets/Metadata.svg</x:String>
                     <x:String x:Key="HeaderIcon">/Assets/Header.svg</x:String>
                     <x:String x:Key="ResourcesIcon">/Assets/Resources.svg</x:String>
+                    <x:String x:Key="ResourcesIconClosed">/Assets/FolderClosed.svg</x:String>
+                    <x:String x:Key="ResourcesIconOpen">/Assets/FolderOpened.svg</x:String>
                     <x:String x:Key="DirectoryTableIcon">/Assets/DirectoryTable.svg</x:String>
+                    <x:String x:Key="FileDialogReportIcon">/Assets/FileDialogReport.svg</x:String>
                     <x:String x:Key="TablesIcon">/Assets/Tables.svg</x:String>
+                    <x:String x:Key="DataTableIcon">/Assets/DataTable.svg</x:String>
                     <x:String x:Key="HeapIcon">/Assets/Heap.svg</x:String>
                     <x:String x:Key="ResourceFileIcon">/Assets/ResourceFile.svg</x:String>
                     <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
@@ -121,8 +125,12 @@
                     <x:String x:Key="DebugMetadataIcon">/Assets/Dark/Metadata.svg</x:String>
                     <x:String x:Key="HeaderIcon">/Assets/Dark/Header.svg</x:String>
                     <x:String x:Key="ResourcesIcon">/Assets/Dark/Resources.svg</x:String>
+                    <x:String x:Key="ResourcesIconClosed">/Assets/Dark/FolderClosed.svg</x:String>
+                    <x:String x:Key="ResourcesIconOpen">/Assets/Dark/FolderOpened.svg</x:String>
                     <x:String x:Key="DirectoryTableIcon">/Assets/Dark/DirectoryTable.svg</x:String>
+                    <x:String x:Key="FileDialogReportIcon">/Assets/Dark/FileDialogReport.svg</x:String>
                     <x:String x:Key="TablesIcon">/Assets/Dark/Tables.svg</x:String>
+                    <x:String x:Key="DataTableIcon">/Assets/Dark/DataTable.svg</x:String>
                     <x:String x:Key="HeapIcon">/Assets/Dark/Heap.svg</x:String>
                     <x:String x:Key="ResourceFileIcon">/Assets/Dark/ResourceFile.svg</x:String>
                     <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>

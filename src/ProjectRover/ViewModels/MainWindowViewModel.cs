@@ -778,14 +778,14 @@ public partial class MainWindowViewModel : ObservableObject
 
     private static void BuildMetadataChildren(MetadataNode metadataNode, PEFile peFile)
     {
+        var reader = peFile.Metadata;
         metadataNode.Items.Add(new MetadataHeaderNode { Name = "DOS Header", Parent = metadataNode });
         metadataNode.Items.Add(new MetadataHeaderNode { Name = "COFF Header", Parent = metadataNode });
         metadataNode.Items.Add(new MetadataHeaderNode { Name = "Optional Header", Parent = metadataNode });
         metadataNode.Items.Add(new MetadataDirectoryNode { Name = "Data Directories", Parent = metadataNode });
         metadataNode.Items.Add(new MetadataDirectoryNode { Name = "Debug Directory", Parent = metadataNode });
-        metadataNode.Items.Add(new MetadataTablesNode { Name = "Tables", Parent = metadataNode });
 
-        var reader = peFile.Metadata;
+        metadataNode.Items.Add(BuildTablesNode(metadataNode, reader));
         metadataNode.Items.Add(new MetadataHeapNode
         {
             Name = $"String Heap ({reader.GetHeapSize(HeapIndex.String)})",
@@ -810,9 +810,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     private static void BuildDebugMetadataChildren(DebugMetadataNode debugMetadataNode, PEFile peFile)
     {
-        debugMetadataNode.Items.Add(new MetadataTablesNode { Name = "Tables", Parent = debugMetadataNode });
-
         var reader = peFile.Metadata;
+        debugMetadataNode.Items.Add(BuildTablesNode(debugMetadataNode, reader));
         debugMetadataNode.Items.Add(new MetadataHeapNode
         {
             Name = $"String Heap ({reader.GetHeapSize(HeapIndex.String)})",
@@ -833,6 +832,28 @@ public partial class MainWindowViewModel : ObservableObject
             Name = $"Blob Heap ({reader.GetHeapSize(HeapIndex.Blob)})",
             Parent = debugMetadataNode
         });
+    }
+
+    private static MetadataTablesNode BuildTablesNode(Node parent, MetadataReader reader)
+    {
+        var tablesNode = new MetadataTablesNode { Name = "Tables", Parent = parent };
+
+        foreach (var table in Enum.GetValues<TableIndex>())
+        {
+            var rowCount = reader.GetTableRowCount(table);
+            if (rowCount <= 0)
+                continue;
+
+            tablesNode.Items.Add(new MetadataTableNode
+            {
+                Name = $"{(byte)table:X2} {table} ({rowCount})",
+                Parent = tablesNode,
+                Table = table,
+                RowCount = rowCount
+            });
+        }
+
+        return tablesNode;
     }
 
     private TypeNode BuildTypeSubtree(TypeDefinition typeDefinition, Node parentNode)

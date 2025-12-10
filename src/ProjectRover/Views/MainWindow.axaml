@@ -318,7 +318,7 @@
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
-                                    <TreeDataTemplate DataType="nodes:MetadataTablesNode">
+                                    <TreeDataTemplate DataType="nodes:MetadataTablesNode" ItemsSource="{Binding Items}">
                                         <StackPanel Orientation="Horizontal">
                                             <Svg Path="{DynamicResource TablesIcon}" />
                                             <TextBlock Text="{Binding Name}" />
@@ -332,13 +332,19 @@
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:MetadataDirectoryNode">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="{DynamicResource DirectoryTableIcon}" />
+                                            <Svg Path="{DynamicResource FileDialogReportIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:MetadataHeapNode">
                                         <StackPanel Orientation="Horizontal">
                                             <Svg Path="{DynamicResource HeapIcon}" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                    <TreeDataTemplate DataType="nodes:MetadataTableNode">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Svg Path="{DynamicResource DataTableIcon}" />
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
@@ -356,7 +362,10 @@
                                     </TreeDataTemplate>
                                     <TreeDataTemplate DataType="nodes:ResourcesNode" ItemsSource="{Binding Items}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Svg Path="{DynamicResource ResourcesIcon}" />
+                                            <Panel>
+                                                <Svg Path="{DynamicResource ResourcesIconClosed}" IsVisible="{Binding !IsExpanded}" />
+                                                <Svg Path="{DynamicResource ResourcesIconOpen}" IsVisible="{Binding IsExpanded}" />
+                                            </Panel>
                                             <TextBlock Text="{Binding Name}" />
                                         </StackPanel>
                                     </TreeDataTemplate>
