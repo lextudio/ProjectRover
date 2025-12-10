@@ -82,18 +82,18 @@
               <ColumnDefinition Width="220" />
               <ColumnDefinition Width="150" />
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Spacing="6">
-               <Svg Width="16" Height="16" Path="{Binding IconPath}" />
-               <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-               <Svg Width="16" Height="16" Path="{Binding LocationIconPath}" />
-               <TextBlock Text="{Binding Location}" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
-               <Svg Width="16" Height="16" Path="{Binding AssemblyIconPath}" />
-               <TextBlock Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
+            <Grid ColumnDefinitions="Auto,*">
+               <Svg Width="16" Height="16" Path="{Binding IconPath}" Margin="0,0,6,0" />
+               <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" VerticalAlignment="Center" />
+            </Grid>
+            <Grid Grid.Column="1" ColumnDefinitions="Auto,*">
+               <Svg Width="16" Height="16" Path="{Binding LocationIconPath}" Margin="0,0,6,0" />
+               <TextBlock Grid.Column="1" Text="{Binding Location}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Location}" VerticalAlignment="Center" />
+            </Grid>
+            <Grid Grid.Column="2" ColumnDefinitions="Auto,*">
+               <Svg Width="16" Height="16" Path="{Binding AssemblyIconPath}" Margin="0,0,6,0" />
+               <TextBlock Grid.Column="1" Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Assembly}" VerticalAlignment="Center" />
+            </Grid>
           </Grid>
         </DataTemplate>
       </ListBox.ItemTemplate>

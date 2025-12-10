@@ -601,7 +601,7 @@ public partial class MainWindowViewModel : ObservableObject
         try
         {
             var settings = BuildDecompilerSettings();
-            var text = ilSpyBackend.DecompileMember(assembly, memberNode.MetadataToken, selectedLanguage.Language, settings);
+            var text = ilSpyBackend.DecompileMember(assembly, memberNode.MetadataToken, SelectedLanguage.Language, settings);
             Document = new TextDocument(text);
             MainWindow.references.Clear();
         }
@@ -624,7 +624,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     private DecompilerSettings BuildDecompilerSettings()
     {
-        var languageVersion = selectedLanguage.Language == DecompilationLanguage.CSharp
+        var languageVersion = SelectedLanguage.Language == DecompilationLanguage.CSharp
             ? SelectedLanguageVersion?.Version ?? LanguageVersion.Latest
             : LanguageVersion.Latest;
 
@@ -640,6 +640,7 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnSelectedSearchModeChanged(SearchMode value)
     {
         RunSearch();
+        PersistLastAssemblies();
     }
 
     [RelayCommand]
@@ -722,6 +723,7 @@ public partial class MainWindowViewModel : ObservableObject
         public string[] LastAssemblies { get; set; } = Array.Empty<string>();
         public string? Theme { get; set; }
         public bool IsSearchDockVisible { get; set; }
+        public string? SearchMode { get; set; }
     }
 
     private void RestoreLastAssemblies()
@@ -741,10 +743,20 @@ public partial class MainWindowViewModel : ObservableObject
             }
         }
 
-        if (state.LastAssemblies.Length == 0)
-            return;
+        if (state.LastAssemblies.Length > 0)
+        {
+            LoadAssemblies(state.LastAssemblies);
+        }
 
-        LoadAssemblies(state.LastAssemblies);
+        if (!string.IsNullOrEmpty(state.SearchMode))
+        {
+            var mode = SearchModes.FirstOrDefault(m => string.Equals(m.Name, state.SearchMode, StringComparison.OrdinalIgnoreCase));
+            if (mode != null)
+            {
+                SelectedSearchMode = mode;
+            }
+        }
+
         IsSearchDockVisible = state.IsSearchDockVisible;
     }
 
@@ -759,7 +771,8 @@ public partial class MainWindowViewModel : ObservableObject
         {
             LastAssemblies = files!,
             Theme = SelectedTheme?.Variant.ToString(),
-            IsSearchDockVisible = IsSearchDockVisible
+            IsSearchDockVisible = IsSearchDockVisible,
+            SearchMode = SelectedSearchMode?.Name
         });
     }
 
@@ -816,6 +829,24 @@ public partial class MainWindowViewModel : ObservableObject
                 : assemblyNode.Name;
             var assemblyIcon = GetIcon("ReferenceIcon");
             var assemblyDisplayName = assemblyNode.Name;
+            var assemblyPath = assemblyLookup.TryGetValue(assemblyNode, out var asmInfo)
+                ? asmInfo.FilePath
+                : assemblyNode.Name;
+
+            if (MatchesMode("Assembly") && assemblyName.Contains(term, comparer))
+            {
+                results.Add(new BasicSearchResult
+                {
+                    MatchedString = assemblyName,
+                    DisplayName = assemblyName,
+                    DisplayLocation = assemblyPath,
+                    DisplayAssembly = assemblyDisplayName,
+                    IconPath = assemblyIcon,
+                    LocationIconPath = GetIcon("FileDialogReportIcon"),
+                    AssemblyIconPath = assemblyIcon,
+                    TargetNode = assemblyNode
+                });
+            }
 
             var namespaces = assemblyNode.Children.OfType<NamespaceNode>().ToList();
             foreach (var ns in namespaces)
