@@ -30,7 +30,7 @@
         Padding="30"
         WindowStartupLocation="CenterOwner"
         SizeToContent="Height"
-        Icon="/Assets/ilspyrover-logo.ico"
+        Icon="/Assets/projectrover-logo.ico"
         CanResize="False">
 
     <Design.DataContext>
@@ -38,7 +38,7 @@
     </Design.DataContext>
 
     <StackPanel VerticalAlignment="Center" Spacing="30">
-        <Image Source="/Assets/ilspyrover-logo.png"
+        <Image Source="/Assets/projectrover-logo.png"
                Height="128"
                Stretch="Uniform" />
         

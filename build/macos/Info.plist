@@ -9,7 +9,7 @@
         <key>CFBundleDisplayName</key>
         <string>Project Rover</string>
         <key>CFBundleIconFile</key>
-        <string>ilspyrover.icns</string>
+        <string>projectrover.icns</string>
         <key>CFBundleVersion</key>
         <string>1.5.0</string>
         <key>CFBundleShortVersionString</key>

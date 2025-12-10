@@ -57,8 +57,8 @@ public class AppInformationProvider : IAppInformationProvider
 
     public AdditionalInfo AdditionalInfo { get; private set; } = new()
     {
-        Title = "About LeXtudio",
-        Text = "LeXtudio Inc. builds developer tools and now maintains Project Rover."
+        Title = "Credits",
+        Text = "Originally created by CodeMerx and now maintained by LeXtudio Inc."
     };
 
     public async Task TryLoadRemoteAdditionalInfoAsync()

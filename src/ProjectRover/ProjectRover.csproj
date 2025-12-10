@@ -6,7 +6,7 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <ApplicationIcon>Assets\ilspyrover-logo.ico</ApplicationIcon>
+        <ApplicationIcon>Assets\projectrover-logo.ico</ApplicationIcon>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <RootNamespace>ProjectRover</RootNamespace>
         <AssemblyName>ProjectRover</AssemblyName>

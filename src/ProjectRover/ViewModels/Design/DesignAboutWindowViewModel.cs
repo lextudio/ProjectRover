@@ -39,8 +39,8 @@ file class DesignAppInformationProvider : IAppInformationProvider
 
     public AdditionalInfo AdditionalInfo { get; } = new()
     {
-        Title = "Additional info",
-        Text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+        Title = "Credits",
+        Text = "Originally created by CodeMerx and now maintained by LeXtudio Inc."
     };
 
     public Task TryLoadRemoteAdditionalInfoAsync()

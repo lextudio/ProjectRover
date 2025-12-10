@@ -21,6 +21,6 @@ mkdir -p ProjectRover.app/Contents/{MacOS,Resources}
 
 script_dir=$(dirname $0)
 cp $script_dir/Info.plist ProjectRover.app/Contents
-cp $script_dir/ilspyrover.icns ProjectRover.app/Contents/Resources
+cp $script_dir/projectrover.icns ProjectRover.app/Contents/Resources
 
 cp -Rp src/ProjectRover/bin/Release/net10.0/$1/publish/ ProjectRover.app/Contents/MacOS
