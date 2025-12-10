@@ -33,6 +33,8 @@ using ICSharpCode.Decompiler.Output;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.ILSpyX;
 using ICSharpCode.ILSpyX.Settings;
+using DecompilerSettings = ICSharpCode.Decompiler.DecompilerSettings;
+using LanguageVersion = ICSharpCode.Decompiler.CSharp.LanguageVersion;
 
 namespace ProjectRover.Services;
 
@@ -42,6 +44,10 @@ public sealed class IlSpyBackend : IDisposable
 
     public IlSpyBackend()
     {
+        if (ILSpySettings.SettingsFilePathProvider == null)
+        {
+            ILSpySettings.SettingsFilePathProvider = new RoverSettingsFilePathProvider();
+        }
         var settings = ILSpySettings.Load();
         var manager = new AssemblyListManager(settings);
         assemblyList = manager.LoadList(AssemblyListManager.DefaultListName);
@@ -163,7 +169,6 @@ public sealed class IlSpyBackend : IDisposable
         return output.ToString();
     }
 
-    }
 }
 
 public record IlSpyAssembly(string FilePath, PEFile PeFile, IAssemblyResolver Resolver, DecompilerTypeSystem TypeSystem, LoadedAssembly LoadedAssembly);

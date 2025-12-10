@@ -1,73 +1,66 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <OutputType>WinExe</OutputType>
-        <TargetFramework>net10.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-        <ApplicationManifest>app.manifest</ApplicationManifest>
-        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <ApplicationIcon>Assets\projectrover-logo.ico</ApplicationIcon>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <RootNamespace>ProjectRover</RootNamespace>
-        <AssemblyName>ProjectRover</AssemblyName>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <AvaloniaResource Include="Assets\**" />
-    </ItemGroup>
-
-
-    <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.9" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.9" />
-        <PackageReference Include="Avalonia.Svg.Skia" Version="11.3.0" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.9" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.9" />
-        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.9" />
-        <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.3.0.6" />
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-        <PackageReference Include="DeviceId" Version="6.9.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="10.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
-        <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
-        <PackageReference Include="TextMateSharp.Grammars" Version="1.0.70" />
-    </ItemGroup>
-
-
-    <PropertyGroup>
-      <UsingLocalDecompiler Condition="Exists('..\..\extern\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj')">true</UsingLocalDecompiler>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference Condition="Exists('..\..\ilspy\ICSharpCode.ILSpyX\ICSharpCode.ILSpyX.csproj')" Include="..\..\ilspy\ICSharpCode.ILSpyX\ICSharpCode.ILSpyX.csproj" />
-      <ProjectReference Include="..\AvaloniaEdit\src\AvaloniaEdit\AvaloniaEdit.csproj" />
-      <ProjectReference Include="..\AvaloniaEdit\src\AvaloniaEdit.TextMate\AvaloniaEdit.TextMate.csproj" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(UsingLocalDecompiler)' == 'true'">
-      <ProjectReference Include="..\..\extern\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(UsingLocalDecompiler)' != 'true'">
-      <PackageReference Include="ICSharpCode.Decompiler" Version="10.0.0.8079-preview1" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="Dock.Avalonia" Version="11.3.2" />
-      <PackageReference Include="Dock.Model.Avalonia" Version="11.3.2" />
-      <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="11.3.2" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <EmbeddedResource Include="appsettings*.json" />
-    </ItemGroup>
-
-
-    <Import Project="..\ProjectRover.Shared\ProjectRover.Shared.projitems" Label="Shared" />
+<?xml version='1.0' encoding='utf-8'?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>Assets\projectrover-logo.ico</ApplicationIcon>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <RootNamespace>ProjectRover</RootNamespace>
+    <AssemblyName>ProjectRover</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Svg.Skia" Version="11.3.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.9" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.3.0.6" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="DeviceId" Version="6.9.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
+    <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
+    <PackageReference Include="TextMateSharp.Grammars" Version="1.0.70" />
+  </ItemGroup>
+  <PropertyGroup>
+    <UsingLocalDecompiler Condition="Exists('..\..\..\ilspy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj')">true</UsingLocalDecompiler>
+    <IlSpyRoot>$(MSBuildThisFileDirectory)..\..\..\ilspy\</IlSpyRoot>
+    <UsingLocalIlSpyX Condition="Exists('$(IlSpyRoot)ICSharpCode.ILSpyX/ICSharpCode.ILSpyX.csproj')">true</UsingLocalIlSpyX>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Condition="'$(UsingLocalIlSpyX)' == 'true'" Include="..\..\..\ilspy\ICSharpCode.ILSpyX\ICSharpCode.ILSpyX.csproj" />
+    <ProjectReference Include="..\AvaloniaEdit\src\AvaloniaEdit\AvaloniaEdit.csproj" />
+    <ProjectReference Include="..\AvaloniaEdit\src\AvaloniaEdit.TextMate\AvaloniaEdit.TextMate.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UsingLocalDecompiler)' == 'true'">
+    <ProjectReference Include="..\..\..\ilspy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UsingLocalDecompiler)' != 'true'">
+    <PackageReference Include="ICSharpCode.Decompiler" Version="10.0.0.8079-preview1" />
+  </ItemGroup>
+  <Target Name="EnsureILSpyX" BeforeTargets="Build" Condition="'$(UsingLocalIlSpyX)' != 'true'">
+    <Error Text="ICSharpCode.ILSpyX project not found. Ensure the ILSpy repository exists at $(IlSpyRoot)ICSharpCode.ILSpyX/ICSharpCode.ILSpyX.csproj or adjust ProjectRover.csproj to point to your ILSpyX location." />
+  </Target>
+  <ItemGroup>
+    <PackageReference Include="Dock.Avalonia" Version="11.3.2" />
+    <PackageReference Include="Dock.Model.Avalonia" Version="11.3.2" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="11.3.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="appsettings*.json" />
+  </ItemGroup>
+  <Import Project="..\ProjectRover.Shared\ProjectRover.Shared.projitems" Label="Shared" />
 </Project>

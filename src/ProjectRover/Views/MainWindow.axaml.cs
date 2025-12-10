@@ -54,7 +54,7 @@ namespace ProjectRover.Views;
 public partial class MainWindow : Window
 {
     internal static readonly TextSegmentCollection<ReferenceTextSegment> references = new();
-    private static MainWindowViewModel viewModel;
+    private MainWindowViewModel viewModel;
     private readonly RegistryOptions registryOptions;
     private readonly TextMate.Installation textMateInstallation;
     private LeftDockView leftDockView = null!;
@@ -589,12 +589,12 @@ public partial class MainWindow : Window
                 {
                     if (memberReference is System.Reflection.Metadata.EntityHandle handle)
                     {
-                        viewModel.SelectNodeByMemberReference(handle);
+                        mainWindow.viewModel.SelectNodeByMemberReference(handle);
                     }
                 }
                 else
                 {
-                    viewModel.TryLoadUnresolvedReference();
+                    mainWindow.viewModel.TryLoadUnresolvedReference();
                 }
                 
                 pressed = null;

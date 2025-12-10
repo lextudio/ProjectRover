@@ -40,6 +40,7 @@ using ProjectRover.Notifications;
 using ProjectRover.Options;
 using ProjectRover.SearchResults;
 using ProjectRover.Services;
+using ProjectRover.Services.IlSpyX;
 using ProjectRover.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -380,7 +381,16 @@ public partial class MainWindowViewModel : ObservableObject
 
             if (!assemblyLookup.Any(kvp => string.Equals(kvp.Value.FilePath, assembly.FilePath, StringComparison.OrdinalIgnoreCase)))
             {
-                var assemblyNode = BuildAssemblyNode(assembly);
+                var assemblyNode = IlSpyXTreeAdapter.BuildAssemblyNode(assembly.LoadedAssembly);
+                if (assemblyNode == null)
+                {
+                    notificationService.ShowNotification(new Notification
+                    {
+                        Message = $"Failed to build tree for \"{filePath}\".",
+                        Level = NotificationLevel.Error
+                    });
+                    continue;
+                }
                 AssemblyNodes.Add(assemblyNode);
                 assemblyLookup[assemblyNode] = assembly;
                 addedAssemblies.Add(assemblyNode);
@@ -1016,45 +1026,7 @@ public partial class MainWindowViewModel : ObservableObject
         _ = analyticsService.TrackEventAsync(ShowCompilerGeneratedMembers ? AnalyticsEvents.CompilerGeneratedMembersOn : AnalyticsEvents.CompilerGeneratedMembersOff);
     }
 
-    private AssemblyNode BuildAssemblyNode(IlSpyAssembly assembly)
-    {
-        var reader = assembly.PeFile.Metadata;
-        var assemblyName = reader.IsAssembly ? reader.GetString(reader.GetAssemblyDefinition().Name) : Path.GetFileNameWithoutExtension(assembly.FilePath);
-        var assemblyVersion = reader.IsAssembly ? reader.GetAssemblyDefinition().Version.ToString() : string.Empty;
-
-        var assemblyNode = new AssemblyNode
-        {
-            Name = string.IsNullOrEmpty(assemblyVersion) ? assemblyName : $"{assemblyName} ({assemblyVersion})",
-            Parent = null
-        };
-
-        assemblyNode.Children.Clear();
-
-        var metadataNode = new MetadataNode
-        {
-            Name = "Metadata",
-            Parent = assemblyNode,
-            PeFile = assembly.PeFile
-        };
-        var debugMetadataNode = new DebugMetadataNode
-        {
-            Name = "Debug Metadata",
-            Parent = assemblyNode,
-            PeFile = assembly.PeFile
-        };
-        BuildMetadataChildren(metadataNode, assembly.PeFile);
-        BuildDebugMetadataChildren(debugMetadataNode, assembly.PeFile);
-
-        assemblyNode.Children.Add(metadataNode);
-        assemblyNode.Children.Add(debugMetadataNode);
-        assemblyNode.Children.Add(assemblyNode.References);
-
-        BuildReferences(assembly, assemblyNode);
-        BuildResources(assembly, assemblyNode);
-        BuildTypes(assembly, assemblyNode);
-
-        return assemblyNode;
-    }
+    // Legacy tree build logic is superseded by IlSpyXTreeAdapter.BuildAssemblyNode.
 
     private static bool IsPublicApi(IEntity entity) =>
         entity.Accessibility == Accessibility.Public
