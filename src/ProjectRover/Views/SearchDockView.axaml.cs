@@ -1,5 +1,8 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Markup.Xaml;
+using ProjectRover.SearchResults;
+using ProjectRover.ViewModels;
 
 namespace ProjectRover.Views;
 
@@ -20,5 +23,20 @@ public partial class SearchDockView : UserControl
         }
 
         SearchTextBox.Focus();
+    }
+
+    private void OnSearchResultDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Handled)
+            return;
+
+        if (DataContext is not MainWindowViewModel vm || sender is not ListBox listBox)
+            return;
+
+        if (listBox.SelectedItem is SearchResult result)
+        {
+            vm.NavigateToSearchResult(result);
+            e.Handled = true;
+        }
     }
 }

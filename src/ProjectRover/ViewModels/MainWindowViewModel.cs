@@ -802,11 +802,16 @@ public partial class MainWindowViewModel : ObservableObject
         if (value == null)
             return;
 
-        if (value is BasicSearchResult basic && basic.TargetNode is { } target)
-        {
-            SelectedNode = target;
-            ExpandParents(target);
-        }
+        NavigateToSearchResult(value);
+    }
+
+    public void NavigateToSearchResult(SearchResult? result)
+    {
+        if (result is not BasicSearchResult basic || basic.TargetNode is not { } target)
+            return;
+
+        SelectedNode = target;
+        ExpandParents(target);
     }
 
     private void RunSearch()
@@ -897,6 +902,9 @@ public partial class MainWindowViewModel : ObservableObject
                     var typeName = type.TypeDefinition.Name;
                     var typeNamespace = ns.Name;
                     var typeIcon = GetIcon(type.IconKey);
+                    var fullTypeName = string.IsNullOrEmpty(typeNamespace) || typeNamespace == "-"
+                        ? typeName
+                        : $"{typeNamespace}.{typeName}";
 
                     if ((MatchesMode("Type") || MatchesMode("Types and Members")) && typeName.Contains(term, comparer))
                     {
@@ -921,13 +929,22 @@ public partial class MainWindowViewModel : ObservableObject
                             || MatchesMode("Event") && member is EventNode
                             || MatchesMode("Types and Members"))
                         {
-                            if (member.Name.Contains(term, comparer))
+                            var isConstructor = member is ConstructorNode;
+                            var displayName = isConstructor ? $"{typeName}()" : $"{typeName}.{member.Name}";
+                            var matchedString = isConstructor ? typeName : member.Name;
+                            var nameMatches = member.Name.Contains(term, comparer);
+                            if (isConstructor && !nameMatches)
+                            {
+                                nameMatches = typeName.Contains(term, comparer);
+                            }
+
+                            if (nameMatches)
                             {
                                 results.Add(new BasicSearchResult
                                 {
-                                    MatchedString = member.Name,
-                                    DisplayName = member.Name,
-                                    DisplayLocation = $"{ns.Name}.{type.Name}",
+                                    MatchedString = matchedString,
+                                    DisplayName = displayName,
+                                    DisplayLocation = fullTypeName,
                                     DisplayAssembly = assemblyDisplayName,
                                     IconPath = GetIcon(GetTypeIcon(member.Entity)),
                                     LocationIconPath = nsIcon,
@@ -1346,7 +1363,7 @@ public partial class MainWindowViewModel : ObservableObject
                 case IMethod { IsConstructor: true } methodDefinition:
                     var ctorNode = new ConstructorNode
                     {
-                        Name = methodDefinition.Name,
+                        Name = $"{typeDefinition.Name}()",
                         MethodDefinition = methodDefinition,
                         Parent = typeNode,
                         Entity = methodDefinition,
@@ -1406,18 +1423,25 @@ public partial class MainWindowViewModel : ObservableObject
 
     private IEnumerable<IEntity> GetMembers(ITypeDefinition typeDefinition)
     {
-        IEnumerable<IEntity> members = typeDefinition.Fields
-            .Concat<IEntity>(typeDefinition.Methods)
-            .Concat(typeDefinition.Properties)
-            .Concat(typeDefinition.Events)
-            .Concat(typeDefinition.NestedTypes);
+        IEnumerable<IEntity> Filter(IEnumerable<IEntity> members) =>
+            ShowCompilerGeneratedMembers ? members : members.Where(m => !IsCompilerGenerated(m));
 
-        if (!ShowCompilerGeneratedMembers)
-        {
-            members = members.Where(m => !IsCompilerGenerated(m));
-        }
+        static IOrderedEnumerable<IEntity> OrderByToken(IEnumerable<IEntity> members) =>
+            members.OrderBy(m => MetadataTokens.GetToken(m.MetadataToken));
 
-        return members.OrderBy(m => MetadataTokens.GetToken(m.MetadataToken));
+        var fields = OrderByToken(Filter(typeDefinition.Fields));
+        var constructors = OrderByToken(Filter(typeDefinition.Methods.Where(m => m.IsConstructor)));
+        var otherMethods = OrderByToken(Filter(typeDefinition.Methods.Where(m => !m.IsConstructor)));
+        var properties = OrderByToken(Filter(typeDefinition.Properties));
+        var events = OrderByToken(Filter(typeDefinition.Events));
+        var nestedTypes = OrderByToken(Filter(typeDefinition.NestedTypes));
+
+        return fields
+            .Concat<IEntity>(constructors)
+            .Concat(otherMethods)
+            .Concat(properties)
+            .Concat(events)
+            .Concat(nestedTypes);
     }
 
     private void RegisterHandle(Node node, EntityHandle metadataToken)

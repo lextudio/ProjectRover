@@ -79,7 +79,8 @@
     <ListBox ItemsSource="{Binding SearchResults}"
              SelectedItem="{Binding SelectedSearchResult}"
              Background="Transparent"
-             BorderThickness="0">
+             BorderThickness="0"
+             DoubleTapped="OnSearchResultDoubleTapped">
       <ListBox.ItemTemplate>
         <DataTemplate DataType="searchResults:BasicSearchResult">
           <Grid>
