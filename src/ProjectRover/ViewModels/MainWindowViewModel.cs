@@ -18,22 +18,32 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
+using System.Resources.NetStandard;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using System.IO.Compression;
+using Avalonia.Media.Imaging;
+using SkiaSharp;
 using Avalonia;
 using Avalonia.Styling;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Document;
 using ProjectRover.Nodes;
 using ProjectRover.Notifications;
@@ -48,6 +58,7 @@ using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
+using ICSharpCode.Decompiler.Util;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Reflection.Metadata;
@@ -176,6 +187,7 @@ public partial class MainWindowViewModel : ObservableObject
     private Node? selectedNode;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowDocument))]
     private TextDocument? document;
 
     [ObservableProperty]
@@ -216,6 +228,21 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool isResolving;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowDocument))]
+    private Bitmap? resourceImage;
+
+    [ObservableProperty]
+    private string? resourceInfo;
+
+    [ObservableProperty]
+    private IHighlightingDefinition? documentHighlighting;
+
+    [ObservableProperty]
+    private List<InlineObjectSpec> inlineObjects = new();
+
+    public bool ShowDocument => Document is not null && ResourceImage is null;
 
     public void RemoveAssembly(AssemblyNode assemblyNode)
     {
@@ -269,6 +296,234 @@ public partial class MainWindowViewModel : ObservableObject
     private void SetTheme(ThemeOption theme)
     {
         SelectedTheme = theme;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSaveResource))]
+    private async Task SaveResourceAsync(ResourceEntryNode resourceNode)
+    {
+        if (resourceNode.Resource is null)
+            return;
+
+        var storageProvider = GetMainWindow()?.StorageProvider;
+        if (storageProvider == null)
+            return;
+
+        var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            SuggestedFileName = resourceNode.Resource.Name
+        });
+        if (file == null)
+            return;
+
+        try
+        {
+            await using var target = File.Create(file.Path.LocalPath);
+            using var source = resourceNode.Resource.TryOpenStream();
+            if (source == null)
+                return;
+            await source.CopyToAsync(target);
+            notificationService.ShowNotification(new Notification { Message = $"Saved resource to {file.Path.LocalPath}", Level = NotificationLevel.Information });
+        }
+        catch (Exception ex)
+        {
+            notificationService.ShowNotification(new Notification { Message = $"Failed to save resource: {ex.Message}", Level = NotificationLevel.Error });
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanExportResources))]
+    private async Task ExportResourcesAsync(ResourceEntryNode resourceNode)
+    {
+        if (resourceNode.Resource is null || !resourceNode.Resource.Name.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var storageProvider = GetMainWindow()?.StorageProvider;
+        if (storageProvider == null)
+            return;
+
+        var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            SuggestedFileName = Path.ChangeExtension(resourceNode.Resource.Name, ".resx")
+        });
+        if (file == null)
+            return;
+
+        try
+        {
+            using var stream = resourceNode.Resource.TryOpenStream();
+            if (stream == null)
+                return;
+
+            using var resources = new ResourcesFile(stream);
+            using var writer = new System.Resources.NetStandard.ResXResourceWriter(file.Path.LocalPath);
+            foreach (var entry in resources)
+            {
+                writer.AddResource(entry.Key, entry.Value);
+            }
+            writer.Generate();
+            notificationService.ShowNotification(new Notification { Message = $"Exported resources to {file.Path.LocalPath}", Level = NotificationLevel.Information });
+        }
+        catch (Exception ex)
+        {
+            notificationService.ShowNotification(new Notification { Message = $"Failed to export: {ex.Message}", Level = NotificationLevel.Error });
+        }
+    }
+
+    private bool CanSaveResource(ResourceEntryNode? node) => node?.Resource != null;
+
+    private bool CanExportResources(ResourceEntryNode? node) =>
+        node?.Resource != null && node.Resource.Name.EndsWith(".resources", StringComparison.OrdinalIgnoreCase);
+
+    [RelayCommand(CanExecute = nameof(CanExportAllResources))]
+    private async Task ExportAllResourcesAsync(ResourcesNode resourcesNode)
+    {
+        var storageProvider = GetMainWindow()?.StorageProvider;
+        if (storageProvider == null)
+            return;
+
+        var folders = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            AllowMultiple = false
+        });
+
+        var folder = folders?.FirstOrDefault();
+        if (folder == null)
+            return;
+
+        int success = 0;
+        foreach (var entry in resourcesNode.Items)
+        {
+            if (entry.Resource == null)
+                continue;
+
+            try
+            {
+                var safeName = Path.GetFileName(entry.Resource.Name);
+                var targetPath = Path.Combine(folder.Path.LocalPath, safeName);
+                using var source = entry.Resource.TryOpenStream();
+                if (source == null)
+                    continue;
+                await using var target = File.Create(targetPath);
+                await source.CopyToAsync(target);
+                success++;
+            }
+            catch
+            {
+                // Ignore individual failures to continue exporting others.
+            }
+        }
+
+        notificationService.ShowNotification(new Notification
+        {
+            Message = $"Exported {success}/{resourcesNode.Items.Count} resource(s) to {folder.Path.LocalPath}",
+            Level = success > 0 ? NotificationLevel.Information : NotificationLevel.Warning
+        });
+    }
+
+    private bool CanExportAllResources(ResourcesNode? node) => node?.Items?.Any() == true;
+
+    [RelayCommand(CanExecute = nameof(CanExtractResourceEntries))]
+    private async Task ExtractResourceEntriesAsync(ResourceEntryNode resourceNode)
+    {
+        if (resourceNode.Resource is null || !resourceNode.Resource.Name.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var storageProvider = GetMainWindow()?.StorageProvider;
+        if (storageProvider == null)
+            return;
+
+        var folders = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { AllowMultiple = false });
+        var folder = folders?.FirstOrDefault();
+        if (folder == null)
+            return;
+
+        int success = 0;
+        try
+        {
+            using var stream = resourceNode.Resource.TryOpenStream();
+            if (stream == null)
+                return;
+            using var resources = new ResourcesFile(stream);
+
+            foreach (var entry in resources)
+            {
+                var safeName = SanitizeFileName(entry.Key);
+                var targetPath = Path.Combine(folder.Path.LocalPath, safeName);
+                try
+                {
+                    await WriteResourceEntryAsync(entry.Value, targetPath);
+                    success++;
+                }
+                catch
+                {
+                    // skip failing entry
+                }
+            }
+        }
+        catch
+        {
+            // ignore and report via notification
+        }
+
+        notificationService.ShowNotification(new Notification
+        {
+            Message = $"Extracted {success} entries to {folder.Path.LocalPath}",
+            Level = success > 0 ? NotificationLevel.Information : NotificationLevel.Warning
+        });
+    }
+
+    private bool CanExtractResourceEntries(ResourceEntryNode? node) =>
+        node?.Resource != null && node.Resource.Name.EndsWith(".resources", StringComparison.OrdinalIgnoreCase);
+
+    public async void SaveImageEntryAsync(ResourceImageEntry entry)
+    {
+        var storageProvider = GetMainWindow()?.StorageProvider;
+        if (storageProvider == null)
+            return;
+
+        var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            SuggestedFileName = SanitizeFileName(entry.Name) + ".png"
+        });
+        if (file == null)
+            return;
+
+        await using var target = File.Create(file.Path.LocalPath);
+        entry.Image.Save(target);
+        notificationService.ShowNotification(new Notification
+        {
+            Message = $"Saved {entry.Name}",
+            Level = NotificationLevel.Information
+        });
+    }
+
+    [RelayCommand]
+    public async Task SaveObjectEntryAsync(object entryObj)
+    {
+        ResourceObjectEntry? entry = entryObj as ResourceObjectEntry;
+        if (entry == null && entryObj is ResourceEntryNode resourceNode && resourceNode.Raw != null)
+        {
+            entry = new ResourceObjectEntry(resourceNode.Name, DescribeType(resourceNode.Raw), DescribeResourceValue(resourceNode.Raw), resourceNode.Raw);
+        }
+        if (entry == null)
+            return;
+
+        var storageProvider = GetMainWindow()?.StorageProvider;
+        if (storageProvider == null || entry.Raw == null)
+            return;
+
+        var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            SuggestedFileName = SanitizeFileName(entry.Name)
+        });
+        if (file == null)
+            return;
+
+        await WriteResourceEntryAsync(entry.Raw, file.Path.LocalPath);
+        notificationService.ShowNotification(new Notification
+        {
+            Message = $"Saved {entry.Name}",
+            Level = NotificationLevel.Information
+        });
     }
 
     internal void SelectNodeByMemberReference(EntityHandle handle)
@@ -608,6 +863,10 @@ public partial class MainWindowViewModel : ObservableObject
         if (node == null)
         {
             Document = null;
+            DocumentHighlighting = null;
+            ResourceImage = null;
+            ResourceInfo = null;
+            InlineObjects = new List<InlineObjectSpec>();
             MainWindow.references.Clear();
             return;
         }
@@ -617,6 +876,11 @@ public partial class MainWindowViewModel : ObservableObject
         {
             return;
         }
+
+        DocumentHighlighting = null;
+        ResourceImage = null;
+        ResourceInfo = null;
+        InlineObjects = new List<InlineObjectSpec>();
 
         if (node is AssemblyNode)
         {
@@ -641,7 +905,11 @@ public partial class MainWindowViewModel : ObservableObject
 
         if (node is ResourceEntryNode resourceNode)
         {
-            Document = new TextDocument($"// Resource: {resourceNode.Name}{System.Environment.NewLine}// Embedded resource viewing is not implemented yet.");
+            // IMPORTANT: Inspired by ILSpy WPF resource viewers, prefer specialized previews for common resource types.
+            if (TryRenderResource(resourceNode, out var resourceDocument))
+            {
+                Document = resourceDocument;
+            }
             MainWindow.references.Clear();
             return;
         }
@@ -671,13 +939,853 @@ public partial class MainWindowViewModel : ObservableObject
             var settings = BuildDecompilerSettings();
             var text = ilSpyBackend.DecompileMember(assembly, memberNode.MetadataToken, SelectedLanguage.Language, settings);
             Document = new TextDocument(text);
+            DocumentHighlighting = GetHighlightingForLanguage(SelectedLanguage.Language);
             MainWindow.references.Clear();
             AddReferenceSegments(text, memberNode);
         }
         catch (Exception ex)
         {
             Document = new TextDocument($"// Failed to decompile {memberNode.Name}:{System.Environment.NewLine}// {ex.Message}");
+            DocumentHighlighting = null;
         }
+    }
+
+    private bool TryRenderResource(ResourceEntryNode resourceNode, out TextDocument? document)
+    {
+        document = null;
+
+        if (resourceNode.Resource is null && resourceNode.Raw != null)
+        {
+            return TryRenderResourceValue(resourceNode, resourceNode.Raw, out document);
+        }
+
+        if (resourceNode.Resource is null)
+        {
+            document = new TextDocument("// Resource metadata is not available.");
+            DocumentHighlighting = null;
+            ResourceImage = null;
+            ResourceInfo = null;
+            InlineObjects = new List<InlineObjectSpec>();
+            return true;
+        }
+
+        var extension = Path.GetExtension(resourceNode.Resource.Name);
+
+        try
+        {
+            using var stream = resourceNode.Resource.TryOpenStream();
+            if (stream == null)
+            {
+                document = new TextDocument("// Unable to open resource stream.");
+                InlineObjects = new List<InlineObjectSpec>();
+                return true;
+            }
+
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            buffer.Position = 0;
+
+            if (IsImageExtension(extension))
+            {
+                var header = BuildResourceHeader(resourceNode, buffer.Length);
+                var placeholders = new StringBuilder(header);
+                var inlineObjects = new List<InlineObjectSpec>();
+
+                var multiFrames = ExtractImageFrames(buffer).ToList();
+                if (multiFrames.Count > 1)
+                {
+                    for (int i = 0; i < multiFrames.Count; i++)
+                    {
+                        placeholders.AppendLine($"// Frame {i + 1}: {multiFrames[i].Image.PixelSize.Width}x{multiFrames[i].Image.PixelSize.Height}");
+                        placeholders.Append('\uFFFC').AppendLine();
+                        inlineObjects.Add(new InlineObjectSpec(placeholders.ToString().LastIndexOf('\uFFFC'), InlineObjectKind.Image, multiFrames[i].Image, null, $"Frame {i + 1} ({multiFrames[i].Label})"));
+                    }
+                    DocumentHighlighting = null;
+                    ResourceImage = null;
+                    ResourceInfo = $"Image with {multiFrames.Count} frame(s)";
+                    InlineObjects = inlineObjects;
+                    document = new TextDocument(placeholders.ToString());
+                    return true;
+                }
+
+                if (extension.Equals(".ico", StringComparison.OrdinalIgnoreCase))
+                {
+                    var frames = ExtractIconFrames(buffer).ToList();
+                    if (frames.Count > 0)
+                    {
+                        for (int i = 0; i < frames.Count; i++)
+                        {
+                            placeholders.AppendLine($"// Frame {i + 1}: {frames[i].Image.PixelSize.Width}x{frames[i].Image.PixelSize.Height}");
+                            placeholders.Append('\uFFFC').AppendLine();
+                            inlineObjects.Add(new InlineObjectSpec(placeholders.ToString().LastIndexOf('\uFFFC'), InlineObjectKind.Image, frames[i].Image, null, $"Frame {i + 1}"));
+                        }
+                        DocumentHighlighting = null;
+                        ResourceImage = null;
+                        ResourceInfo = $"Icon with {frames.Count} frame(s)";
+                        InlineObjects = inlineObjects;
+                        document = new TextDocument(placeholders.ToString());
+                        return true;
+                    }
+                }
+
+                // Fallback single-frame image
+                if (TryLoadBitmap(buffer, out var bitmap))
+                {
+                    placeholders.AppendLine();
+                    placeholders.Append('\uFFFC');
+                    var idx = placeholders.ToString().IndexOf('\uFFFC');
+                    DocumentHighlighting = null;
+                    ResourceImage = null;
+                    ResourceInfo = extension.Equals(".ico", StringComparison.OrdinalIgnoreCase)
+                        ? $"Icon preview (first frame) {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height} ({extension})"
+                        : $"Image {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height} ({extension})";
+                    InlineObjects = new List<InlineObjectSpec> { new InlineObjectSpec(idx, InlineObjectKind.Image, bitmap, null, null) };
+                    document = new TextDocument(placeholders.ToString());
+                    return true;
+                }
+            }
+
+            buffer.Position = 0;
+            var text = RenderResourceText(resourceNode, buffer, extension);
+            document = new TextDocument(text);
+            DocumentHighlighting = GetHighlightingForExtension(extension);
+            ResourceImage = null;
+            InlineObjects = new List<InlineObjectSpec>();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            document = new TextDocument($"// Error reading resource: {ex.Message}");
+            InlineObjects = new List<InlineObjectSpec>();
+            return true;
+        }
+    }
+
+    private bool TryRenderResourceValue(ResourceEntryNode resourceNode, object value, out TextDocument? document)
+    {
+        document = null;
+        var extension = Path.GetExtension(resourceNode.Name ?? resourceNode.ResourceName ?? string.Empty);
+        try
+        {
+            switch (value)
+            {
+                case string s:
+                {
+                    DocumentHighlighting = null;
+                    ResourceImage = null;
+                    ResourceInfo = "String entry";
+                    InlineObjects = new List<InlineObjectSpec>();
+                    var header = BuildResourceHeader(resourceNode, s.Length);
+                    document = new TextDocument($"{header}{s}");
+                    return true;
+                }
+                case byte[] bytes:
+                {
+                    using var ms = new MemoryStream(bytes);
+                    var text = RenderResourceText(resourceNode, ms, extension);
+                    document = new TextDocument(text);
+                    return true;
+                }
+                case Stream stream:
+                {
+                    using var buffer = new MemoryStream();
+                    if (stream.CanSeek)
+                        stream.Position = 0;
+                    stream.CopyTo(buffer);
+                    buffer.Position = 0;
+                    var text = RenderResourceText(resourceNode, buffer, extension);
+                    document = new TextDocument(text);
+                    return true;
+                }
+                case Resource res:
+                {
+                    using var resStream = res.TryOpenStream();
+                    if (resStream == null)
+                        break;
+
+                    using var buffer = new MemoryStream();
+                    resStream.CopyTo(buffer);
+                    buffer.Position = 0;
+                    var text = RenderResourceText(resourceNode, buffer, extension);
+                    document = new TextDocument(text);
+                    return true;
+                }
+                default:
+                {
+                    DocumentHighlighting = null;
+                    ResourceImage = null;
+                    ResourceInfo = DescribeResourceValue(value);
+                    InlineObjects = new List<InlineObjectSpec>();
+                    var header = BuildResourceHeader(resourceNode, 0);
+                    document = new TextDocument($"{header}// Value: {DescribeResourceValue(value)}");
+                    return true;
+                }
+            }
+        }
+        catch
+        {
+            // fall through to a generic message
+        }
+
+        document = new TextDocument("// Unable to render resource entry.");
+        DocumentHighlighting = null;
+        ResourceImage = null;
+        ResourceInfo = null;
+        InlineObjects = new List<InlineObjectSpec>();
+        return true;
+    }
+
+    private static bool TryReadTextPreview(Stream stream, int maxBytes, bool preferText, out string preview, out string encodingName, out bool truncated)
+    {
+        preview = string.Empty;
+        encodingName = "utf-8";
+        truncated = false;
+
+        if (!stream.CanRead)
+            return false;
+
+        var originalPosition = stream.CanSeek ? stream.Position : 0;
+        if (stream.CanSeek)
+            stream.Position = 0;
+
+        try
+        {
+            var buffer = new byte[Math.Min(maxBytes, (int)Math.Max(1, stream.CanSeek ? stream.Length : maxBytes))];
+            var read = stream.Read(buffer, 0, buffer.Length);
+
+            // Determine if more data exists
+            truncated = stream.CanSeek ? stream.Length > read : stream.ReadByte() != -1;
+
+            var (encoding, offset) = DetectEncoding(buffer, read);
+            encodingName = encoding.WebName;
+
+            string text;
+            try
+            {
+                text = encoding.GetString(buffer, offset, read - offset);
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (!LooksLikeText(text) && !preferText)
+                return false;
+
+            preview = read == 0 ? string.Empty : text;
+            if (preview.Length > 4000)
+            {
+                preview = preview.Substring(0, 4000);
+                truncated = true;
+            }
+
+            return true;
+        }
+        finally
+        {
+            if (stream.CanSeek)
+                stream.Position = originalPosition;
+        }
+    }
+
+    private string RenderResourceText(ResourceEntryNode resourceNode, MemoryStream stream, string extension)
+    {
+        var sb = new StringBuilder();
+        sb.Append(BuildResourceHeader(resourceNode, stream.Length));
+        stream.Position = 0;
+
+        // IMPORTANT: Mirror ILSpy WPF resource handling for structured formats where possible.
+        if (IsResx(extension) && TryRenderResx(stream, sb, out var resxText))
+            return resxText ?? sb.ToString();
+
+        if (resourceNode.Resource?.ResourceType == ResourceType.Embedded
+            && resourceNode.Resource.Name.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
+        {
+            var entries = new ResourcesFile(stream).ToList();
+            sb.AppendLine($"// Entries in .resources (inline below): {entries.Count}");
+
+            var strings = new List<KeyValuePair<string, string>>();
+            var others = new List<KeyValuePair<string, string>>();
+            var objects = new List<ResourceObjectEntry>();
+            var images = new List<ResourceImageEntry>();
+            var packages = new List<ResourceObjectEntry>();
+            foreach (var entry in entries)
+            {
+                if (entry.Value is string str)
+                {
+                    strings.Add(new KeyValuePair<string, string>(entry.Key, str));
+                }
+                else if (TryExtractImage(entry.Key, entry.Value, out var imageEntry))
+                {
+                    images.Add(imageEntry);
+                }
+                else if (IsPackageEntry(entry.Value, out var packageEntry))
+                {
+                    packages.Add(packageEntry);
+                }
+                else if (IsPrimitiveEntry(entry.Value))
+                {
+                    others.Add(new KeyValuePair<string, string>($"{entry.Key} [{DescribeType(entry.Value)}]", DescribeResourceValue(entry.Value)));
+                }
+                else
+                {
+                    objects.Add(new ResourceObjectEntry(entry.Key, DescribeType(entry.Value), DescribeResourceValue(entry.Value), entry.Value));
+                }
+            }
+
+            var textBuilder = new StringBuilder(sb.ToString());
+            var inlineObjects = new List<InlineObjectSpec>();
+            if (strings.Count > 0)
+            {
+                textBuilder.AppendLine("// String entries:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                var placeholderIndex = textBuilder.ToString().IndexOf('\uFFFC');
+                inlineObjects.Add(new InlineObjectSpec(placeholderIndex, InlineObjectKind.Table, null, strings, "Strings"));
+            }
+            if (others.Count > 0)
+            {
+                textBuilder.AppendLine("// Other entries:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                var placeholderIndex = textBuilder.ToString().LastIndexOf('\uFFFC');
+                inlineObjects.Add(new InlineObjectSpec(placeholderIndex, InlineObjectKind.Table, null, others, "Objects/Binary"));
+            }
+            if (objects.Count > 0)
+            {
+                textBuilder.AppendLine("// Complex objects:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                var placeholderIndex = textBuilder.ToString().LastIndexOf('\uFFFC');
+                inlineObjects.Add(new InlineObjectSpec(placeholderIndex, InlineObjectKind.ObjectTable, null, null, "Objects", objects));
+            }
+            if (images.Count > 0)
+            {
+                textBuilder.AppendLine("// Image list entries:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                var placeholderIndex = textBuilder.ToString().LastIndexOf('\uFFFC');
+                inlineObjects.Add(new InlineObjectSpec(placeholderIndex, InlineObjectKind.Image, null, null, "Image List", null, images));
+            }
+            if (packages.Count > 0)
+            {
+                textBuilder.AppendLine("// Package entries:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                var placeholderIndex = textBuilder.ToString().LastIndexOf('\uFFFC');
+                inlineObjects.Add(new InlineObjectSpec(placeholderIndex, InlineObjectKind.ObjectTable, null, null, "Packages", packages));
+            }
+
+            InlineObjects = inlineObjects;
+            return textBuilder.ToString();
+        }
+        else
+        {
+            var preferText = ShouldTreatAsText(extension);
+            // IMPORTANT: Inspired by ILSpy WPF resource node factories: prefer text preview for known text-like extensions.
+            if (TryReadTextPreview(stream, 4096, preferText, out var textPreview, out var encodingName, out var truncated))
+            {
+                if (ShouldFormatXml(extension) && TryFormatXml(textPreview, out var formatted))
+                {
+                    textPreview = formatted;
+                }
+                sb.AppendLine($"// Text preview ({encodingName}{(truncated ? ", truncated" : string.Empty)}):");
+                sb.AppendLine(textPreview);
+            }
+            else
+            {
+                sb.AppendLine("// Hex preview (first 256 bytes):");
+                sb.AppendLine(RenderHexPreview(stream, 256));
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static string BuildResourceHeader(ResourceEntryNode resourceNode, long size)
+    {
+        var sb = new StringBuilder();
+        var name = resourceNode.ResourceName ?? resourceNode.Name;
+        sb.AppendLine($"// Resource: {name}");
+        var type = resourceNode.Resource?.ResourceType.ToString() ?? (resourceNode.Raw != null ? DescribeType(resourceNode.Raw) : null);
+        if (!string.IsNullOrWhiteSpace(type))
+            sb.AppendLine($"// Type: {type}");
+        if (resourceNode.Resource != null)
+            sb.AppendLine($"// Attributes: {resourceNode.Resource.Attributes}");
+        sb.AppendLine($"// Size: {size} bytes");
+        return sb.ToString();
+    }
+
+    private static bool IsImageExtension(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+            return false;
+
+        return extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".bmp", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".gif", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".tif", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".tiff", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".ico", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryLoadBitmap(MemoryStream stream, [NotNullWhen(true)] out Bitmap? bitmap)
+    {
+        bitmap = null;
+        try
+        {
+            stream.Position = 0;
+            bitmap = new Bitmap(stream);
+            return true;
+        }
+        catch
+        {
+            bitmap = null;
+            return false;
+        }
+    }
+
+    private static IEnumerable<(Bitmap Image, string Label)> ExtractIconFrames(MemoryStream stream)
+    {
+        var frames = new List<(Bitmap, string)>();
+        try
+        {
+            stream.Position = 0;
+            using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+            if (reader.ReadUInt16() != 0)
+                return frames;
+            if (reader.ReadUInt16() != 1)
+                return frames;
+            var count = reader.ReadUInt16();
+            var entries = new List<(byte Width, byte Height, uint Size, uint Offset)>();
+            for (int i = 0; i < count; i++)
+            {
+                byte width = reader.ReadByte();
+                byte height = reader.ReadByte();
+                reader.ReadByte(); // color count
+                reader.ReadByte(); // reserved
+                reader.ReadUInt16(); // planes
+                reader.ReadUInt16(); // bitcount
+                uint size = reader.ReadUInt32();
+                uint offset = reader.ReadUInt32();
+                entries.Add((width == 0 ? (byte)255 : width, height == 0 ? (byte)255 : height, size, offset));
+            }
+
+            foreach (var entry in entries)
+            {
+                var bytes = new byte[entry.Size];
+                long previous = stream.Position;
+                stream.Position = entry.Offset;
+                stream.Read(bytes, 0, bytes.Length);
+                stream.Position = previous;
+                using var frameStream = new MemoryStream(bytes);
+                if (TryLoadBitmap(frameStream, out var bmp) && bmp != null)
+                {
+                    frames.Add((bmp, $"{entry.Width}x{entry.Height}"));
+                }
+            }
+        }
+        catch
+        {
+            // ignore parse errors
+        }
+
+        return frames;
+    }
+
+    private static IEnumerable<(Bitmap Image, string Label)> ExtractImageFrames(MemoryStream buffer)
+    {
+        var frames = new List<(Bitmap, string)>();
+        try
+        {
+            var data = buffer.ToArray();
+            using var skData = SKData.CreateCopy(data);
+            using var codec = SKCodec.Create(skData);
+            if (codec == null)
+                return frames;
+
+            var frameInfos = codec.FrameInfo;
+            if (frameInfos.Length <= 1)
+                return frames;
+
+            for (int i = 0; i < frameInfos.Length; i++)
+            {
+                using var skBitmap = new SKBitmap(codec.Info.Width, codec.Info.Height);
+                codec.GetPixels(skBitmap.Info, skBitmap.GetPixels(), new SKCodecOptions(i));
+                using var skImage = SKImage.FromBitmap(skBitmap);
+                using var encoded = skImage.Encode(SKEncodedImageFormat.Png, 100);
+                using var ms = new MemoryStream();
+                encoded.SaveTo(ms);
+                ms.Position = 0;
+                var avaloniaBmp = new Bitmap(ms);
+                frames.Add((avaloniaBmp, $"{codec.Info.Width}x{codec.Info.Height}"));
+            }
+        }
+        catch
+        {
+            // ignore decoding errors
+        }
+
+        return frames;
+    }
+
+    private static bool TryExtractImage(string name, object? value, [NotNullWhen(true)] out ResourceImageEntry? imageEntry)
+    {
+        imageEntry = null;
+        if (value is byte[] bytes)
+        {
+            using var ms = new MemoryStream(bytes);
+            if (TryLoadBitmap(ms, out var bmp) && bmp != null)
+            {
+                imageEntry = new ResourceImageEntry(name, bmp, $"{bmp.PixelSize.Width}x{bmp.PixelSize.Height}");
+                return true;
+            }
+        }
+
+        if (value is Stream stream)
+        {
+            var pos = stream.CanSeek ? stream.Position : 0;
+            using var ms = new MemoryStream();
+            stream.CopyTo(ms);
+            ms.Position = 0;
+            if (TryLoadBitmap(ms, out var bmp) && bmp != null)
+            {
+                imageEntry = new ResourceImageEntry(name, bmp, $"{bmp.PixelSize.Width}x{bmp.PixelSize.Height}");
+                if (stream.CanSeek)
+                    stream.Position = pos;
+                return true;
+            }
+            if (stream.CanSeek)
+                stream.Position = pos;
+        }
+
+        return false;
+    }
+
+    private static bool IsPackageEntry(object? value, [NotNullWhen(true)] out ResourceObjectEntry? entry)
+    {
+        entry = null;
+        if (value is Resource { ResourceType: ResourceType.AssemblyLinked or ResourceType.Linked or ResourceType.Embedded } res
+            && res.Name.StartsWith("bundle://", StringComparison.OrdinalIgnoreCase))
+        {
+            entry = new ResourceObjectEntry(res.Name, DescribeType(res), "Package Entry", res);
+            return true;
+        }
+
+        if (value is ZipArchiveEntry zip)
+        {
+            entry = new ResourceObjectEntry(zip.FullName, "ZipArchiveEntry", "Package Entry", zip);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsResx(string extension) =>
+        extension.Equals(".resx", StringComparison.OrdinalIgnoreCase) || extension.Equals(".resw", StringComparison.OrdinalIgnoreCase);
+
+    private bool TryRenderResx(MemoryStream stream, StringBuilder sb, out string? textWithInline)
+    {
+        textWithInline = null;
+        try
+        {
+            stream.Position = 0;
+            using var reader = new ResXResourceReader(stream);
+            var entries = reader.OfType<DictionaryEntry>().ToList();
+            sb.AppendLine($"// RESX entries (inline below): {entries.Count}");
+
+            var strings = new List<KeyValuePair<string, string>>();
+            var others = new List<KeyValuePair<string, string>>();
+            var objects = new List<ResourceObjectEntry>();
+            var images = new List<ResourceImageEntry>();
+            var packages = new List<ResourceObjectEntry>();
+            foreach (DictionaryEntry entry in entries)
+            {
+                if (entry.Value is string str)
+                {
+                    strings.Add(new KeyValuePair<string, string>(entry.Key?.ToString() ?? string.Empty, str));
+                }
+                else
+                {
+                    if (TryExtractImage(entry.Key?.ToString() ?? string.Empty, entry.Value, out var imageEntry))
+                    {
+                        images.Add(imageEntry);
+                    }
+                    else if (IsPackageEntry(entry.Value, out var packageEntry))
+                    {
+                        packages.Add(packageEntry);
+                    }
+                    else if (IsPrimitiveEntry(entry.Value))
+                    {
+                        others.Add(new KeyValuePair<string, string>(
+                            $"{entry.Key?.ToString() ?? string.Empty} [{DescribeType(entry.Value)}]",
+                            DescribeResourceValue(entry.Value)));
+                    }
+                    else
+                    {
+                        objects.Add(new ResourceObjectEntry(entry.Key?.ToString() ?? string.Empty, DescribeType(entry.Value), DescribeResourceValue(entry.Value), entry.Value));
+                    }
+                }
+            }
+
+            var textBuilder = new StringBuilder(sb.ToString());
+            var inlineObjects = new List<InlineObjectSpec>();
+            if (strings.Count > 0)
+            {
+                textBuilder.AppendLine("// String entries:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                inlineObjects.Add(new InlineObjectSpec(textBuilder.ToString().IndexOf('\uFFFC'), InlineObjectKind.Table, null, strings, "Strings"));
+            }
+            if (others.Count > 0)
+            {
+                textBuilder.AppendLine("// Other entries:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                inlineObjects.Add(new InlineObjectSpec(textBuilder.ToString().LastIndexOf('\uFFFC'), InlineObjectKind.Table, null, others, "Objects/Binary"));
+            }
+            if (objects.Count > 0)
+            {
+                textBuilder.AppendLine("// Complex objects:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                inlineObjects.Add(new InlineObjectSpec(textBuilder.ToString().LastIndexOf('\uFFFC'), InlineObjectKind.ObjectTable, null, null, "Objects", objects));
+            }
+            if (images.Count > 0)
+            {
+                textBuilder.AppendLine("// Image list entries:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                inlineObjects.Add(new InlineObjectSpec(textBuilder.ToString().LastIndexOf('\uFFFC'), InlineObjectKind.Image, null, null, "Image List", null, images));
+            }
+            if (packages.Count > 0)
+            {
+                textBuilder.AppendLine("// Package entries:");
+                textBuilder.Append("\uFFFC").AppendLine();
+                inlineObjects.Add(new InlineObjectSpec(textBuilder.ToString().LastIndexOf('\uFFFC'), InlineObjectKind.ObjectTable, null, null, "Packages", packages));
+            }
+
+            InlineObjects = inlineObjects;
+            textWithInline = textBuilder.ToString();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static (Encoding Encoding, int Offset) DetectEncoding(byte[] buffer, int count)
+    {
+        if (count >= 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF)
+            return (Encoding.UTF8, 3);
+        if (count >= 2 && buffer[0] == 0xFF && buffer[1] == 0xFE)
+            return (Encoding.Unicode, 2);
+        if (count >= 2 && buffer[0] == 0xFE && buffer[1] == 0xFF)
+            return (Encoding.BigEndianUnicode, 2);
+
+        return (new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false), 0);
+    }
+
+    private static bool LooksLikeText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return true;
+
+        var controlCount = 0;
+        foreach (var ch in text)
+        {
+            if (char.IsControl(ch) && ch != '\r' && ch != '\n' && ch != '\t')
+                controlCount++;
+        }
+
+        return controlCount <= text.Length / 10 + 1;
+    }
+
+    // IMPORTANT: Borrowed idea from ILSpy WPF resource handlers: use file extension hints to decide on text rendering.
+    private static bool ShouldTreatAsText(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+            return false;
+
+        return extension.Equals(".json", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".xsd", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".xslt", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".xaml", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".config", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".txt", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".yml", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".props", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".targets", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".csproj", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".vbproj", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".resx", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".resw", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".sln", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".htm", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".html", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".js", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".css", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".md", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".nuspec", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".resjson", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ShouldFormatXml(string extension) =>
+        extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)
+        || extension.Equals(".xsd", StringComparison.OrdinalIgnoreCase)
+        || extension.Equals(".xslt", StringComparison.OrdinalIgnoreCase)
+        || extension.Equals(".xaml", StringComparison.OrdinalIgnoreCase)
+        || extension.Equals(".config", StringComparison.OrdinalIgnoreCase)
+        || extension.Equals(".resx", StringComparison.OrdinalIgnoreCase)
+        || extension.Equals(".resw", StringComparison.OrdinalIgnoreCase)
+        || extension.Equals(".nuspec", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryFormatXml(string text, out string formatted)
+    {
+        formatted = text;
+        try
+        {
+            var doc = XDocument.Parse(text);
+            formatted = doc.ToString();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static IHighlightingDefinition? GetHighlightingForExtension(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+            return null;
+
+        try
+        {
+            return HighlightingManager.Instance.GetDefinitionByExtension(extension);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static IHighlightingDefinition? GetHighlightingForLanguage(DecompilationLanguage language)
+    {
+        try
+        {
+            return language == DecompilationLanguage.CSharp
+                ? HighlightingManager.Instance.GetDefinition("C#")
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string DescribeResourceValue(object? value)
+    {
+        return value switch
+        {
+            null => "null",
+            string s => $"\"{(s.Length > 120 ? s[..120] + "..." : s)}\"{(s.Length > 120 ? " (truncated)" : string.Empty)}",
+            byte[] bytes => $"byte[{bytes.Length}]",
+            Stream stream => $"Stream (length {(stream.CanSeek ? stream.Length.ToString() : "unknown")})",
+            _ => value?.ToString() ?? "(unknown)"
+        };
+    }
+
+    private static string DescribeType(object? value)
+    {
+        return value switch
+        {
+            null => "null",
+            byte[] bytes => $"byte[] ({bytes.Length} bytes)",
+            string => "string",
+            Stream stream => stream.CanSeek ? $"Stream ({stream.Length} bytes)" : "Stream",
+            Resource res => $"Resource ({res.ResourceType})",
+            ZipArchiveEntry => "ZipArchiveEntry",
+            _ => value?.GetType().FullName ?? "unknown"
+        };
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var sanitized = new string(name.Select(ch => invalid.Contains(ch) ? '_' : ch).ToArray());
+        return string.IsNullOrWhiteSpace(sanitized) ? "resource" : sanitized;
+    }
+
+    private static bool IsPrimitiveEntry(object? value) =>
+        value is null or string or byte[] or Stream or bool or char or sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal;
+
+    private static async Task WriteResourceEntryAsync(object? value, string targetPath)
+    {
+        switch (value)
+        {
+            case null:
+                await File.WriteAllTextAsync(targetPath + ".txt", "null");
+                break;
+            case string s:
+                await File.WriteAllTextAsync(targetPath + ".txt", s);
+                break;
+            case byte[] bytes:
+                await File.WriteAllBytesAsync(targetPath, bytes);
+                break;
+            case Stream stream:
+            {
+                await using var target = File.Create(targetPath);
+                if (stream.CanSeek)
+                    stream.Position = 0;
+                await stream.CopyToAsync(target);
+                break;
+            }
+            case Resource res:
+            {
+                using var source = res.TryOpenStream();
+                if (source == null)
+                    break;
+                await using var target = File.Create(targetPath);
+                await source.CopyToAsync(target);
+                break;
+            }
+            case ZipArchiveEntry zipEntry:
+            {
+                await using var target = File.Create(targetPath);
+                await using var source = zipEntry.Open();
+                await source.CopyToAsync(target);
+                break;
+            }
+            default:
+                await File.WriteAllTextAsync(targetPath + ".txt", value.ToString() ?? string.Empty);
+                break;
+        }
+    }
+
+    private static string RenderHexPreview(Stream stream, int maxBytes)
+    {
+        if (stream.CanSeek)
+            stream.Position = 0;
+
+        var buffer = new byte[Math.Min(maxBytes, (int)(stream.CanSeek ? stream.Length : maxBytes))];
+        var read = stream.Read(buffer, 0, buffer.Length);
+        var sb = new StringBuilder();
+
+        for (int i = 0; i < read; i += 16)
+        {
+            sb.Append(i.ToString("X4")).Append(": ");
+            var lineLength = Math.Min(16, read - i);
+            for (int j = 0; j < lineLength; j++)
+            {
+                sb.Append(buffer[i + j].ToString("X2")).Append(' ');
+            }
+            sb.Append("  ");
+            for (int j = 0; j < lineLength; j++)
+            {
+                var b = buffer[i + j];
+                sb.Append(b is >= 32 and <= 126 ? (char)b : '.');
+            }
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
     }
 
     private static AssemblyNode? GetAssemblyNode(Node node)
@@ -711,23 +1819,45 @@ public partial class MainWindowViewModel : ObservableObject
         if (string.IsNullOrEmpty(text))
             return;
 
-        var name = memberNode.Name;
-        if (string.IsNullOrEmpty(name))
-            return;
+        var declarations = new List<(string Identifier, object Reference)>();
 
-        var start = text.IndexOf(name, StringComparison.Ordinal);
-        if (start < 0)
-            return;
+        if (!memberNode.MetadataToken.IsNil)
+            declarations.Add((memberNode.Name, memberNode.MetadataToken));
 
-        var segment = new ReferenceTextSegment
+        if (memberNode.Entity?.DeclaringType != null)
         {
-            StartOffset = start,
-            EndOffset = start + name.Length,
-            MemberReference = memberNode.MetadataToken.IsNil ? memberNode.Entity.FullName : memberNode.MetadataToken,
-            Resolved = true
-        };
+            var declaring = memberNode.Entity.DeclaringType;
+            declarations.Add((declaring.Name, declaring));
+            if (!string.IsNullOrEmpty(declaring.FullName))
+                declarations.Add((declaring.FullName, declaring));
+        }
 
-        MainWindow.references.Add(segment);
+        foreach (var (identifier, reference) in declarations.Where(d => !string.IsNullOrWhiteSpace(d.Identifier)))
+        {
+            foreach (var (start, length) in FindAllOccurrences(text, identifier))
+            {
+                MainWindow.references.Add(new ReferenceTextSegment
+                {
+                    StartOffset = start,
+                    EndOffset = start + length,
+                    MemberReference = reference,
+                    Resolved = true
+                });
+            }
+        }
+    }
+
+    private static IEnumerable<(int Start, int Length)> FindAllOccurrences(string text, string term)
+    {
+        var startIndex = 0;
+        while (startIndex < text.Length)
+        {
+            var idx = text.IndexOf(term, startIndex, StringComparison.Ordinal);
+            if (idx < 0)
+                yield break;
+            yield return (idx, term.Length);
+            startIndex = idx + term.Length;
+        }
     }
 
     partial void OnSelectedSearchModeChanged(SearchMode value)
@@ -838,7 +1968,13 @@ public partial class MainWindowViewModel : ObservableObject
 
         var persistedAssemblies = ilSpyBackend.GetPersistedAssemblyFiles();
         if (persistedAssemblies.Any())
+        {
             LoadAssemblies(persistedAssemblies);
+        }
+        else if (state.LastAssemblies?.Length > 0)
+        {
+            LoadAssemblies(state.LastAssemblies);
+        }
 
         if (!string.IsNullOrEmpty(state.SearchMode))
         {
@@ -852,11 +1988,6 @@ public partial class MainWindowViewModel : ObservableObject
         IsSearchDockVisible = state.IsSearchDockVisible;
         ShowCompilerGeneratedMembers = state.ShowCompilerGeneratedMembers;
         ShowInternalApi = state.ShowInternalApi;
-
-        if (state.LastAssemblies?.Length > 0)
-        {
-            LoadAssemblies(state.LastAssemblies);
-        }
     }
 
     private void PersistLastAssemblies()
@@ -927,7 +2058,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         var adapter = new IlSpyXSearchAdapter();
         var ilspyAssemblies = assemblyLookup.Values.Select(a => a.LoadedAssembly).ToList();
-        var results = adapter.Search(ilspyAssemblies, term, SelectedSearchMode.Name, ResolveNode, includeInternal: ShowInternalApi, includeCompilerGenerated: ShowCompilerGeneratedMembers);
+        var results = adapter.Search(ilspyAssemblies, term, SelectedSearchMode.Name, ResolveNode, ResolveResourceNode, includeInternal: ShowInternalApi, includeCompilerGenerated: ShowCompilerGeneratedMembers);
 
         SearchResults.Clear();
         foreach (var r in results)
@@ -1451,6 +2582,19 @@ public partial class MainWindowViewModel : ObservableObject
 
     private Node? ResolveNode(EntityHandle handle) => TryResolveHandle(handle);
 
+    private Node? ResolveResourceNode(string assemblyName, string resourceName)
+    {
+        var assemblyNode = AssemblyNodes.FirstOrDefault(a => string.Equals(a.Name, assemblyName, StringComparison.OrdinalIgnoreCase));
+        if (assemblyNode == null)
+            return null;
+
+        var resourcesNode = assemblyNode.Children.OfType<ResourcesNode>().FirstOrDefault();
+        return resourcesNode?.Items.FirstOrDefault(r => string.Equals(r.ResourceName ?? r.Name, resourceName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static Window? GetMainWindow() =>
+        (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+
     private Node? TryResolveHandle(EntityHandle handle) =>
         handleToNodeMap.FirstOrDefault(kvp => kvp.Key.Handle.Equals(handle)).Value;
 
@@ -1459,4 +2603,24 @@ public partial class MainWindowViewModel : ObservableObject
     public record LanguageOption(string Name, DecompilationLanguage Language);
 
     public record LanguageVersionOption(string Name, LanguageVersion Version);
+
+    public enum InlineObjectKind
+    {
+        Image,
+        Table,
+        ObjectTable
+    }
+
+    public record InlineObjectSpec(
+        int Offset,
+        InlineObjectKind Kind,
+        Bitmap? Image = null,
+        IReadOnlyList<KeyValuePair<string, string>>? Entries = null,
+        string? Caption = null,
+        IReadOnlyList<ResourceObjectEntry>? ObjectEntries = null,
+        IReadOnlyList<ResourceImageEntry>? ImageEntries = null);
+
+    public record ResourceObjectEntry(string Name, string Type, string Display, object? Raw);
+
+    public record ResourceImageEntry(string Name, Bitmap Image, string Label);
 }

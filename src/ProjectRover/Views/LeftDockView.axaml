@@ -69,8 +69,25 @@
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
-      <TreeDataTemplate DataType="nodes:ResourceEntryNode">
-        <StackPanel Orientation="Horizontal">
+      <TreeDataTemplate DataType="nodes:ResourceEntryNode" ItemsSource="{Binding Children}">
+        <StackPanel Orientation="Horizontal" Background="Transparent">
+          <StackPanel.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Save Resource"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).SaveResourceCommand}"
+                        CommandParameter="{Binding .}" />
+              <MenuItem Header="Export to .resx"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).ExportResourcesCommand}"
+                        CommandParameter="{Binding .}" />
+              <MenuItem Header="Extract entries"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).ExtractResourceEntriesCommand}"
+                        CommandParameter="{Binding .}" />
+              <MenuItem Header="Save entry"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).SaveObjectEntryCommand}"
+                        CommandParameter="{Binding .}"
+                        IsVisible="{Binding Raw, Converter={x:Static converters:ObjectConverters.IsNotNull}}" />
+            </ContextMenu>
+          </StackPanel.ContextMenu>
           <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
@@ -94,7 +111,14 @@
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:ResourcesNode" ItemsSource="{Binding Items}">
-        <StackPanel Orientation="Horizontal">
+        <StackPanel Orientation="Horizontal" Background="Transparent">
+          <StackPanel.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Export All Resources"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).ExportAllResourcesCommand}"
+                        CommandParameter="{Binding .}" />
+            </ContextMenu>
+          </StackPanel.ContextMenu>
           <Panel>
             <Svg Path="{DynamicResource ResourcesIconClosed}" IsVisible="{Binding !IsExpanded}" />
             <Svg Path="{DynamicResource ResourcesIconOpen}" IsVisible="{Binding IsExpanded}" />

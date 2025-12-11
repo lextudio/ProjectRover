@@ -8,12 +8,23 @@
   <Grid>
     <Grid Background="Transparent" />
 
+    <StackPanel Margin="8"
+                Spacing="8"
+                IsVisible="{Binding ResourceImage, Converter={x:Static converters:ObjectConverters.IsNotNull}}">
+      <TextBlock Text="{Binding ResourceInfo}" />
+      <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto">
+        <Image Source="{Binding ResourceImage}" Stretch="None" />
+      </ScrollViewer>
+    </StackPanel>
+
     <avaloniaEdit:TextEditor x:Name="TextEditor"
                              ShowLineNumbers="True"
                              FontFamily="Consolas,Menlo,Courier New,Monospace"
                              IsReadOnly="True"
                              Document="{Binding Document}"
-                             IsVisible="{Binding Document, Converter={x:Static converters:ObjectConverters.IsNotNull}}" />
+                             SyntaxHighlighting="{Binding DocumentHighlighting}"
+                             IsVisible="{Binding ShowDocument}" />
 
     <Border Background="#66000000"
             IsVisible="{Binding IsResolving}"

@@ -1,6 +1,9 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
+using System.Resources;
+using System.Resources.NetStandard;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
@@ -128,26 +131,86 @@ private static void PopulateReferences(AssemblyNode assemblyNode, LoadedAssembly
 }
 
 private static void PopulateResources(AssemblyNode assemblyNode, PEFile peFile)
-{
-    var resourcesNode = new ResourcesNode
     {
-        Name = "Resources",
-        Parent = assemblyNode
+        var resourcesNode = new ResourcesNode
+        {
+            Name = "Resources",
+            Parent = assemblyNode
     };
 
     foreach (var resource in peFile.Resources)
     {
-        resourcesNode.Items.Add(new ResourceEntryNode
+        var entryNode = new ResourceEntryNode
         {
             Name = resource.Name,
             ResourceName = resource.Name,
             Parent = resourcesNode,
-            IconKey = "ResourceFileIcon"
-        });
+            Resource = resource,
+            IconKey = "ResourceFileIcon",
+            Raw = resource
+        };
+        PopulateResourceEntries(entryNode);
+        resourcesNode.Items.Add(entryNode);
     }
 
     if (resourcesNode.Items.Count > 0)
         assemblyNode.Children.Add(resourcesNode);
+}
+
+private static void PopulateResourceEntries(ResourceEntryNode entryNode)
+{
+    if (entryNode.Resource == null)
+        return;
+
+    var resourceName = entryNode.Resource.Name;
+    try
+    {
+        using var stream = entryNode.Resource.TryOpenStream();
+        if (stream == null)
+            return;
+
+        if (resourceName.EndsWith(".resources", System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (stream.CanSeek)
+                stream.Position = 0;
+            // IMPORTANT: match ILSpy WPF resource parsing to expand entries in the tree.
+            using var resources = new ICSharpCode.Decompiler.Util.ResourcesFile(stream);
+            foreach (var child in resources)
+            {
+                entryNode.Children.Add(new ResourceEntryNode
+                {
+                    Name = child.Key,
+                    ResourceName = child.Key,
+                    Parent = entryNode,
+                    IconKey = "ResourceFileIcon",
+                    Raw = child.Value
+                });
+            }
+        }
+        else if (resourceName.EndsWith(".resx", System.StringComparison.OrdinalIgnoreCase)
+                 || resourceName.EndsWith(".resw", System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (stream.CanSeek)
+                stream.Position = 0;
+            using var resx = new ResXResourceReader(stream);
+            foreach (DictionaryEntry child in resx)
+            {
+                var name = child.Key?.ToString() ?? string.Empty;
+                entryNode.Children.Add(new ResourceEntryNode
+                {
+                    Name = name,
+                    ResourceName = name,
+                    Parent = entryNode,
+                    IconKey = "ResourceFileIcon",
+                    Raw = child.Value
+                });
+            }
+        }
+    }
+    catch
+    {
+        // Keep the root resource node even if entries cannot be expanded.
+    }
 }
 
 private static TypeNode? BuildTypeSubtree(ITypeDefinition resolved, Node parent, bool includeCompilerGenerated, bool includeInternal)
@@ -294,6 +357,9 @@ private static TypeNode? BuildTypeSubtree(ITypeDefinition resolved, Node parent,
     foreach (var nested in resolved.NestedTypes)
     {
         var nestedDef = nested.GetDefinition();
+        if (nestedDef == null)
+            continue;
+
         var nestedNode = BuildTypeSubtree(nestedDef, typeNode, includeCompilerGenerated, includeInternal);
         if (nestedNode != null)
         {
@@ -387,9 +453,13 @@ private static string GetMemberIconKey(IEntity entity)
     return entity switch
     {
         IField field when field.IsConst => $"ConstantIcon{suffix}",
+        IField field when field.IsStatic => $"FieldStaticIcon{suffix}",
         IField => $"FieldIcon{suffix}",
+        IProperty property when property.IsStatic => $"PropertyStaticIcon{suffix}",
         IProperty => $"PropertyIcon{suffix}",
+        IEvent @event when @event.IsStatic => $"EventStaticIcon{suffix}",
         IEvent => $"EventIcon{suffix}",
+        IMethod method when method.IsStatic => $"MethodStaticIcon{suffix}",
         IMethod => $"MethodIcon{suffix}",
         _ => "MethodIcon"
     };
@@ -407,4 +477,5 @@ private static string GetMemberIconKey(IEntity entity)
             _ => "ClassPrivateIcon"
         };
     }
+
 }

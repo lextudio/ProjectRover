@@ -17,6 +17,7 @@
     along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -29,6 +30,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
+using Avalonia.Layout;
+using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using AvaloniaEdit.Document;
@@ -66,6 +69,7 @@ public partial class MainWindow : Window
     private ProportionalDock? verticalLayout;
     private ProportionalDock? rightDock;
     private Factory dockFactory = null!;
+    private InlineResourceElementGenerator? resourceInlineGenerator;
 
     private AvaloniaEdit.TextEditor TextEditor => centerDockView.Editor;
     private TreeView TreeView => leftDockView.ExplorerTreeView;
@@ -96,6 +100,11 @@ public partial class MainWindow : Window
         _ = autoUpdateService.CheckForNewerVersionAsync();
         _ = appInformationProvider.TryLoadRemoteAdditionalInfoAsync();
         
+        resourceInlineGenerator = new InlineResourceElementGenerator(
+            () => viewModel?.InlineObjects,
+            entry => viewModel?.SaveImageEntryAsync(entry),
+            entry => viewModel?.SaveObjectEntryAsync(entry));
+        TextEditor.TextArea.TextView.ElementGenerators.Insert(0, resourceInlineGenerator);
         TextEditor.TextArea.TextView.ElementGenerators.Add(new ReferenceElementGenerator());
         
         registryOptions = new RegistryOptions(ThemeName.LightPlus);
@@ -275,7 +284,7 @@ public partial class MainWindow : Window
         rightDock = new ProportionalDock
         {
             Id = "RightDock",
-            Orientation = Orientation.Vertical,
+            Orientation = Dock.Model.Core.Orientation.Vertical,
             VisibleDockables = new ObservableCollection<IDockable>
             {
                 documentDock
@@ -286,7 +295,7 @@ public partial class MainWindow : Window
         var mainLayout = new ProportionalDock
         {
             Id = "MainLayout",
-            Orientation = Orientation.Horizontal,
+            Orientation = Dock.Model.Core.Orientation.Horizontal,
             VisibleDockables = new ObservableCollection<IDockable>
             {
                 toolDock,
@@ -321,7 +330,7 @@ public partial class MainWindow : Window
         verticalLayout = new ProportionalDock
         {
             Id = "VerticalLayout",
-            Orientation = Orientation.Vertical,
+            Orientation = Dock.Model.Core.Orientation.Vertical,
             VisibleDockables = new ObservableCollection<IDockable>
             {
                 mainLayout
@@ -359,6 +368,12 @@ public partial class MainWindow : Window
         if (e.PropertyName == nameof(MainWindowViewModel.SelectedNode))
         {
             UpdateDocumentTitle();
+        }
+
+        if (e.PropertyName == nameof(MainWindowViewModel.Document)
+            || e.PropertyName == nameof(MainWindowViewModel.InlineObjects))
+        {
+            TextEditor.TextArea.TextView.Redraw();
         }
     }
 
@@ -458,6 +473,12 @@ public partial class MainWindow : Window
         {
             ApplyTheme(viewModel?.SelectedTheme);
         }
+
+        if (e.PropertyName == nameof(MainWindowViewModel.Document)
+            || e.PropertyName == nameof(MainWindowViewModel.InlineObjects))
+        {
+            TextEditor.TextArea.TextView.Redraw();
+        }
     }
 
     private void ApplyTheme(MainWindowViewModel.ThemeOption? themeOption)
@@ -474,6 +495,266 @@ public partial class MainWindow : Window
     
     private void TreeView_OnDoubleTapped(object? sender, TappedEventArgs e)
     {
+    }
+
+    private class InlineResourceElementGenerator : VisualLineElementGenerator
+    {
+        private readonly Func<IReadOnlyList<MainWindowViewModel.InlineObjectSpec>?> inlineSource;
+        private readonly Action<MainWindowViewModel.ResourceImageEntry>? saveImage;
+        private readonly Action<MainWindowViewModel.ResourceObjectEntry>? saveObject;
+
+        public InlineResourceElementGenerator(Func<IReadOnlyList<MainWindowViewModel.InlineObjectSpec>?> inlineSource,
+            Action<MainWindowViewModel.ResourceImageEntry>? saveImage = null,
+            Action<MainWindowViewModel.ResourceObjectEntry>? saveObject = null)
+        {
+            this.inlineSource = inlineSource;
+            this.saveImage = saveImage;
+            this.saveObject = saveObject;
+        }
+
+        public override int GetFirstInterestedOffset(int startOffset)
+        {
+            var inlines = inlineSource() ?? Array.Empty<MainWindowViewModel.InlineObjectSpec>();
+            var next = inlines.Select(i => i.Offset).Where(o => o >= startOffset).DefaultIfEmpty(-1).Min();
+            return next;
+        }
+
+        public override VisualLineElement ConstructElement(int offset)
+        {
+            var inlines = inlineSource() ?? Array.Empty<MainWindowViewModel.InlineObjectSpec>();
+            var match = inlines.FirstOrDefault(i => i.Offset == offset);
+            if (match == null)
+                return null!;
+
+            Control control = match.Kind switch
+            {
+                MainWindowViewModel.InlineObjectKind.Image when match.Image != null => BuildImageControl(match),
+                MainWindowViewModel.InlineObjectKind.Table when match.Entries != null => BuildTableControl(match.Caption, match.Entries),
+                MainWindowViewModel.InlineObjectKind.ObjectTable when match.ObjectEntries != null => BuildObjectTable(match.Caption, match.ObjectEntries),
+                MainWindowViewModel.InlineObjectKind.Image when match.ImageEntries != null => BuildImageList(match.Caption, match.ImageEntries),
+                _ => null!
+            };
+
+            if (control == null)
+                return null!;
+
+            return new InlineObjectElement(1, control);
+        }
+
+        private static Control BuildTableControl(string? caption, IReadOnlyList<KeyValuePair<string, string>> entries)
+        {
+            var stack = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Vertical,
+                Spacing = 4
+            };
+
+            if (!string.IsNullOrWhiteSpace(caption))
+            {
+                stack.Children.Add(new TextBlock
+                {
+                    Text = caption,
+                    FontWeight = FontWeight.SemiBold
+                });
+            }
+
+            var list = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Vertical,
+                Spacing = 2
+            };
+
+            foreach (var entry in entries)
+            {
+                list.Children.Add(new TextBlock
+                {
+                    Text = $"{entry.Key} = {entry.Value}"
+                });
+            }
+
+            var border = new Border
+            {
+                BorderBrush = Brushes.Gray,
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(6),
+                Child = new ScrollViewer
+                {
+                    Content = list,
+                    MaxHeight = 320,
+                    MaxWidth = 640,
+                    HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                    VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
+                }
+            };
+
+            stack.Children.Add(border);
+            return stack;
+        }
+
+        private Control BuildImageControl(MainWindowViewModel.InlineObjectSpec spec)
+        {
+            var stack = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Vertical,
+                Spacing = 2
+            };
+
+            if (!string.IsNullOrWhiteSpace(spec.Caption))
+            {
+                stack.Children.Add(new TextBlock
+                {
+                    Text = spec.Caption,
+                    FontWeight = FontWeight.SemiBold
+                });
+            }
+
+            stack.Children.Add(new Image
+            {
+                Source = spec.Image,
+                Stretch = Stretch.None
+            });
+
+            if (saveImage != null && spec.ImageEntries == null)
+            {
+                var btn = new Button
+                {
+                    Content = "Save",
+                    Padding = new Thickness(4)
+                };
+                btn.Click += (_, __) => saveImage(new MainWindowViewModel.ResourceImageEntry(spec.Caption ?? "image", spec.Image!, spec.Caption ?? string.Empty));
+                stack.Children.Add(btn);
+            }
+
+            return stack;
+        }
+
+        private Control BuildObjectTable(string? caption, IReadOnlyList<MainWindowViewModel.ResourceObjectEntry> entries)
+        {
+            var stack = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Vertical,
+                Spacing = 4
+            };
+
+            if (!string.IsNullOrWhiteSpace(caption))
+            {
+                stack.Children.Add(new TextBlock
+                {
+                    Text = caption,
+                    FontWeight = FontWeight.SemiBold
+                });
+            }
+
+            var list = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Vertical,
+                Spacing = 2
+            };
+
+            foreach (var entry in entries)
+            {
+                list.Children.Add(new TextBlock
+                {
+                    Text = $"{entry.Name} [{entry.Type}] = {entry.Display}"
+                });
+                if (saveObject != null && entry.Raw != null)
+                {
+                    var btn = new Button
+                    {
+                        Content = "Save entry",
+                        Padding = new Thickness(2)
+                    };
+                    btn.Click += (_, __) => saveObject(entry);
+                    list.Children.Add(btn);
+                }
+            }
+
+            var border = new Border
+            {
+                BorderBrush = Brushes.Gray,
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(6),
+                Child = new ScrollViewer
+                {
+                    Content = list,
+                    MaxHeight = 320,
+                    MaxWidth = 640,
+                    HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                    VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
+                }
+            };
+
+            stack.Children.Add(border);
+            return stack;
+        }
+
+        private Control BuildImageList(string? caption, IReadOnlyList<MainWindowViewModel.ResourceImageEntry> entries)
+        {
+            var stack = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Vertical,
+                Spacing = 4
+            };
+
+            if (!string.IsNullOrWhiteSpace(caption))
+            {
+                stack.Children.Add(new TextBlock
+                {
+                    Text = caption,
+                    FontWeight = FontWeight.SemiBold
+                });
+            }
+
+            var list = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Vertical,
+                Spacing = 6
+            };
+
+            foreach (var entry in entries)
+            {
+                var itemStack = new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Vertical,
+                    Spacing = 2
+                };
+                itemStack.Children.Add(new TextBlock { Text = $"{entry.Name} ({entry.Label})" });
+                itemStack.Children.Add(new Image
+                {
+                    Source = entry.Image,
+                    Stretch = Stretch.None
+                });
+                if (saveImage != null)
+                {
+                    var btn = new Button
+                    {
+                        Content = "Save entry",
+                        Padding = new Thickness(2)
+                    };
+                    btn.Click += (_, __) => saveImage(entry);
+                    itemStack.Children.Add(btn);
+                }
+                list.Children.Add(itemStack);
+            }
+
+            var border = new Border
+            {
+                BorderBrush = Brushes.Gray,
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(6),
+                Child = new ScrollViewer
+                {
+                    Content = list,
+                    MaxHeight = 320,
+                    MaxWidth = 640,
+                    HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                    VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
+                }
+            };
+
+            stack.Children.Add(border);
+            return stack;
+        }
     }
 
     private class ReferenceElementGenerator : VisualLineElementGenerator

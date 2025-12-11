@@ -25,8 +25,8 @@ public class IlSpyXSearchAdapter
     private readonly ILanguage language = new BasicLanguage();
     private readonly DecompilerSettings decompilerSettings = new();
 
-    public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, string term, string modeName, Func<EntityHandle, Node?>? resolveNode = null, bool includeInternal = false, bool includeCompilerGenerated = true)
-    {
+public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, string term, string modeName, Func<EntityHandle, Node?>? resolveNode = null, Func<string, string, Node?>? resolveResource = null, bool includeInternal = false, bool includeCompilerGenerated = true)
+{
         var trimmed = term?.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
             return Array.Empty<BasicSearchResult>();
@@ -70,9 +70,9 @@ public class IlSpyXSearchAdapter
 
         return results
             .Where(r => FilterByMode(r, searchMode, constantOnly, includeCompilerGenerated))
-            .Select(r => MapToBasicResult(r, resolveNode))
+            .Select(r => MapToBasicResult(r, resolveNode, resolveResource))
             .ToList();
-    }
+}
 
     private IEnumerable<AbstractSearchStrategy> CreateStrategies(SearchRequest request, IProducerConsumerCollection<ICSharpCode.ILSpyX.Search.SearchResult> results, ApiVisibility apiVisibility, MemberSearchKind memberKind)
     {
@@ -137,7 +137,7 @@ public class IlSpyXSearchAdapter
         };
     }
 
-    private static BasicSearchResult MapToBasicResult(ICSharpCode.ILSpyX.Search.SearchResult r, Func<EntityHandle, Node?>? resolveNode)
+    private static BasicSearchResult MapToBasicResult(ICSharpCode.ILSpyX.Search.SearchResult r, Func<EntityHandle, Node?>? resolveNode, Func<string, string, Node?>? resolveResource)
     {
         string name = r.Name;
         string location = r.Location;
@@ -206,9 +206,10 @@ public class IlSpyXSearchAdapter
             iconKey = "AssemblyIcon";
             assemblyIconKey = "AssemblyIcon";
         }
-        else if (r is ResourceSearchResult)
+        else if (r is ResourceSearchResult resourceResult)
         {
             iconKey = "ResourceFileIcon";
+            targetNode = resolveResource?.Invoke(resourceResult.Assembly, resourceResult.Name);
         }
 
         return new BasicSearchResult
@@ -359,7 +360,7 @@ public class IlSpyXSearchAdapter
                 System.Reflection.Metadata.HandleKind.FieldDefinition => reader.GetString(reader.GetFieldDefinition((FieldDefinitionHandle)handle).Name),
                 System.Reflection.Metadata.HandleKind.PropertyDefinition => reader.GetString(reader.GetPropertyDefinition((PropertyDefinitionHandle)handle).Name),
                 System.Reflection.Metadata.HandleKind.EventDefinition => reader.GetString(reader.GetEventDefinition((EventDefinitionHandle)handle).Name),
-                _ => handle.ToString()
+                _ => handle.ToString() ?? string.Empty
             };
         }
 
@@ -410,7 +411,7 @@ public class IlSpyXSearchAdapter
     {
         foreach (var attr in entity.GetAttributes())
         {
-            if (attr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
+            if (attr?.AttributeType?.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
                 return true;
         }
         return false;
