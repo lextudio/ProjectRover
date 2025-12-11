@@ -21,7 +21,6 @@ Status: In progress.
 Goal: Use ILSpyX search providers and mapping to match WPF behavior.
 Actions:
 - [x] Add `IlSpyXSearchAdapter` to convert ILSpyX search results to Rover `SearchResult` (done)
-- [x] Expose the `Literal` search mode alongside other ILSpy filters.
 - [x] Focus assembly search results on their matching assembly node.
 - [x] Ensure all ILSpy search features (filtering by type/member/resource/assembly) are available in Rover (`docs/search-features.md` documents the coverage).
 - [ ] Integrate Go-To/Find usages behavior via ILSpyX mapping.

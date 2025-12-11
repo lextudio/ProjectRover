@@ -7,7 +7,7 @@ ProjectRover already mirrors ILSpy’s built-in search modes via `IlSpyXSearchAd
 - **Member-specific modes:** `SearchMode.Member`, `Method`, `Field`, `Property`, `Event`, and the special `Constant` mode drive `MemberSearchStrategy` with the matching `MemberSearchKind`. The adapter filters down to members of that kind and for `Constant` only const fields.
 - **Resource search:** `SearchMode.Resource` switches to `ResourceSearchStrategy`, returning ILSpyX resource nodes and pointing navigation to `ResolveResourceNode`.
 - **Assembly and Namespace:** `AssemblySearchStrategy` and `NamespaceSearchStrategy` produce results tied to the matching assembly/namespace, so the UI can select the corresponding `AssemblyNode`.
-- **Literal and Metadata Token:** `LiteralSearchStrategy` and `MetadataTokenSearchStrategy` expose string literal and metadata-token searches, matching the ILSpy experience.
+- **Metadata Token:** `MetadataTokenSearchStrategy` exposes metadata-token searches, matching the ILSpy experience.
 
 Each `BasicSearchResult` maps ILSpyX metadata back to Rover nodes (types, members, resources, assemblies) via the handle/assembly resolver services, so double-click navigation works for every mode. The `SearchModes` collection and `MapMode` method tie the UI selection to these strategies, and `FilterByMode` enforces the correct result subset.
 

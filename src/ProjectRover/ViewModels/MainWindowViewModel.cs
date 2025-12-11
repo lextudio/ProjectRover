@@ -178,7 +178,6 @@ public partial class MainWindowViewModel : ObservableObject
         new SearchMode("Property", "PropertyIcon"),
         new SearchMode("Event", "EventIcon"),
         new SearchMode("Constant", "ConstantIcon"),
-        new SearchMode("Literal", "StringIcon"),
         new SearchMode("Metadata Token", "MetadataIcon"),
         new SearchMode("Resource", "ResourceFileIcon"),
         new SearchMode("Assembly", "ReferenceIcon"),

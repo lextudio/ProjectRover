@@ -108,11 +108,6 @@ public class IlSpyXSearchAdapter
             yield return new ResourceSearchStrategy(apiVisibility, request, results);
         }
 
-        if (request.Mode == SearchMode.Literal)
-        {
-            yield return new LiteralSearchStrategy(language, apiVisibility, request, results);
-        }
-
         if (request.Mode == SearchMode.Token)
         {
             yield return new MetadataTokenSearchStrategy(language, apiVisibility, request, results);
@@ -143,7 +138,6 @@ public class IlSpyXSearchAdapter
             SearchMode.Namespace => result is NamespaceSearchResult,
             SearchMode.Assembly => result is AssemblySearchResult,
             SearchMode.Resource => result is ResourceSearchResult,
-            SearchMode.Literal => true,
             SearchMode.Token => true,
             _ => true
         };
