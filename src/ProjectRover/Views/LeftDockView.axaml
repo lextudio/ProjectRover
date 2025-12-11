@@ -75,13 +75,16 @@
             <ContextMenu>
               <MenuItem Header="Save Resource"
                         Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).SaveResourceCommand}"
-                        CommandParameter="{Binding .}" />
+                        CommandParameter="{Binding .}"
+                        IsVisible="{Binding Resource, Converter={x:Static converters:ObjectConverters.IsNotNull}}" />
               <MenuItem Header="Export to .resx"
                         Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).ExportResourcesCommand}"
-                        CommandParameter="{Binding .}" />
+                        CommandParameter="{Binding .}"
+                        IsVisible="{Binding Resource, Converter={x:Static converters:ObjectConverters.IsNotNull}}" />
               <MenuItem Header="Extract entries"
                         Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).ExtractResourceEntriesCommand}"
-                        CommandParameter="{Binding .}" />
+                        CommandParameter="{Binding .}"
+                        IsVisible="{Binding Resource, Converter={x:Static converters:ObjectConverters.IsNotNull}}" />
               <MenuItem Header="Save entry"
                         Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).SaveObjectEntryCommand}"
                         CommandParameter="{Binding .}"

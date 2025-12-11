@@ -33,7 +33,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using System.IO.Compression;
 using Avalonia.Media.Imaging;
 using SkiaSharp;
@@ -47,10 +46,10 @@ using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Document;
 using ProjectRover.Nodes;
 using ProjectRover.Notifications;
-using ProjectRover.Options;
 using ProjectRover.SearchResults;
 using ProjectRover.Services;
 using ProjectRover.Services.IlSpyX;
+using ProjectRover.Settings;
 using ProjectRover.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -60,9 +59,9 @@ using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.Util;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Xml.Linq;
 
 namespace ProjectRover.ViewModels;
 
@@ -75,7 +74,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IAnalyticsService analyticsService;
     private readonly IDialogService dialogService;
     private readonly ILogger<MainWindowViewModel> logger;
-    private readonly StartupOptions startupOptions;
+    private readonly IRoverSettingsService roverSettingsService;
     private readonly string startupStateFilePath = Path.Combine(
         System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
         "ProjectRover",
@@ -93,18 +92,20 @@ public partial class MainWindowViewModel : ObservableObject
         INotificationService notificationService,
         IAnalyticsService analyticsService,
         IDialogService dialogService,
-        IOptions<StartupOptions> startupOptions)
+        IRoverSettingsService roverSettingsService)
     {
         this.logger = logger;
         this.notificationService = notificationService;
         this.analyticsService = analyticsService;
         this.dialogService = dialogService;
-        this.startupOptions = startupOptions.Value;
+        this.roverSettingsService = roverSettingsService;
+
+        var startupSettings = roverSettingsService.StartupSettings;
 
         ilSpyBackend = new IlSpyBackend
         {
-            UseDebugSymbols = this.startupOptions.UseDebugSymbols,
-            ApplyWinRtProjections = this.startupOptions.ApplyWinRtProjections
+            UseDebugSymbols = startupSettings.UseDebugSymbols,
+            ApplyWinRtProjections = startupSettings.ApplyWinRtProjections
         };
 
         Languages = new ObservableCollection<LanguageOption>
@@ -126,8 +127,8 @@ public partial class MainWindowViewModel : ObservableObject
         LanguageVersions.CollectionChanged += OnLanguageVersionsChanged;
         UpdateLanguageVersions(selectedLanguage.Language);
 
-        ShowCompilerGeneratedMembers = this.startupOptions.ShowCompilerGeneratedMembers;
-        ShowInternalApi = this.startupOptions.ShowInternalApi;
+        ShowCompilerGeneratedMembers = startupSettings.ShowCompilerGeneratedMembers;
+        ShowInternalApi = startupSettings.ShowInternalApi;
 
         RestoreLastAssemblies();
     }
@@ -806,7 +807,18 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnShowCompilerGeneratedMembersChanged(bool value)
     {
-        // Rebuild the tree to account for the new filter.
+        roverSettingsService.StartupSettings.ShowCompilerGeneratedMembers = value;
+        ReloadAssemblies();
+    }
+
+    partial void OnShowInternalApiChanged(bool value)
+    {
+        roverSettingsService.StartupSettings.ShowInternalApi = value;
+        ReloadAssemblies();
+    }
+
+    private void ReloadAssemblies()
+    {
         var openedAssemblies = assemblyLookup.Values.Select(a => a.FilePath).ToArray();
         ClearAssemblyList();
         LoadAssemblies(openedAssemblies);
@@ -1951,7 +1963,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void RestoreLastAssemblies()
     {
-        if (!startupOptions.RestoreAssemblies)
+        var startupSettings = roverSettingsService.StartupSettings;
+        if (!startupSettings.RestoreAssemblies)
             return;
 
         var state = LoadStartupState();
@@ -1986,8 +1999,18 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         IsSearchDockVisible = state.IsSearchDockVisible;
-        ShowCompilerGeneratedMembers = state.ShowCompilerGeneratedMembers;
-        ShowInternalApi = state.ShowInternalApi;
+
+        if (startupSettings.ShowCompilerGeneratedMembers != state.ShowCompilerGeneratedMembers)
+        {
+            startupSettings.ShowCompilerGeneratedMembers = state.ShowCompilerGeneratedMembers;
+        }
+        ShowCompilerGeneratedMembers = startupSettings.ShowCompilerGeneratedMembers;
+
+        if (startupSettings.ShowInternalApi != state.ShowInternalApi)
+        {
+            startupSettings.ShowInternalApi = state.ShowInternalApi;
+        }
+        ShowInternalApi = startupSettings.ShowInternalApi;
     }
 
     private void PersistLastAssemblies()
@@ -2002,8 +2025,6 @@ public partial class MainWindowViewModel : ObservableObject
             Theme = SelectedTheme?.Variant.ToString(),
             IsSearchDockVisible = IsSearchDockVisible,
             SearchMode = SelectedSearchMode?.Name,
-            ShowCompilerGeneratedMembers = ShowCompilerGeneratedMembers,
-            ShowInternalApi = ShowInternalApi,
             LastAssemblies = files!
         });
     }
@@ -2589,7 +2610,35 @@ public partial class MainWindowViewModel : ObservableObject
             return null;
 
         var resourcesNode = assemblyNode.Children.OfType<ResourcesNode>().FirstOrDefault();
-        return resourcesNode?.Items.FirstOrDefault(r => string.Equals(r.ResourceName ?? r.Name, resourceName, StringComparison.OrdinalIgnoreCase));
+        if (resourcesNode == null)
+            return null;
+
+        foreach (var resourceNode in resourcesNode.Items)
+        {
+            var candidate = FindResourceEntry(resourceNode, resourceName);
+            if (candidate != null)
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private static ResourceEntryNode? FindResourceEntry(ResourceEntryNode node, string resourceName)
+    {
+        if (string.Equals(node.ResourceName ?? node.Name, resourceName, StringComparison.OrdinalIgnoreCase))
+            return node;
+
+        foreach (var child in node.Children)
+        {
+            if (child is ResourceEntryNode childResource)
+            {
+                var match = FindResourceEntry(childResource, resourceName);
+                if (match != null)
+                    return match;
+            }
+        }
+
+        return null;
     }
 
     private static Window? GetMainWindow() =>

@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using ProjectRover.Notifications;
 using ProjectRover.Services;
-using Microsoft.Extensions.Options;
+using ProjectRover.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace ProjectRover.ViewModels.Design;
@@ -30,7 +30,7 @@ namespace ProjectRover.ViewModels.Design;
 public class DesignMainWindowViewModel : MainWindowViewModel
 {
     public DesignMainWindowViewModel()
-        : base(new DesignLogger(), new DesignNotificationService(), new DesignAnalyticsService(), new DesignDialogService(), new DesignStartupOptions())
+        : base(new DesignLogger(), new DesignNotificationService(), new DesignAnalyticsService(), new DesignDialogService(), new DesignRoverSettingsService())
     {
     }
 }
@@ -70,9 +70,9 @@ file class DesignDialogService : IDialogService
     }
 }
 
-file class DesignStartupOptions : IOptions<Options.StartupOptions>
+file class DesignRoverSettingsService : IRoverSettingsService
 {
-    public Options.StartupOptions Value { get; } = new();
+    public RoverStartupSettings StartupSettings { get; } = new();
 }
 
 file class DesignLogger : ILogger<MainWindowViewModel>

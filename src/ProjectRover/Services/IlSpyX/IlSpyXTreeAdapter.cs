@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Resources;
@@ -177,14 +179,17 @@ private static void PopulateResourceEntries(ResourceEntryNode entryNode)
             using var resources = new ICSharpCode.Decompiler.Util.ResourcesFile(stream);
             foreach (var child in resources)
             {
-                entryNode.Children.Add(new ResourceEntryNode
+                var iconKey = child.Value is string ? "StringIcon" : "ResourceFileIcon";
+                var childNode = new ResourceEntryNode
                 {
                     Name = child.Key,
                     ResourceName = child.Key,
                     Parent = entryNode,
-                    IconKey = "ResourceFileIcon",
+                    IconKey = iconKey,
                     Raw = child.Value
-                });
+                };
+                AddPackageChildren(childNode, child.Value);
+                entryNode.Children.Add(childNode);
             }
         }
         else if (resourceName.EndsWith(".resx", System.StringComparison.OrdinalIgnoreCase)
@@ -196,12 +201,13 @@ private static void PopulateResourceEntries(ResourceEntryNode entryNode)
             foreach (DictionaryEntry child in resx)
             {
                 var name = child.Key?.ToString() ?? string.Empty;
+                var iconKey = child.Value is string ? "StringIcon" : "ResourceFileIcon";
                 entryNode.Children.Add(new ResourceEntryNode
                 {
                     Name = name,
                     ResourceName = name,
                     Parent = entryNode,
-                    IconKey = "ResourceFileIcon",
+                    IconKey = iconKey,
                     Raw = child.Value
                 });
             }
@@ -210,6 +216,64 @@ private static void PopulateResourceEntries(ResourceEntryNode entryNode)
     catch
     {
         // Keep the root resource node even if entries cannot be expanded.
+    }
+}
+
+private static void AddPackageChildren(ResourceEntryNode parent, object? value)
+{
+    // IMPORTANT: follow ILSpy WPF behavior by expanding package-like resources into child nodes.
+    try
+    {
+        if (value is Resource res)
+        {
+            using var stream = res.TryOpenStream();
+            AddZipEntries(parent, stream);
+        }
+        else if (value is ZipArchiveEntry zipEntry)
+        {
+            using var stream = zipEntry.Open();
+            AddZipEntries(parent, stream);
+        }
+    }
+    catch
+    {
+        // ignore package expansion failures
+    }
+}
+
+private static void AddZipEntries(ResourceEntryNode parent, Stream? stream)
+{
+    if (stream == null)
+        return;
+
+    Stream zipStream = stream;
+    if (!zipStream.CanSeek)
+    {
+        // ZipArchive needs seekable stream; copy if necessary.
+        var buffer = new MemoryStream();
+        zipStream.CopyTo(buffer);
+        buffer.Position = 0;
+        zipStream = buffer;
+    }
+
+    try
+    {
+        using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: false);
+        foreach (var entry in archive.Entries)
+        {
+            parent.Children.Add(new ResourceEntryNode
+            {
+                Name = entry.FullName,
+                ResourceName = entry.FullName,
+                Parent = parent,
+                IconKey = "ResourceFileIcon",
+                Raw = entry
+            });
+        }
+    }
+    catch
+    {
+        // ignore malformed zip streams
     }
 }
 

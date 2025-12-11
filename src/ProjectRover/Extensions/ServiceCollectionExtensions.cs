@@ -41,8 +41,7 @@ public static class ServiceCollectionExtensions
 
         return services
             .Configure<MatomoAnalyticsOptions>(configuration.GetSection(MatomoAnalyticsOptions.Key))
-            .Configure<AppInformationProviderOptions>(configuration.GetSection(AppInformationProviderOptions.Key))
-            .Configure<StartupOptions>(configuration.GetSection("Startup"));
+            .Configure<AppInformationProviderOptions>(configuration.GetSection(AppInformationProviderOptions.Key));
     }
 
     public static IServiceCollection ConfigureLogging(this IServiceCollection services)
@@ -69,7 +68,8 @@ public static class ServiceCollectionExtensions
             .AddTransient<IProjectGenerationService, ProjectGenerationService>()
             .AddTransient<IAutoUpdateService, AutoUpdateService>()
             .AddTransient<IAnalyticsService, NullAnalyticsService>()
-            .AddTransient<IDialogService, DialogService>();
+            .AddTransient<IDialogService, DialogService>()
+            .AddSingleton<IRoverSettingsService, RoverSettingsService>();
 
     public static IServiceCollection AddProviders(this IServiceCollection services) =>
         services
