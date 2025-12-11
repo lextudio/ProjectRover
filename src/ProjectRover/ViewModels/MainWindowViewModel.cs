@@ -159,7 +159,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     public bool HasLanguageVersions => LanguageVersions.Count > 0;
 
-    public ObservableCollection<SearchResult> SearchResults { get; } = new();
+        public ObservableCollection<SearchResult> SearchResults { get; } = new();
     public ObservableCollection<SearchMode> SearchModes { get; } = new(new[]
     {
         new SearchMode("Types and Members", "ClassIcon"),
@@ -170,6 +170,7 @@ public partial class MainWindowViewModel : ObservableObject
         new SearchMode("Property", "PropertyIcon"),
         new SearchMode("Event", "EventIcon"),
         new SearchMode("Constant", "ConstantIcon"),
+        new SearchMode("Literal", "StringIcon"),
         new SearchMode("Metadata Token", "MetadataIcon"),
         new SearchMode("Resource", "ResourceFileIcon"),
         new SearchMode("Assembly", "ReferenceIcon"),
