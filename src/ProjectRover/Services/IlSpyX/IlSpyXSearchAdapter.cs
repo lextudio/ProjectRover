@@ -25,8 +25,9 @@ public class IlSpyXSearchAdapter
     private readonly ILanguage language = new BasicLanguage();
     private readonly DecompilerSettings decompilerSettings = new();
 
-public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, string term, string modeName, Func<EntityHandle, Node?>? resolveNode = null, Func<string, Node?>? resolveAssembly = null, Func<string, string, Node?>? resolveResource = null, bool includeInternal = false, bool includeCompilerGenerated = true)
-{
+    public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, string term, string modeName, Func<EntityHandle, Node?>? resolveNode = null, Func<string, Node?>? resolveAssembly = null, Func<string, string, Node?>? resolveResource = null, bool includeInternal = false, bool includeCompilerGenerated = true)
+    {
+        Serilog.Log.Debug("[IlSpyXSearchAdapter] Search called. term='{Term}', modeName='{ModeName}', includeInternal={IncludeInternal}, includeCompilerGenerated={IncludeCompilerGenerated}", term, modeName, includeInternal, includeCompilerGenerated);
         var trimmed = term?.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
             return Array.Empty<BasicSearchResult>();
@@ -36,24 +37,7 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
         var constantOnly = string.Equals(modeName, "Constant", StringComparison.OrdinalIgnoreCase);
         var apiVisibility = includeInternal ? ApiVisibility.PublicAndInternal : ApiVisibility.PublicOnly;
 
-        var request = new SearchRequest
-        {
-            DecompilerSettings = decompilerSettings,
-            TreeNodeFactory = new DummyTreeNodeFactory(),
-            SearchResultFactory = new RoverSearchResultFactory(),
-            Mode = searchMode,
-            AssemblySearchKind = AssemblySearchKind.NameOrFileName,
-            MemberSearchKind = memberKind,
-            Keywords = new[] { trimmed },
-            RegEx = (Regex?)null,
-            FullNameSearch = false,
-            OmitGenerics = false,
-            InNamespace = string.Empty,
-            InAssembly = string.Empty
-        };
-
         var results = new ConcurrentBag<ICSharpCode.ILSpyX.Search.SearchResult>();
-        var strategies = CreateStrategies(request, results, apiVisibility, memberKind);
         var tokenSource = new CancellationTokenSource();
 
         foreach (var asm in assemblies)
@@ -62,9 +46,37 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
             if (module == null)
                 continue;
 
+            var treeNodeFactory = new DummyTreeNodeFactory(asm);
+            var request = new SearchRequest
+            {
+                DecompilerSettings = decompilerSettings,
+                TreeNodeFactory = treeNodeFactory,
+                SearchResultFactory = new RoverSearchResultFactory(),
+                Mode = searchMode,
+                AssemblySearchKind = AssemblySearchKind.NameOrFileName,
+                MemberSearchKind = memberKind,
+                Keywords = new[] { trimmed },
+                RegEx = (Regex?)null,
+                FullNameSearch = false,
+                OmitGenerics = false,
+                InNamespace = string.Empty,
+                InAssembly = string.Empty
+            };
+
+            var strategies = CreateStrategies(request, results, apiVisibility, memberKind);
+            var beforeCount = results.Count;
             foreach (var strategy in strategies)
             {
                 strategy.Search(module, tokenSource.Token);
+            }
+            var added = results.Count - beforeCount;
+            Serilog.Log.Debug("[IlSpyXSearchAdapter] Assembly '{Assembly}' added {Added} results (total {Total})", asm.ShortName, added, results.Count);
+            if (added > 0)
+            {
+                foreach (var r in results.Skip(beforeCount).Take(10))
+                {
+                    try { Serilog.Log.Debug("[IlSpyXSearchAdapter] Sample result: {Name} ({Type})", r.Name, r.GetType().Name); } catch { }
+                }
             }
         }
 
@@ -72,7 +84,7 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
             .Where(r => FilterByMode(r, searchMode, constantOnly, includeCompilerGenerated))
             .Select(r => MapToBasicResult(r, resolveNode, resolveAssembly, resolveResource))
             .ToList();
-}
+    }
 
     private IEnumerable<AbstractSearchStrategy> CreateStrategies(SearchRequest request, IProducerConsumerCollection<ICSharpCode.ILSpyX.Search.SearchResult> results, ApiVisibility apiVisibility, MemberSearchKind memberKind)
     {
@@ -137,8 +149,19 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
         };
     }
 
+    private static bool IsCompilerGenerated(IEntity entity)
+    {
+        foreach (var attr in entity.GetAttributes())
+        {
+            if (attr?.AttributeType?.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
+                return true;
+        }
+        return false;
+    }
+
     private static BasicSearchResult MapToBasicResult(ICSharpCode.ILSpyX.Search.SearchResult r, Func<EntityHandle, Node?>? resolveNode, Func<string, Node?>? resolveAssembly, Func<string, string, Node?>? resolveResource)
     {
+        Serilog.Log.Debug("[IlSpyXSearchAdapter] MapToBasicResult mapping: {Name} ({Type})", r.Name, r.GetType().Name);
         string name = r.Name;
         string location = r.Location;
         string assembly = r.Assembly;
@@ -306,107 +329,202 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
 
     private sealed class DummyTreeNodeFactory : ITreeNodeFactory
     {
-        public ITreeNode CreateDecompilerTreeNode(ILanguage language, System.Reflection.Metadata.EntityHandle handle, MetadataFile module) => new DummyTreeNode();
-
-        public ITreeNode CreateResourcesList(MetadataFile module) => new DummyTreeNode { Text = "Resources" };
-
-        public ITreeNode Create(Resource resource) => new DummyTreeNode { Text = resource.Name, Resource = resource };
-    }
-
-    private sealed class RoverSearchResultFactory : ISearchResultFactory
-    {
-        public MemberSearchResult Create(IEntity entity) => new MemberSearchResult { Member = entity, Name = entity.Name, Location = entity.DeclaringType?.FullName ?? string.Empty, Assembly = entity.ParentModule?.AssemblyName ?? string.Empty, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
-
-        public ResourceSearchResult Create(MetadataFile module, Resource resource, ITreeNode node, ITreeNode parent)
+        private readonly LoadedAssembly loadedAssembly;
+        public DummyTreeNodeFactory(LoadedAssembly loadedAssembly)
         {
-            var assemblyName = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? string.Empty;
-            return new ResourceSearchResult { Resource = resource, Name = resource.Name, Location = node?.ToString() ?? string.Empty, Assembly = assemblyName, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+            this.loadedAssembly = loadedAssembly;
+            Serilog.Log.Debug("[DummyTreeNodeFactory] Constructor called for assembly: {Assembly}", loadedAssembly.ShortName);
         }
-
-        public AssemblySearchResult Create(MetadataFile module)
+        public ITreeNode CreateDecompilerTreeNode(ILanguage language, System.Reflection.Metadata.EntityHandle handle, MetadataFile module)
         {
-            var assemblyName = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? string.Empty;
-            return new AssemblySearchResult { Module = module, Name = assemblyName, Location = string.Empty, Assembly = assemblyName, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
-        }
-
-        public NamespaceSearchResult Create(MetadataFile module, INamespace @namespace)
-        {
-            var assemblyName = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? string.Empty;
-            return new NamespaceSearchResult { Namespace = @namespace, Name = @namespace.FullName, Location = string.Empty, Assembly = assemblyName, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
-        }
-    }
-
-    private sealed class DummyTreeNode : ITreeNode, IResourcesFileTreeNode
-    {
-        public object Icon => string.Empty;
-        public object Text { get; init; } = string.Empty;
-        public IEnumerable<ITreeNode> Children => Enumerable.Empty<ITreeNode>();
-        public bool IsExpanded => false;
-        public void EnsureLazyChildren() { }
-        public Resource Resource { get; init; }
-    }
-
-    private sealed class BasicLanguage : ILanguage
-    {
-        public bool ShowMember(IEntity member) => true;
-
-        public CodeMappingInfo GetCodeMappingInfo(MetadataFile module, System.Reflection.Metadata.EntityHandle member) => CSharpDecompiler.GetCodeMappingInfo(module, member);
-
-        public string GetEntityName(MetadataFile module, System.Reflection.Metadata.EntityHandle handle, bool fullName, bool omitGenerics)
-        {
-            var reader = module.Metadata;
-            return handle.Kind switch
+            Serilog.Log.Debug("[DummyTreeNodeFactory] CreateDecompilerTreeNode called. HandleKind: {HandleKind}, Handle: {Handle}", handle.Kind, handle);
+            var text = language.GetEntityName(module, handle, fullName: false, omitGenerics: false);
+            Serilog.Log.Debug("[DummyTreeNodeFactory] HandleKind: {HandleKind}, Handle: {Handle}", handle.Kind, handle);
+            var typeSystem = loadedAssembly.GetTypeSystemOrNull();
+            IEntity? entity = null;
+            ITypeDefinition? typeDef = null;
+            if (typeSystem != null && typeSystem.MainModule is MetadataModule metadataModule)
             {
-                System.Reflection.Metadata.HandleKind.TypeDefinition => reader.GetString(reader.GetTypeDefinition((TypeDefinitionHandle)handle).Name),
-                System.Reflection.Metadata.HandleKind.MethodDefinition => GetMethodName(reader, (MethodDefinitionHandle)handle),
-                System.Reflection.Metadata.HandleKind.FieldDefinition => reader.GetString(reader.GetFieldDefinition((FieldDefinitionHandle)handle).Name),
-                System.Reflection.Metadata.HandleKind.PropertyDefinition => reader.GetString(reader.GetPropertyDefinition((PropertyDefinitionHandle)handle).Name),
-                System.Reflection.Metadata.HandleKind.EventDefinition => reader.GetString(reader.GetEventDefinition((EventDefinitionHandle)handle).Name),
-                _ => handle.ToString() ?? string.Empty
-            };
-        }
-
-        public string GetTooltip(IEntity entity) => entity.FullName ?? entity.Name;
-
-        public string TypeToString(IType type, bool includeNamespace) => includeNamespace ? type.FullName : type.Name;
-
-        public string MethodToString(IMethod method, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
-        {
-            var decl = includeDeclaringTypeName ? method.DeclaringType?.FullName + "." : string.Empty;
-            return $"{decl}{method.Name}";
-        }
-
-        public string FieldToString(IField field, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
-        {
-            var decl = includeDeclaringTypeName ? field.DeclaringType?.FullName + "." : string.Empty;
-            return $"{decl}{field.Name}";
-        }
-
-        public string PropertyToString(IProperty property, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
-        {
-            var decl = includeDeclaringTypeName ? property.DeclaringType?.FullName + "." : string.Empty;
-            return $"{decl}{property.Name}";
-        }
-
-        public string EventToString(IEvent @event, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
-        {
-            var decl = includeDeclaringTypeName ? @event.DeclaringType?.FullName + "." : string.Empty;
-            return $"{decl}{@event.Name}";
-        }
-
-        private static string GetMethodName(System.Reflection.Metadata.MetadataReader reader, MethodDefinitionHandle handle)
-        {
-            var method = reader.GetMethodDefinition(handle);
-            var name = reader.GetString(method.Name);
-            if (name == ".ctor" || name == ".cctor")
-            {
-                var type = reader.GetTypeDefinition(method.GetDeclaringType());
-                var typeName = reader.GetString(type.Name);
-                return typeName ?? name ?? string.Empty;
+                switch (handle.Kind)
+                {
+                    case HandleKind.TypeDefinition:
+                        var typeHandle = (TypeDefinitionHandle)handle;
+                        typeDef = metadataModule.GetDefinition(typeHandle) as ITypeDefinition;
+                        entity = typeDef;
+                        Serilog.Log.Debug("[DummyTreeNodeFactory] TypeDefinition resolved: {TypeDef}", typeDef?.FullName);
+                        break;
+                    case HandleKind.MethodDefinition:
+                        var methodHandle = (MethodDefinitionHandle)handle;
+                        entity = metadataModule.GetDefinition(methodHandle) as IMethod;
+                        typeDef = entity?.DeclaringType?.GetDefinition();
+                        Serilog.Log.Debug("[DummyTreeNodeFactory] MethodDefinition resolved: {Entity}", entity?.FullName);
+                        break;
+                    case HandleKind.FieldDefinition:
+                        var fieldHandle = (FieldDefinitionHandle)handle;
+                        entity = metadataModule.GetDefinition(fieldHandle) as IField;
+                        typeDef = entity?.DeclaringType?.GetDefinition();
+                        Serilog.Log.Debug("[DummyTreeNodeFactory] FieldDefinition resolved: {Entity}", entity?.FullName);
+                        break;
+                    case HandleKind.PropertyDefinition:
+                        var propertyHandle = (PropertyDefinitionHandle)handle;
+                        entity = metadataModule.GetDefinition(propertyHandle) as IProperty;
+                        typeDef = entity?.DeclaringType?.GetDefinition();
+                        Serilog.Log.Debug("[DummyTreeNodeFactory] PropertyDefinition resolved: {Entity}", entity?.FullName);
+                        break;
+                    case HandleKind.EventDefinition:
+                        var eventHandle = (EventDefinitionHandle)handle;
+                        entity = metadataModule.GetDefinition(eventHandle) as IEvent;
+                        typeDef = entity?.DeclaringType?.GetDefinition();
+                        Serilog.Log.Debug("[DummyTreeNodeFactory] EventDefinition resolved: {Entity}", entity?.FullName);
+                        break;
+                    default:
+                        Serilog.Log.Debug("[DummyTreeNodeFactory] Unknown handle kind: {HandleKind}", handle.Kind);
+                        break;
+                }
+                if (entity == null)
+                {
+                    Serilog.Log.Debug("[DummyTreeNodeFactory] Entity resolution failed for handle kind: {HandleKind}, handle: {Handle}", handle.Kind, handle);
+                }
             }
-
-            return name ?? string.Empty;
+            return new DummyTreeNode { Text = text, Member = entity, Type = typeDef };
         }
+
+        public ITreeNode CreateResourcesList(MetadataFile module)
+        {
+            Serilog.Log.Debug("[DummyTreeNodeFactory] CreateResourcesList called for module: {Module}", module.FileName);
+            return new DummyTreeNode { Text = "Resources" };
+        }
+
+        public ITreeNode Create(Resource resource)
+        {
+            Serilog.Log.Debug("[DummyTreeNodeFactory] Create(Resource) called for resource: {Resource}", resource.Name);
+            return new DummyTreeNode { Text = resource.Name, Resource = resource };
+        }
+
+        public ITreeNode CreateNamespace(string namespaceName)
+        {
+            Serilog.Log.Debug("[DummyTreeNodeFactory] CreateNamespace called for namespace: {Namespace}", namespaceName);
+            return new DummyTreeNode { Text = namespaceName };
+        }
+        public ITreeNode CreateAssembly(string assemblyName)
+        {
+            Serilog.Log.Debug("[DummyTreeNodeFactory] CreateAssembly called for assembly: {Assembly}", assemblyName);
+            return new DummyTreeNode { Text = assemblyName };
+        }
+    }
+
+}
+
+
+internal sealed class RoverSearchResultFactory : ISearchResultFactory
+{
+    public RoverSearchResultFactory()
+    {
+        Serilog.Log.Debug("[RoverSearchResultFactory] Constructor called");
+    }
+
+    public MemberSearchResult Create(IEntity entity)
+    {
+        Serilog.Log.Debug("[RoverSearchResultFactory] Create(Member) called for entity: {Entity}", entity?.FullName);
+        return new MemberSearchResult { Member = entity, Name = entity.Name, Location = entity.DeclaringType?.FullName ?? string.Empty, Assembly = entity.ParentModule?.AssemblyName ?? string.Empty, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+    }
+
+    public ResourceSearchResult Create(MetadataFile module, Resource resource, ITreeNode node, ITreeNode parent)
+    {
+        Serilog.Log.Debug("[RoverSearchResultFactory] Create(Resource) called for resource: {Resource}, module: {Module}", resource.Name, module.FileName);
+        var assemblyName = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? string.Empty;
+        return new ResourceSearchResult { Resource = resource, Name = resource.Name, Location = node?.ToString() ?? string.Empty, Assembly = assemblyName, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+    }
+
+
+    public AssemblySearchResult Create(MetadataFile module)
+    {
+        Serilog.Log.Debug("[RoverSearchResultFactory] Create(Assembly) called for module: {Module}", module.FileName);
+        var assemblyName = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? string.Empty;
+        return new AssemblySearchResult { Module = module, Name = assemblyName, Location = string.Empty, Assembly = assemblyName, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+    }
+
+
+    public NamespaceSearchResult Create(MetadataFile module, INamespace @namespace)
+    {
+        Serilog.Log.Debug("[RoverSearchResultFactory] Create(Namespace) called for namespace: {Namespace}, module: {Module}", @namespace.FullName, module.FileName);
+        var assemblyName = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? string.Empty;
+        return new NamespaceSearchResult { Namespace = @namespace, Name = @namespace.FullName, Location = string.Empty, Assembly = assemblyName, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+    }
+}
+
+internal sealed class DummyTreeNode : ITreeNode, IResourcesFileTreeNode
+{
+    public object Icon => string.Empty;
+    public object Text { get; init; } = string.Empty;
+    public IEntity? Member { get; init; }
+    public ITypeDefinition? Type { get; init; }
+    public IEnumerable<ITreeNode> Children => Enumerable.Empty<ITreeNode>();
+    public bool IsExpanded => false;
+    public void EnsureLazyChildren() { }
+    public Resource Resource { get; init; } = null!;
+}
+
+internal sealed class BasicLanguage : ILanguage
+{
+    public bool ShowMember(IEntity member) => true;
+
+    public CodeMappingInfo GetCodeMappingInfo(MetadataFile module, System.Reflection.Metadata.EntityHandle member) => CSharpDecompiler.GetCodeMappingInfo(module, member);
+
+    public string GetEntityName(MetadataFile module, System.Reflection.Metadata.EntityHandle handle, bool fullName, bool omitGenerics)
+    {
+        var reader = module.Metadata;
+        return handle.Kind switch
+        {
+            System.Reflection.Metadata.HandleKind.TypeDefinition => reader.GetString(reader.GetTypeDefinition((TypeDefinitionHandle)handle).Name),
+            System.Reflection.Metadata.HandleKind.MethodDefinition => GetMethodName(reader, (MethodDefinitionHandle)handle),
+            System.Reflection.Metadata.HandleKind.FieldDefinition => reader.GetString(reader.GetFieldDefinition((FieldDefinitionHandle)handle).Name),
+            System.Reflection.Metadata.HandleKind.PropertyDefinition => reader.GetString(reader.GetPropertyDefinition((PropertyDefinitionHandle)handle).Name),
+            System.Reflection.Metadata.HandleKind.EventDefinition => reader.GetString(reader.GetEventDefinition((EventDefinitionHandle)handle).Name),
+            _ => handle.ToString() ?? string.Empty
+        };
+    }
+
+    public string GetTooltip(IEntity entity) => entity.FullName ?? entity.Name;
+
+    public string TypeToString(IType type, bool includeNamespace) => includeNamespace ? type.FullName : type.Name;
+
+    public string MethodToString(IMethod method, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
+    {
+        var decl = includeDeclaringTypeName ? method.DeclaringType?.FullName + "." : string.Empty;
+        return $"{decl}{method.Name}";
+    }
+
+    public string FieldToString(IField field, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
+    {
+        var decl = includeDeclaringTypeName ? field.DeclaringType?.FullName + "." : string.Empty;
+        return $"{decl}{field.Name}";
+    }
+
+    public string PropertyToString(IProperty property, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
+    {
+        var decl = includeDeclaringTypeName ? property.DeclaringType?.FullName + "." : string.Empty;
+        return $"{decl}{property.Name}";
+    }
+
+    public string EventToString(IEvent @event, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
+    {
+        var decl = includeDeclaringTypeName ? @event.DeclaringType?.FullName + "." : string.Empty;
+        return $"{decl}{@event.Name}";
+    }
+
+    private static string GetMethodName(System.Reflection.Metadata.MetadataReader reader, MethodDefinitionHandle handle)
+    {
+        var method = reader.GetMethodDefinition(handle);
+        var name = reader.GetString(method.Name);
+        if (name == ".ctor" || name == ".cctor")
+        {
+            var type = reader.GetTypeDefinition(method.GetDeclaringType());
+            var typeName = reader.GetString(type.Name);
+            return typeName ?? name ?? string.Empty;
+        }
+
+        return name ?? string.Empty;
     }
 
     private static bool IsCompilerGenerated(IEntity entity)

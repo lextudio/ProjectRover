@@ -2313,7 +2313,37 @@ public partial class MainWindowViewModel : ObservableObject
         handleToNodeMap[(keyPath, metadataToken)] = node;
     }
 
-    private Node? ResolveNode(EntityHandle handle) => TryResolveHandle(handle);
+    private Node? ResolveNode(EntityHandle handle)
+    {
+        try
+        {
+            logger.LogInformation("[ResolveNode] Called with handle: Kind={HandleKind}, IsNil={IsNil}, Raw={Handle}", handle.Kind, handle.IsNil, handle);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "[ResolveNode] Failed to log handle details");
+        }
+
+        var node = TryResolveHandle(handle);
+
+        if (node == null)
+        {
+            logger.LogInformation("[ResolveNode] Could not resolve handle: {Handle}", handle);
+        }
+        else
+        {
+            try
+            {
+                logger.LogInformation("[ResolveNode] Resolved to node: {NodeType}, Name: {NodeName}", node.GetType().Name, node.Name);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "[ResolveNode] Resolved node found but failed to log details");
+            }
+        }
+
+        return node;
+    }
 
     private Node? ResolveResourceNode(string assemblyName, string resourceName)
     {

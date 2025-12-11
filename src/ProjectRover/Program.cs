@@ -19,6 +19,8 @@
 
 using Avalonia;
 using System;
+using Serilog;
+using Microsoft.Extensions.Logging;
 
 namespace ProjectRover;
 
@@ -32,6 +34,16 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        Console.WriteLine("[ProjectRover] Main started. Console output is working.");
+
+        // Configure Serilog (console + file) - settings can be controlled via configuration later.
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .WriteTo.File("projectrover.log", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+
+        // Do NOT forward ILSpyX diagnostics into Serilog here so ilspy logs remain console-only.
         try
         {
             BuildAvaloniaApp()
