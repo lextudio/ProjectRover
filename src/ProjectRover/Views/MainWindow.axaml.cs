@@ -113,23 +113,27 @@ public partial class MainWindow : Window
 
             if (args.Key != Key.F12)
                 return;
-            
+
             var reference = references.FindSegmentsContaining(TextEditor.CaretOffset).FirstOrDefault();
             if (reference == null)
                 return;
-            
-                if (reference.Resolved)
+
+            if (reference.Resolved)
+            {
+                if (reference.MemberReference is System.Reflection.Metadata.EntityHandle handle)
                 {
-                    if (reference.MemberReference is System.Reflection.Metadata.EntityHandle handle)
-                    {
-                        viewModel.SelectNodeByMemberReference(handle);
-                    }
+                    viewModel.SelectNodeByMemberReference(handle);
                 }
-                else
+                else if (reference.MemberReference is string fullName)
                 {
-                    viewModel.TryLoadUnresolvedReference();
+                    viewModel.NavigateByFullName(fullName);
                 }
-                    
+            }
+            else
+            {
+                viewModel.TryLoadUnresolvedReference();
+            }
+
             args.Handled = true;
         };
         

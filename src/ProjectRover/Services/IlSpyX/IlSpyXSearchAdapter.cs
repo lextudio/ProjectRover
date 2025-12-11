@@ -25,7 +25,7 @@ public class IlSpyXSearchAdapter
     private readonly ILanguage language = new BasicLanguage();
     private readonly DecompilerSettings decompilerSettings = new();
 
-    public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, string term, string modeName, Func<EntityHandle, Node?>? resolveNode = null)
+    public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, string term, string modeName, Func<EntityHandle, Node?>? resolveNode = null, bool includeInternal = false, bool includeCompilerGenerated = true)
     {
         var trimmed = term?.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
@@ -34,7 +34,7 @@ public class IlSpyXSearchAdapter
         var searchMode = MapMode(modeName);
         var memberKind = MapMemberKind(searchMode);
         var constantOnly = string.Equals(modeName, "Constant", StringComparison.OrdinalIgnoreCase);
-        var apiVisibility = ApiVisibility.PublicAndInternal;
+        var apiVisibility = includeInternal ? ApiVisibility.PublicAndInternal : ApiVisibility.PublicOnly;
 
         var request = new SearchRequest
         {
@@ -69,7 +69,7 @@ public class IlSpyXSearchAdapter
         }
 
         return results
-            .Where(r => FilterByMode(r, searchMode, constantOnly))
+            .Where(r => FilterByMode(r, searchMode, constantOnly, includeCompilerGenerated))
             .Select(r => MapToBasicResult(r, resolveNode))
             .ToList();
     }
@@ -107,10 +107,13 @@ public class IlSpyXSearchAdapter
         }
     }
 
-    private static bool FilterByMode(ICSharpCode.ILSpyX.Search.SearchResult result, SearchMode mode, bool constantOnly)
+    private static bool FilterByMode(ICSharpCode.ILSpyX.Search.SearchResult result, SearchMode mode, bool constantOnly, bool includeCompilerGenerated)
     {
         if (result is MemberSearchResult m)
         {
+            if (!includeCompilerGenerated && IsCompilerGenerated(m.Member))
+                return false;
+
             return mode switch
             {
                 SearchMode.Method => m.Member is IMethod,
@@ -401,5 +404,15 @@ public class IlSpyXSearchAdapter
 
             return name ?? string.Empty;
         }
+    }
+
+    private static bool IsCompilerGenerated(IEntity entity)
+    {
+        foreach (var attr in entity.GetAttributes())
+        {
+            if (attr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
+                return true;
+        }
+        return false;
     }
 }

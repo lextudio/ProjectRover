@@ -15,7 +15,7 @@ namespace ProjectRover.Services.IlSpyX;
 public static class IlSpyXTreeAdapter
 {
     
-public static AssemblyNode? BuildAssemblyNode(LoadedAssembly loaded)
+public static AssemblyNode? BuildAssemblyNode(LoadedAssembly loaded, bool includeCompilerGenerated = false, bool includeInternal = false)
 {
     var metadata = loaded.GetMetadataFileOrNull();
     var compilation = loaded.GetTypeSystemOrNull();
@@ -59,10 +59,32 @@ public static AssemblyNode? BuildAssemblyNode(LoadedAssembly loaded)
         var typeDef = reader.GetTypeDefinition(typeHandle);
         if (!typeHandle.IsNil && typeDef.IsNested)
         {
-            // Nested types are added under parent below
             continue;
         }
-        AddType(compilation, assemblyNode, namespaces, typeHandle, reader);
+
+        var fullTypeName = typeHandle.GetFullTypeName(reader);
+        var resolved = compilation.FindType(fullTypeName).GetDefinition();
+        if (resolved == null || (!includeCompilerGenerated && IsCompilerGenerated(resolved)))
+            continue;
+
+        var nsName = resolved.Namespace;
+        if (!namespaces.TryGetValue(nsName, out var nsNode))
+        {
+            nsNode = new NamespaceNode
+            {
+                Name = string.IsNullOrEmpty(nsName) ? "-" : nsName,
+                Parent = assemblyNode,
+                IsPublicAPI = true
+            };
+            namespaces[nsName] = nsNode;
+            assemblyNode.AddNamespace(nsNode);
+        }
+
+        var typeNode = BuildTypeSubtree(resolved, nsNode, includeCompilerGenerated, includeInternal);
+        if (typeNode != null)
+        {
+            nsNode.Types.Add(typeNode);
+        }
     }
 
     return assemblyNode;
@@ -128,106 +150,224 @@ private static void PopulateResources(AssemblyNode assemblyNode, PEFile peFile)
         assemblyNode.Children.Add(resourcesNode);
 }
 
-private static void AddType(ICompilation compilation, AssemblyNode assemblyNode, Dictionary<string, NamespaceNode> namespaces, TypeDefinitionHandle handle, MetadataReader reader)
+private static TypeNode? BuildTypeSubtree(ITypeDefinition resolved, Node parent, bool includeCompilerGenerated, bool includeInternal)
 {
-    var typeDef = reader.GetTypeDefinition(handle);
-    var fullTypeName = handle.GetFullTypeName(reader);
-    var resolved = compilation.FindType(fullTypeName).GetDefinition();
-    if (resolved == null)
-        return;
+    if (!includeCompilerGenerated && IsCompilerGenerated(resolved))
+        return null;
+    if (!IsVisible(resolved, includeInternal))
+        return null;
 
-    var nsName = resolved.Namespace;
-    if (!namespaces.TryGetValue(nsName, out var nsNode))
+    TypeNode typeNode = resolved.Kind switch
     {
-        nsNode = new NamespaceNode
+        TypeKind.Enum => new EnumNode
         {
-            Name = string.IsNullOrEmpty(nsName) ? "-" : nsName,
-            Parent = assemblyNode,
-            IsPublicAPI = true
-        };
-        namespaces[nsName] = nsNode;
-        assemblyNode.AddNamespace(nsNode);
+            Name = resolved.Name,
+            Parent = parent,
+            TypeDefinition = resolved,
+            IsPublicAPI = resolved.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
+            IconKey = GetClassIconKey(resolved),
+            Entity = resolved
+        },
+        TypeKind.Struct => new StructNode
+        {
+            Name = resolved.Name,
+            Parent = parent,
+            TypeDefinition = resolved,
+            IsPublicAPI = resolved.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
+            IconKey = GetClassIconKey(resolved),
+            Entity = resolved
+        },
+        TypeKind.Interface => new InterfaceNode
+        {
+            Name = resolved.Name,
+            Parent = parent,
+            TypeDefinition = resolved,
+            IsPublicAPI = resolved.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
+            IconKey = GetClassIconKey(resolved),
+            Entity = resolved
+        },
+        _ => new ClassNode
+        {
+            Name = resolved.Name,
+            Parent = parent,
+            TypeDefinition = resolved,
+            IsPublicAPI = resolved.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
+            IconKey = GetClassIconKey(resolved),
+            Entity = resolved
+        }
+    };
+
+    var members = new List<Node>();
+
+    // Fields / const
+    foreach (var field in resolved.Fields)
+    {
+        if (!includeCompilerGenerated && IsCompilerGenerated(field))
+            continue;
+        if (!IsVisible(field, includeInternal))
+            continue;
+
+        members.Add(new FieldNode
+        {
+            Name = field.Name,
+            Parent = typeNode,
+            FieldDefinition = field,
+            Entity = field,
+            IsPublicAPI = field.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
+            IconKey = GetMemberIconKey(field)
+        });
     }
 
-    var typeNode = new ClassNode
+    // Properties
+    foreach (var property in resolved.Properties)
     {
-        Name = resolved.Name,
-        Parent = nsNode,
-        TypeDefinition = resolved,
-        IsPublicAPI = resolved.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
-        IconKey = GetClassIconKey(resolved),
-        Entity = resolved
-    };
-    nsNode.Types.Add(typeNode);
+        if (!includeCompilerGenerated && IsCompilerGenerated(property))
+            continue;
+        if (!IsVisible(property, includeInternal))
+            continue;
 
-    // Members
-    foreach (var member in resolved.Members)
-    {
-        switch (member)
+        members.Add(new PropertyNode
         {
-            case IField field:
-                typeNode.Members.Add(new FieldNode
-                {
-                    Name = field.Name,
-                    Parent = typeNode,
-                    FieldDefinition = field,
-                    Entity = field,
-                    IsPublicAPI = field.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
-                    IconKey = GetMemberIconKey(field)
-                });
-                break;
-            case IProperty property:
-                typeNode.Members.Add(new PropertyNode
-                {
-                    Name = property.Name,
-                    Parent = typeNode,
-                    PropertyDefinition = property,
-                    Entity = property,
-                    IsPublicAPI = property.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
-                    IconKey = GetMemberIconKey(property)
-                });
-                break;
-            case IEvent ev:
-                typeNode.Members.Add(new EventNode
-                {
-                    Name = ev.Name,
-                    Parent = typeNode,
-                    EventDefinition = ev,
-                    Entity = ev,
-                    IsPublicAPI = ev.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
-                    IconKey = GetMemberIconKey(ev)
-                });
-                break;
-            case IMethod method when method.IsConstructor:
-                typeNode.Members.Add(new ConstructorNode
-                {
-                    Name = $"{resolved.Name}()",
-                    Parent = typeNode,
-                    MethodDefinition = method,
-                    Entity = method,
-                    IsPublicAPI = method.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
-                    IconKey = "ConstructorIcon"
-                });
-                break;
-            case IMethod method:
-                typeNode.Members.Add(new MethodNode
-                {
-                    Name = method.Name,
-                    Parent = typeNode,
-                    MethodDefinition = method,
-                    Entity = method,
-                    IsPublicAPI = method.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
-                    IconKey = GetMemberIconKey(method)
-                });
-                break;
+            Name = property.Name,
+            Parent = typeNode,
+            PropertyDefinition = property,
+            Entity = property,
+            IsPublicAPI = property.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
+            IconKey = GetMemberIconKey(property)
+        });
+    }
+
+    // Events
+    foreach (var ev in resolved.Events)
+    {
+        if (!includeCompilerGenerated && IsCompilerGenerated(ev))
+            continue;
+        if (!IsVisible(ev, includeInternal))
+            continue;
+
+        members.Add(new EventNode
+        {
+            Name = ev.Name,
+            Parent = typeNode,
+            EventDefinition = ev,
+            Entity = ev,
+            IsPublicAPI = ev.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
+            IconKey = GetMemberIconKey(ev)
+        });
+    }
+
+    // Methods
+    foreach (var method in resolved.Methods)
+    {
+        if (!includeCompilerGenerated && IsCompilerGenerated(method))
+            continue;
+        if (!IsVisible(method, includeInternal))
+            continue;
+
+        if (method.IsConstructor)
+        {
+            members.Add(new ConstructorNode
+            {
+                Name = $"{resolved.Name}()",
+                Parent = typeNode,
+                MethodDefinition = method,
+                Entity = method,
+                IsPublicAPI = method.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
+                IconKey = "ConstructorIcon"
+            });
+        }
+        else
+        {
+            members.Add(new MethodNode
+            {
+                Name = method.Name,
+                Parent = typeNode,
+                MethodDefinition = method,
+                Entity = method,
+                IsPublicAPI = method.Accessibility is Accessibility.Public or Accessibility.Protected or Accessibility.ProtectedOrInternal,
+                IconKey = GetMemberIconKey(method)
+            });
         }
     }
 
     // Nested types
-    foreach (var nestedHandle in typeDef.GetNestedTypes())
+    foreach (var nested in resolved.NestedTypes)
     {
-        AddType(compilation, assemblyNode, namespaces, nestedHandle, reader);
+        var nestedDef = nested.GetDefinition();
+        var nestedNode = BuildTypeSubtree(nestedDef, typeNode, includeCompilerGenerated, includeInternal);
+        if (nestedNode != null)
+        {
+            members.Add(nestedNode);
+        }
     }
+
+    typeNode.Members.Clear();
+    foreach (var member in OrderMembers(members))
+    {
+        typeNode.Members.Add(member);
+    }
+
+    return typeNode;
+}
+
+private static IEnumerable<Node> OrderMembers(IEnumerable<Node> members)
+{
+    var nestedTypes = members.OfType<TypeNode>().OrderBy(m => m.Name, System.StringComparer.Ordinal).ToList();
+
+    var fields = members.OfType<FieldNode>().ToList();
+    var constants = fields.Where(f => f.FieldDefinition.IsConst).ToList();
+    var instanceFields = fields.Where(f => !f.FieldDefinition.IsConst && !f.FieldDefinition.IsStatic).ToList();
+    var staticFields = fields.Where(f => !f.FieldDefinition.IsConst && f.FieldDefinition.IsStatic).ToList();
+
+    var properties = members.OfType<PropertyNode>().ToList();
+    var instanceProperties = properties.Where(p => !p.PropertyDefinition.IsStatic).ToList();
+    var staticProperties = properties.Where(p => p.PropertyDefinition.IsStatic).ToList();
+
+    var constructors = members.OfType<ConstructorNode>().ToList();
+
+    var methods = members.OfType<MethodNode>().ToList();
+    var instanceMethods = methods.Where(m => !m.MethodDefinition.IsStatic).ToList();
+    var staticMethods = methods.Where(m => m.MethodDefinition.IsStatic).ToList();
+
+    var events = members.OfType<EventNode>().ToList();
+
+    IEnumerable<Node> ordered = Enumerable.Empty<Node>();
+    ordered = ordered.Concat(nestedTypes)
+        .Concat(constants)
+        .Concat(instanceFields)
+        .Concat(staticFields)
+        .Concat(instanceProperties)
+        .Concat(staticProperties)
+        .Concat(constructors)
+        .Concat(instanceMethods)
+        .Concat(staticMethods)
+        .Concat(events);
+
+    return ordered;
+}
+
+private static bool IsCompilerGenerated(IEntity entity)
+{
+    foreach (var attr in entity.GetAttributes())
+    {
+        if (attr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
+            return true;
+    }
+    return false;
+}
+
+private static bool IsVisible(IEntity entity, bool includeInternal)
+{
+    return entity.Accessibility switch
+    {
+        Accessibility.Public => true,
+        Accessibility.Protected => true,
+        Accessibility.ProtectedOrInternal => true,
+        Accessibility.Internal => includeInternal,
+        Accessibility.ProtectedAndInternal => includeInternal,
+        Accessibility.Private => true, // keep private members consistent with Rover behavior
+        _ => true
+    };
 }
 
 private static string GetMemberIconKey(IEntity entity)

@@ -90,7 +90,11 @@ public partial class MainWindowViewModel : ObservableObject
         this.dialogService = dialogService;
         this.startupOptions = startupOptions.Value;
 
-        ilSpyBackend = new IlSpyBackend();
+        ilSpyBackend = new IlSpyBackend
+        {
+            UseDebugSymbols = this.startupOptions.UseDebugSymbols,
+            ApplyWinRtProjections = this.startupOptions.ApplyWinRtProjections
+        };
 
         Languages = new ObservableCollection<LanguageOption>
         {
@@ -111,7 +115,28 @@ public partial class MainWindowViewModel : ObservableObject
         LanguageVersions.CollectionChanged += OnLanguageVersionsChanged;
         UpdateLanguageVersions(selectedLanguage.Language);
 
+        ShowCompilerGeneratedMembers = this.startupOptions.ShowCompilerGeneratedMembers;
+        ShowInternalApi = this.startupOptions.ShowInternalApi;
+
         RestoreLastAssemblies();
+    }
+
+    internal void NavigateByFullName(string fullName)
+    {
+        var match = handleToNodeMap.FirstOrDefault(kvp =>
+            kvp.Value is MemberNode member && string.Equals(member.Entity.FullName, fullName, StringComparison.Ordinal));
+        if (match.Value != null)
+        {
+            SelectedNode = match.Value;
+            ExpandParents(match.Value);
+            return;
+        }
+
+        notificationService.ShowNotification(new Notification
+        {
+            Message = "Definition not found in the current tree.",
+            Level = NotificationLevel.Warning
+        });
     }
 
     public ObservableCollection<AssemblyNode> AssemblyNodes { get; } = new();
@@ -163,6 +188,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool showCompilerGeneratedMembers;
+
+    [ObservableProperty]
+    private bool showInternalApi;
 
     [ObservableProperty]
     private ThemeOption selectedTheme;
@@ -253,6 +281,17 @@ public partial class MainWindowViewModel : ObservableObject
         {
             SelectedNode = node;
             ExpandParents(node);
+            return;
+        }
+
+        // Try matching full name if token wasn't indexed (e.g., auto-loaded dependency not mapped yet)
+        var fallback = handleToNodeMap.Values
+            .OfType<MemberNode>()
+            .FirstOrDefault(m => m.Entity.MetadataToken.Equals(handle));
+        if (fallback != null)
+        {
+            SelectedNode = fallback;
+            ExpandParents(fallback);
             return;
         }
 
@@ -398,7 +437,7 @@ public partial class MainWindowViewModel : ObservableObject
 
             if (!assemblyLookup.Any(kvp => string.Equals(kvp.Value.FilePath, assembly.FilePath, StringComparison.OrdinalIgnoreCase)))
             {
-                var assemblyNode = IlSpyXTreeAdapter.BuildAssemblyNode(assembly.LoadedAssembly);
+                var assemblyNode = IlSpyXTreeAdapter.BuildAssemblyNode(assembly.LoadedAssembly, includeCompilerGenerated: ShowCompilerGeneratedMembers, includeInternal: ShowInternalApi);
                 if (assemblyNode == null)
                 {
                     notificationService.ShowNotification(new Notification
@@ -845,7 +884,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         var adapter = new IlSpyXSearchAdapter();
         var ilspyAssemblies = assemblyLookup.Values.Select(a => a.LoadedAssembly).ToList();
-        var results = adapter.Search(ilspyAssemblies, term, SelectedSearchMode.Name, ResolveNode);
+        var results = adapter.Search(ilspyAssemblies, term, SelectedSearchMode.Name, ResolveNode, includeInternal: ShowInternalApi, includeCompilerGenerated: ShowCompilerGeneratedMembers);
 
         SearchResults.Clear();
         foreach (var r in results)
