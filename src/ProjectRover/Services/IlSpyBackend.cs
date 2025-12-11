@@ -95,12 +95,12 @@ public sealed class IlSpyBackend : IDisposable
         assemblyList.Unload(assembly.LoadedAssembly);
     }
 
-    public string DecompileMember(IlSpyAssembly assembly, EntityHandle handle, DecompilationLanguage language, DecompilerSettings? settings = null)
+public string DecompileMember(IlSpyAssembly assembly, EntityHandle handle, DecompilationLanguage language, DecompilerSettings? settings = null)
+{
+    if (handle.IsNil)
     {
-        if (handle.IsNil)
-        {
-            return "// Unable to map member token.";
-        }
+        return "// Unable to map member token.";
+    }
 
         return language switch
         {
@@ -112,6 +112,11 @@ public sealed class IlSpyBackend : IDisposable
     public void Clear()
     {
         assemblyList.Clear();
+    }
+
+    public void SaveAssemblyList()
+    {
+        assemblyList.RefreshSave();
     }
 
     public void Dispose()

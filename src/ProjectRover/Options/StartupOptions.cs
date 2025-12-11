@@ -9,4 +9,5 @@ public sealed class StartupOptions
     public bool ApplyWinRtProjections { get; set; } = false;
     public bool ShowCompilerGeneratedMembers { get; set; } = false;
     public bool ShowInternalApi { get; set; } = false;
+    public string[] LastAssemblies { get; set; } = Array.Empty<string>();
 }

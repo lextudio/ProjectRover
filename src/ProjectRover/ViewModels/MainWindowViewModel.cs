@@ -672,6 +672,7 @@ public partial class MainWindowViewModel : ObservableObject
             var text = ilSpyBackend.DecompileMember(assembly, memberNode.MetadataToken, SelectedLanguage.Language, settings);
             Document = new TextDocument(text);
             MainWindow.references.Clear();
+            AddReferenceSegments(text, memberNode);
         }
         catch (Exception ex)
         {
@@ -703,6 +704,30 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         return settings;
+    }
+
+    private void AddReferenceSegments(string text, MemberNode memberNode)
+    {
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        var name = memberNode.Name;
+        if (string.IsNullOrEmpty(name))
+            return;
+
+        var start = text.IndexOf(name, StringComparison.Ordinal);
+        if (start < 0)
+            return;
+
+        var segment = new ReferenceTextSegment
+        {
+            StartOffset = start,
+            EndOffset = start + name.Length,
+            MemberReference = memberNode.MetadataToken.IsNil ? memberNode.Entity.FullName : memberNode.MetadataToken,
+            Resolved = true
+        };
+
+        MainWindow.references.Add(segment);
     }
 
     partial void OnSelectedSearchModeChanged(SearchMode value)
@@ -789,6 +814,9 @@ public partial class MainWindowViewModel : ObservableObject
         public string? Theme { get; set; }
         public bool IsSearchDockVisible { get; set; }
         public string? SearchMode { get; set; }
+        public bool ShowCompilerGeneratedMembers { get; set; }
+        public bool ShowInternalApi { get; set; }
+        public string[]? LastAssemblies { get; set; }
     }
 
     private void RestoreLastAssemblies()
@@ -822,15 +850,30 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         IsSearchDockVisible = state.IsSearchDockVisible;
+        ShowCompilerGeneratedMembers = state.ShowCompilerGeneratedMembers;
+        ShowInternalApi = state.ShowInternalApi;
+
+        if (state.LastAssemblies?.Length > 0)
+        {
+            LoadAssemblies(state.LastAssemblies);
+        }
     }
 
     private void PersistLastAssemblies()
     {
+        var files = AssemblyNodes
+            .Select(a => assemblyLookup.TryGetValue(a, out var asm) ? asm.FilePath : null)
+            .Where(p => p != null)
+            .ToArray();
+
         SaveStartupState(new StartupState
         {
             Theme = SelectedTheme?.Variant.ToString(),
             IsSearchDockVisible = IsSearchDockVisible,
-            SearchMode = SelectedSearchMode?.Name
+            SearchMode = SelectedSearchMode?.Name,
+            ShowCompilerGeneratedMembers = ShowCompilerGeneratedMembers,
+            ShowInternalApi = ShowInternalApi,
+            LastAssemblies = files!
         });
     }
 
