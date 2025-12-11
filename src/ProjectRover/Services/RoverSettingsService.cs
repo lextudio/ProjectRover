@@ -12,6 +12,7 @@ public sealed class RoverSettingsService : SettingsServiceBase, IRoverSettingsSe
     }
 
     public RoverStartupSettings StartupSettings => GetSettings<RoverStartupSettings>();
+    public RoverSessionSettings SessionSettings => GetSettings<RoverSessionSettings>();
 
     private static ILSpySettings LoadSettingsSafe()
     {
@@ -27,9 +28,13 @@ public sealed class RoverSettingsService : SettingsServiceBase, IRoverSettingsSe
     {
         base.Section_PropertyChanged(sender, e);
 
-        if (sender is RoverStartupSettings section)
+        if (sender is RoverStartupSettings startupSection)
         {
-            SpySettings.Update(root => SaveSection(section, root));
+            SpySettings.Update(root => SaveSection(startupSection, root));
+        }
+        else if (sender is RoverSessionSettings sessionSection)
+        {
+            SpySettings.Update(root => SaveSection(sessionSection, root));
         }
     }
 }

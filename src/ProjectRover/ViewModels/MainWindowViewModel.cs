@@ -75,6 +75,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IDialogService dialogService;
     private readonly ILogger<MainWindowViewModel> logger;
     private readonly IRoverSettingsService roverSettingsService;
+    private readonly RoverSessionSettings roverSessionSettings;
     private readonly string startupStateFilePath = Path.Combine(
         System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
         "ProjectRover",
@@ -101,6 +102,8 @@ public partial class MainWindowViewModel : ObservableObject
         this.roverSettingsService = roverSettingsService;
 
         var startupSettings = roverSettingsService.StartupSettings;
+        var sessionSettings = roverSettingsService.SessionSettings;
+        roverSessionSettings = sessionSettings;
 
         ilSpyBackend = new IlSpyBackend
         {
@@ -122,13 +125,15 @@ public partial class MainWindowViewModel : ObservableObject
         };
         selectedTheme = Themes[0];
 
-        selectedSearchMode = SearchModes[0];
+        var savedMode = SearchModes.FirstOrDefault(m => string.Equals(m.Name, sessionSettings.SelectedSearchMode, StringComparison.OrdinalIgnoreCase));
+        selectedSearchMode = savedMode ?? SearchModes[0];
 
         LanguageVersions.CollectionChanged += OnLanguageVersionsChanged;
         UpdateLanguageVersions(selectedLanguage.Language);
 
         ShowCompilerGeneratedMembers = startupSettings.ShowCompilerGeneratedMembers;
         ShowInternalApi = startupSettings.ShowInternalApi;
+        IsSearchDockVisible = sessionSettings.IsSearchDockVisible;
 
         RestoreLastAssemblies();
     }
@@ -1875,6 +1880,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnSelectedSearchModeChanged(SearchMode value)
     {
+        roverSessionSettings.SelectedSearchMode = value?.Name;
         RunSearch();
         PersistLastAssemblies();
     }
@@ -1952,15 +1958,11 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    private sealed class StartupState
-    {
-        public string? Theme { get; set; }
-        public bool IsSearchDockVisible { get; set; }
-        public string? SearchMode { get; set; }
-        public bool ShowCompilerGeneratedMembers { get; set; }
-        public bool ShowInternalApi { get; set; }
-        public string[]? LastAssemblies { get; set; }
-    }
+        private sealed class StartupState
+        {
+            public string? Theme { get; set; }
+            public string[]? LastAssemblies { get; set; }
+        }
 
     private void RestoreLastAssemblies()
     {
@@ -1990,28 +1992,14 @@ public partial class MainWindowViewModel : ObservableObject
             LoadAssemblies(state.LastAssemblies);
         }
 
-        if (!string.IsNullOrEmpty(state.SearchMode))
+        if (!string.IsNullOrEmpty(roverSessionSettings.SelectedSearchMode))
         {
-            var mode = SearchModes.FirstOrDefault(m => string.Equals(m.Name, state.SearchMode, StringComparison.OrdinalIgnoreCase));
+            var mode = SearchModes.FirstOrDefault(m => string.Equals(m.Name, roverSessionSettings.SelectedSearchMode, StringComparison.OrdinalIgnoreCase));
             if (mode != null)
             {
                 SelectedSearchMode = mode;
             }
         }
-
-        IsSearchDockVisible = state.IsSearchDockVisible;
-
-        if (startupSettings.ShowCompilerGeneratedMembers != state.ShowCompilerGeneratedMembers)
-        {
-            startupSettings.ShowCompilerGeneratedMembers = state.ShowCompilerGeneratedMembers;
-        }
-        ShowCompilerGeneratedMembers = startupSettings.ShowCompilerGeneratedMembers;
-
-        if (startupSettings.ShowInternalApi != state.ShowInternalApi)
-        {
-            startupSettings.ShowInternalApi = state.ShowInternalApi;
-        }
-        ShowInternalApi = startupSettings.ShowInternalApi;
     }
 
     private void PersistLastAssemblies()
@@ -2024,8 +2012,6 @@ public partial class MainWindowViewModel : ObservableObject
         SaveStartupState(new StartupState
         {
             Theme = SelectedTheme?.Variant.ToString(),
-            IsSearchDockVisible = IsSearchDockVisible,
-            SearchMode = SelectedSearchMode?.Name,
             LastAssemblies = files!
         });
     }
@@ -2092,6 +2078,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnIsSearchDockVisibleChanged(bool value)
     {
+        roverSessionSettings.IsSearchDockVisible = value;
         PersistLastAssemblies();
     }
 

@@ -14,6 +14,7 @@ Goal: Share settings data with ILSpy and maintain consistent startup state.
 Actions:
 - [x] Wire `ILSpySettings.SettingsFilePathProvider` to Rover provider. (done)
 - [x] Migrate Rover options to use ILSpy settings sections (or implement a compatibility layer).
+- [x] Store search mode and search pane visibility in the shared settings so WPF and Rover honor the same choice.
 Status: In progress.
 
 ### Epic 3 — Search & Navigation Parity (High Priority)

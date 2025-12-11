@@ -73,6 +73,8 @@ file class DesignDialogService : IDialogService
 file class DesignRoverSettingsService : IRoverSettingsService
 {
     public RoverStartupSettings StartupSettings { get; } = new();
+
+    public RoverSessionSettings SessionSettings { get; } = new();
 }
 
 file class DesignLogger : ILogger<MainWindowViewModel>
