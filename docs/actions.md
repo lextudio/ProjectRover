@@ -54,7 +54,7 @@ Status: Ongoing.
 Goal: Support ILSpy add-ins or define a Rover-specific plugin surface.
 Actions:
 - [x] Inventory ILSpy add-ins and prioritized ones to support (see `docs/ilspy-addins.md` for the current catalog).
-- [ ] Define compatibility shims / adaptors for Avalonia controls (planning notes in `docs/compatibility-shims.md`).
+- [x] Define compatibility shims / adaptors for Avalonia controls (covered: commands, tree-node interface, dock descriptor).
 Status: TODO.
 
 ---

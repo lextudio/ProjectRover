@@ -9,13 +9,13 @@ To keep Rover aligned with ILSpy WPF while running on Avalonia, we need a thin c
 
 ### 2. Tree node contracts
 - WPF ILSpy uses `SharpTreeNode` + derived tree node types that expose commands, icons, and selection behavior.
-- **Shim idea:** introduce `ISharedTreeNode` interface (properties such as `Text`, `ImageKey`, `Command`, `Children`) implemented by Rover nodes and a lightweight wrapper over `SharpTreeNode` when consuming ILSpyX results.
-- This interface can power both the Avalonia `TreeView` and future UI surfaces, so tree-rendering logic stays consistent with ILSpy’s `NavigationHistory`, `SelectNodeByMemberReference`, etc.
+- **Shim idea:** introduce `ISharedTreeNode` (see `src/ProjectRover/Nodes/ISharedTreeNode.cs`) so both Rover nodes and ILSpyX adapters can present the same `Name`, `IconKey`, and `Children`/expansion semantics to Avalonia controls.
+- The new `NodeSharedTreeNode` adapter keeps a thin wrapper around Rover `Node` instances; future ILSpyX wrappers can target the same interface, keeping `NavigationHistory`, `SelectNodeByMemberReference`, and docking aligned with WPF.
 
 ### 3. Docking/toolbar behaviors
 - ILSpy’s docking system arranges panes, handles theme colors, and exposes toolbar commands via `DockWorkspace`.
-- **Shim idea:** create a `DockDescriptor` (panes, tools, default visibility) that Rover reads to build `Dock.Model` configuration. The descriptor layer can also surface command bindings so toolbar buttons reuse the same commands defined in step 1.
-- This keeps the layout metadata centralized, meaning we can align future Av controllers with ILSpy’s docking structure without rewriting the data model.
+- **Shim idea:** expose `IDockLayoutDescriptorProvider` (`src/ProjectRover/Services/DockDescriptor.cs`) to describe panes (id, title, default visibility, floatability) so Avalonia’s `Dock.Model` can mimic the WPF layout.
+- The descriptor can be extended with toolbar metadata and then consumed by both the WPF and Avalonia hosts to guarantee matching pane IDs and placement without copying layout code.
 
 ### 4. Icon & resource mapping
 - ILSpy WPF uses the VS 2022 icon library (e.g., `Images.Class`, `Images.Field`). Rover already consumes `IconKeyToPathConverter`.

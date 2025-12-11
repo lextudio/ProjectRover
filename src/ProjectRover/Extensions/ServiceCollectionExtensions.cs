@@ -70,7 +70,8 @@ public static class ServiceCollectionExtensions
             .AddTransient<IAnalyticsService, NullAnalyticsService>()
             .AddTransient<IDialogService, DialogService>()
             .AddSingleton<IRoverSettingsService, RoverSettingsService>()
-            .AddSingleton<ICommandCatalog, CommandCatalog>();
+            .AddSingleton<ICommandCatalog, CommandCatalog>()
+            .AddSingleton<IDockLayoutDescriptorProvider, DefaultDockLayoutDescriptorProvider>();
 
     public static IServiceCollection AddProviders(this IServiceCollection services) =>
         services
