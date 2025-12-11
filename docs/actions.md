@@ -53,8 +53,8 @@ Status: Ongoing.
 ### Epic 7 — Plugin/Extension Model (Low Priority)
 Goal: Support ILSpy add-ins or define a Rover-specific plugin surface.
 Actions:
-- [ ] Inventory ILSpy add-ins and prioritized ones to support.
-- [ ] Define compatibility shims / adaptors for Avalonia controls.
+- [x] Inventory ILSpy add-ins and prioritized ones to support (see `docs/ilspy-addins.md` for the current catalog).
+- [ ] Define compatibility shims / adaptors for Avalonia controls (planning notes in `docs/compatibility-shims.md`).
 Status: TODO.
 
 ---

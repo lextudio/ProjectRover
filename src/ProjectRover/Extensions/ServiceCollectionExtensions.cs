@@ -69,7 +69,8 @@ public static class ServiceCollectionExtensions
             .AddTransient<IAutoUpdateService, AutoUpdateService>()
             .AddTransient<IAnalyticsService, NullAnalyticsService>()
             .AddTransient<IDialogService, DialogService>()
-            .AddSingleton<IRoverSettingsService, RoverSettingsService>();
+            .AddSingleton<IRoverSettingsService, RoverSettingsService>()
+            .AddSingleton<ICommandCatalog, CommandCatalog>();
 
     public static IServiceCollection AddProviders(this IServiceCollection services) =>
         services

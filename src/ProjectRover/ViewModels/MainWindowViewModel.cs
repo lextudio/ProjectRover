@@ -75,6 +75,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IDialogService dialogService;
     private readonly ILogger<MainWindowViewModel> logger;
     private readonly IRoverSettingsService roverSettingsService;
+    private readonly ICommandCatalog commandCatalog;
     private readonly RoverSessionSettings roverSessionSettings;
     private readonly string startupStateFilePath = Path.Combine(
         System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
@@ -93,13 +94,15 @@ public partial class MainWindowViewModel : ObservableObject
         INotificationService notificationService,
         IAnalyticsService analyticsService,
         IDialogService dialogService,
-        IRoverSettingsService roverSettingsService)
+        IRoverSettingsService roverSettingsService,
+        ICommandCatalog commandCatalog)
     {
         this.logger = logger;
         this.notificationService = notificationService;
         this.analyticsService = analyticsService;
         this.dialogService = dialogService;
         this.roverSettingsService = roverSettingsService;
+        this.commandCatalog = commandCatalog;
 
         var startupSettings = roverSettingsService.StartupSettings;
         var sessionSettings = roverSettingsService.SessionSettings;
@@ -188,6 +191,8 @@ public partial class MainWindowViewModel : ObservableObject
     public bool SearchPaneSelected => SelectedPaneIndex == 1;
 
     public ObservableCollection<ThemeOption> Themes { get; }
+
+    public IReadOnlyList<CommandDescriptor> SharedCommands => commandCatalog.Commands;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(GenerateProjectCommand))]

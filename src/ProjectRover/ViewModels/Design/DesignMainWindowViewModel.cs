@@ -18,6 +18,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using ProjectRover.Notifications;
@@ -30,7 +31,12 @@ namespace ProjectRover.ViewModels.Design;
 public class DesignMainWindowViewModel : MainWindowViewModel
 {
     public DesignMainWindowViewModel()
-        : base(new DesignLogger(), new DesignNotificationService(), new DesignAnalyticsService(), new DesignDialogService(), new DesignRoverSettingsService())
+        : base(new DesignLogger(),
+            new DesignNotificationService(),
+            new DesignAnalyticsService(),
+            new DesignDialogService(),
+            new DesignRoverSettingsService(),
+            new DesignCommandCatalog())
     {
     }
 }
@@ -75,6 +81,11 @@ file class DesignRoverSettingsService : IRoverSettingsService
     public RoverStartupSettings StartupSettings { get; } = new();
 
     public RoverSessionSettings SessionSettings { get; } = new();
+}
+
+file class DesignCommandCatalog : ICommandCatalog
+{
+    public IReadOnlyList<CommandDescriptor> Commands { get; } = Array.Empty<CommandDescriptor>();
 }
 
 file class DesignLogger : ILogger<MainWindowViewModel>
