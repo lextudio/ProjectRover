@@ -312,11 +312,23 @@ public class IlSpyXSearchAdapter
     {
         public MemberSearchResult Create(IEntity entity) => new MemberSearchResult { Member = entity, Name = entity.Name, Location = entity.DeclaringType?.FullName ?? string.Empty, Assembly = entity.ParentModule?.AssemblyName ?? string.Empty, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
 
-        public ResourceSearchResult Create(MetadataFile module, Resource resource, ITreeNode node, ITreeNode parent) => new ResourceSearchResult { Resource = resource, Name = resource.Name, Location = node?.ToString() ?? string.Empty, Assembly = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+        public ResourceSearchResult Create(MetadataFile module, Resource resource, ITreeNode node, ITreeNode parent)
+        {
+            var assemblyName = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? string.Empty;
+            return new ResourceSearchResult { Resource = resource, Name = resource.Name, Location = node?.ToString() ?? string.Empty, Assembly = assemblyName, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+        }
 
-        public AssemblySearchResult Create(MetadataFile module) => new AssemblySearchResult { Module = module, Name = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name, Location = string.Empty, Assembly = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+        public AssemblySearchResult Create(MetadataFile module)
+        {
+            var assemblyName = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? string.Empty;
+            return new AssemblySearchResult { Module = module, Name = assemblyName, Location = string.Empty, Assembly = assemblyName, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+        }
 
-        public NamespaceSearchResult Create(MetadataFile module, INamespace @namespace) => new NamespaceSearchResult { Namespace = @namespace, Name = @namespace.FullName, Location = string.Empty, Assembly = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+        public NamespaceSearchResult Create(MetadataFile module, INamespace @namespace)
+        {
+            var assemblyName = module.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? string.Empty;
+            return new NamespaceSearchResult { Namespace = @namespace, Name = @namespace.FullName, Location = string.Empty, Assembly = assemblyName, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+        }
     }
 
     private sealed class DummyTreeNode : ITreeNode
@@ -384,10 +396,10 @@ public class IlSpyXSearchAdapter
             {
                 var type = reader.GetTypeDefinition(method.GetDeclaringType());
                 var typeName = reader.GetString(type.Name);
-                return typeName;
+                return typeName ?? name ?? string.Empty;
             }
 
-            return name;
+            return name ?? string.Empty;
         }
     }
 }

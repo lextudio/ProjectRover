@@ -70,6 +70,18 @@ public sealed class IlSpyBackend : IDisposable
         return new IlSpyAssembly(filePath, peFile, resolver, typeSystem, loaded);
     }
 
+    public bool UseDebugSymbols
+    {
+        get => assemblyList.UseDebugSymbols;
+        set => assemblyList.UseDebugSymbols = value;
+    }
+
+    public bool ApplyWinRtProjections
+    {
+        get => assemblyList.ApplyWinRTProjections;
+        set => assemblyList.ApplyWinRTProjections = value;
+    }
+
     public IEnumerable<string> GetPersistedAssemblyFiles()
     {
         return assemblyList.GetAssemblies()

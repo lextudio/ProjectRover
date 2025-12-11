@@ -86,7 +86,23 @@ private static void PopulateReferences(AssemblyNode assemblyNode, LoadedAssembly
         });
     }
 
-    // Unresolved references are not exposed directly by ILSpyX resolver; placeholder for future enhancement.
+    var reader = loaded.GetMetadataFileOrNull()?.Metadata;
+    if (reader != null)
+    {
+        foreach (var handle in reader.AssemblyReferences)
+        {
+            var asmRef = reader.GetAssemblyReference(handle);
+            var name = reader.GetString(asmRef.Name);
+            if (referencesNode.Items.OfType<ResolvedReferenceNode>().Any(r => string.Equals(r.Name, name, System.StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            referencesNode.Items.Add(new UnresolvedReferenceNode
+            {
+                Name = name,
+                Parent = referencesNode
+            });
+        }
+    }
 }
 
 private static void PopulateResources(AssemblyNode assemblyNode, PEFile peFile)

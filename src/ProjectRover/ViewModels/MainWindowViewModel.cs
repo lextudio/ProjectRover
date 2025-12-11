@@ -71,7 +71,7 @@ public partial class MainWindowViewModel : ObservableObject
         "startup.json");
 
     private readonly Dictionary<AssemblyNode, IlSpyAssembly> assemblyLookup = new();
-    private readonly Dictionary<EntityHandle, Node> handleToNodeMap = new();
+    private readonly Dictionary<(string AssemblyPath, EntityHandle Handle), Node> handleToNodeMap = new();
     private readonly Stack<Node> backStack = new();
     private readonly Stack<Node> forwardStack = new();
 
@@ -200,8 +200,13 @@ public partial class MainWindowViewModel : ObservableObject
             assemblyLookup.Remove(assemblyNode);
         }
 
+        var assemblyPath = assemblyLookup.TryGetValue(assemblyNode, out var removedAsm)
+            ? removedAsm.FilePath
+            : string.Empty;
+
         var toRemove = handleToNodeMap
-            .Where(kvp => GetAssemblyNode(kvp.Value) == assemblyNode)
+            .Where(kvp => GetAssemblyNode(kvp.Value) == assemblyNode
+                          || (assemblyPath != null && string.Equals(kvp.Key.AssemblyPath, assemblyPath, StringComparison.OrdinalIgnoreCase)))
             .Select(kvp => kvp.Key)
             .ToList();
         foreach (var key in toRemove)
@@ -243,7 +248,8 @@ public partial class MainWindowViewModel : ObservableObject
         if (handle.IsNil)
             return;
 
-        if (handleToNodeMap.TryGetValue(handle, out var node))
+        var node = TryResolveHandle(handle);
+        if (node != null)
         {
             SelectedNode = node;
             ExpandParents(node);
@@ -259,19 +265,19 @@ public partial class MainWindowViewModel : ObservableObject
 
     public void NavigateToType(EntityHandle typeHandle)
     {
-        if (handleToNodeMap.TryGetValue(typeHandle, out var node))
+        var node = TryResolveHandle(typeHandle);
+        if (node != null)
         {
             SelectedNode = node;
             ExpandParents(node);
+            return;
         }
-        else
+
+        notificationService.ShowNotification(new Notification
         {
-            notificationService.ShowNotification(new Notification
-            {
-                Message = $"Type not found in tree",
-                Level = NotificationLevel.Warning
-            });
-        }
+            Message = $"Type not found in tree",
+            Level = NotificationLevel.Warning
+        });
     }
 
     private void ExpandParents(Node node)
@@ -402,7 +408,7 @@ public partial class MainWindowViewModel : ObservableObject
                     });
                     continue;
                 }
-                IndexAssemblyHandles(assemblyNode);
+                IndexAssemblyHandles(assemblyNode, assembly.FilePath);
                 AssemblyNodes.Add(assemblyNode);
                 assemblyLookup[assemblyNode] = assembly;
                 addedAssemblies.Add(assemblyNode);
@@ -1179,7 +1185,7 @@ public partial class MainWindowViewModel : ObservableObject
             }
         };
 
-        RegisterHandle(typeNode, typeDefinition.MetadataToken);
+        RegisterHandle(typeNode, typeDefinition.MetadataToken, assembly.FilePath);
 
         var directBases = typeDefinition.DirectBaseTypes.Where(t => t.Kind != TypeKind.Unknown).ToList();
         if (directBases.Count > 0)
@@ -1217,7 +1223,7 @@ public partial class MainWindowViewModel : ObservableObject
                         IconKey = GetMemberIconKey(fieldDefinition)
                     };
                     typeNode.Members.Add(fieldNode);
-                    RegisterHandle(fieldNode, fieldDefinition.MetadataToken);
+                    RegisterHandle(fieldNode, fieldDefinition.MetadataToken, assembly.FilePath);
                     break;
                 case IMethod { IsConstructor: true } methodDefinition:
                     var ctorNode = new ConstructorNode
@@ -1230,7 +1236,7 @@ public partial class MainWindowViewModel : ObservableObject
                         IconKey = GetMemberIconKey(methodDefinition)
                     };
                     typeNode.Members.Add(ctorNode);
-                    RegisterHandle(ctorNode, methodDefinition.MetadataToken);
+                    RegisterHandle(ctorNode, methodDefinition.MetadataToken, assembly.FilePath);
                     break;
                 case IMethod methodDefinition:
                     var methodNode = new MethodNode
@@ -1243,7 +1249,7 @@ public partial class MainWindowViewModel : ObservableObject
                         IconKey = GetMemberIconKey(methodDefinition)
                     };
                     typeNode.Members.Add(methodNode);
-                    RegisterHandle(methodNode, methodDefinition.MetadataToken);
+                    RegisterHandle(methodNode, methodDefinition.MetadataToken, assembly.FilePath);
                     break;
                 case IProperty propertyDefinition:
                     var propNode = new PropertyNode
@@ -1256,7 +1262,7 @@ public partial class MainWindowViewModel : ObservableObject
                         IconKey = GetMemberIconKey(propertyDefinition)
                     };
                     typeNode.Members.Add(propNode);
-                    RegisterHandle(propNode, propertyDefinition.MetadataToken);
+                    RegisterHandle(propNode, propertyDefinition.MetadataToken, assembly.FilePath);
                     break;
                 case IEvent eventDefinition:
                     var evtNode = new EventNode
@@ -1269,7 +1275,7 @@ public partial class MainWindowViewModel : ObservableObject
                         IconKey = GetMemberIconKey(eventDefinition)
                     };
                     typeNode.Members.Add(evtNode);
-                    RegisterHandle(evtNode, eventDefinition.MetadataToken);
+                    RegisterHandle(evtNode, eventDefinition.MetadataToken, assembly.FilePath);
                     break;
                 case ITypeDefinition nestedTypeDefinition:
                     var nested = BuildTypeSubtree(nestedTypeDefinition, typeNode, assembly);
@@ -1324,44 +1330,47 @@ public partial class MainWindowViewModel : ObservableObject
             .Concat(events);
     }
 
-    private void IndexAssemblyHandles(AssemblyNode assemblyNode)
+    private void IndexAssemblyHandles(AssemblyNode assemblyNode, string assemblyPath)
     {
         foreach (var ns in assemblyNode.Children.OfType<NamespaceNode>())
         {
             foreach (var type in ns.Types)
             {
-                IndexTypeHandles(type);
+                IndexTypeHandles(type, assemblyPath);
             }
         }
     }
 
-    private void IndexTypeHandles(TypeNode typeNode)
+    private void IndexTypeHandles(TypeNode typeNode, string assemblyPath)
     {
-        RegisterHandle(typeNode, typeNode.TypeDefinition.MetadataToken);
+        RegisterHandle(typeNode, typeNode.TypeDefinition.MetadataToken, assemblyPath);
 
         foreach (var member in typeNode.Members)
         {
             switch (member)
             {
                 case TypeNode nested:
-                    IndexTypeHandles(nested);
+                    IndexTypeHandles(nested, assemblyPath);
                     break;
                 case MemberNode memberNode:
-                    RegisterHandle(memberNode, memberNode.MetadataToken);
+                    RegisterHandle(memberNode, memberNode.MetadataToken, assemblyPath);
                     break;
             }
         }
     }
 
-    private void RegisterHandle(Node node, EntityHandle metadataToken)
+    private void RegisterHandle(Node node, EntityHandle metadataToken, string assemblyPath)
     {
         if (metadataToken.IsNil)
             return;
-        handleToNodeMap[metadataToken] = node;
+        var keyPath = assemblyPath ?? string.Empty;
+        handleToNodeMap[(keyPath, metadataToken)] = node;
     }
 
-    private Node? ResolveNode(EntityHandle handle) =>
-        handleToNodeMap.TryGetValue(handle, out var node) ? node : null;
+    private Node? ResolveNode(EntityHandle handle) => TryResolveHandle(handle);
+
+    private Node? TryResolveHandle(EntityHandle handle) =>
+        handleToNodeMap.FirstOrDefault(kvp => kvp.Key.Handle.Equals(handle)).Value;
 
     public record ThemeOption(string Name, ThemeVariant Variant);
 
