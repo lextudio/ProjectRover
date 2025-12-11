@@ -196,6 +196,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         if (assemblyLookup.TryGetValue(assemblyNode, out var ilSpyAssembly))
         {
+            ilSpyBackend.UnloadAssembly(ilSpyAssembly);
             assemblyLookup.Remove(assemblyNode);
         }
 
@@ -239,10 +240,20 @@ public partial class MainWindowViewModel : ObservableObject
 
     internal void SelectNodeByMemberReference(EntityHandle handle)
     {
+        if (handle.IsNil)
+            return;
+
+        if (handleToNodeMap.TryGetValue(handle, out var node))
+        {
+            SelectedNode = node;
+            ExpandParents(node);
+            return;
+        }
+
         notificationService.ShowNotification(new Notification
         {
-            Message = "Go to definition is not wired to the ILSpy backend yet.",
-            Level = NotificationLevel.Information
+            Message = "Definition not found in the current tree.",
+            Level = NotificationLevel.Warning
         });
     }
 
@@ -391,6 +402,7 @@ public partial class MainWindowViewModel : ObservableObject
                     });
                     continue;
                 }
+                IndexAssemblyHandles(assemblyNode);
                 AssemblyNodes.Add(assemblyNode);
                 assemblyLookup[assemblyNode] = assembly;
                 addedAssemblies.Add(assemblyNode);
@@ -700,9 +712,7 @@ public partial class MainWindowViewModel : ObservableObject
                 return new StartupState();
 
             var json = File.ReadAllText(startupStateFilePath);
-            var state = JsonSerializer.Deserialize<StartupState>(json) ?? new StartupState();
-            state.LastAssemblies = (state.LastAssemblies ?? Array.Empty<string>()).Where(File.Exists).ToArray();
-            return state;
+            return JsonSerializer.Deserialize<StartupState>(json) ?? new StartupState();
         }
         catch
         {
@@ -731,7 +741,6 @@ public partial class MainWindowViewModel : ObservableObject
 
     private sealed class StartupState
     {
-        public string[] LastAssemblies { get; set; } = Array.Empty<string>();
         public string? Theme { get; set; }
         public bool IsSearchDockVisible { get; set; }
         public string? SearchMode { get; set; }
@@ -754,10 +763,9 @@ public partial class MainWindowViewModel : ObservableObject
             }
         }
 
-        if (state.LastAssemblies.Length > 0)
-        {
-            LoadAssemblies(state.LastAssemblies);
-        }
+        var persistedAssemblies = ilSpyBackend.GetPersistedAssemblyFiles();
+        if (persistedAssemblies.Any())
+            LoadAssemblies(persistedAssemblies);
 
         if (!string.IsNullOrEmpty(state.SearchMode))
         {
@@ -773,14 +781,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PersistLastAssemblies()
     {
-        var files = AssemblyNodes
-            .Select(a => assemblyLookup.TryGetValue(a, out var asm) ? asm.FilePath : null)
-            .Where(p => p != null)
-            .ToArray();
-
         SaveStartupState(new StartupState
         {
-            LastAssemblies = files!,
             Theme = SelectedTheme?.Variant.ToString(),
             IsSearchDockVisible = IsSearchDockVisible,
             SearchMode = SelectedSearchMode?.Name
@@ -835,151 +837,9 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        var comparer = StringComparison.OrdinalIgnoreCase;
-        var results = new List<SearchResult>();
-
-        foreach (var assemblyNode in AssemblyNodes)
-        {
-            var assemblyName = assemblyLookup.TryGetValue(assemblyNode, out var asm)
-                ? asm.PeFile?.Metadata.GetAssemblyDefinition().GetAssemblyName().Name ?? asm.FilePath
-                : assemblyNode.Name;
-            var assemblyIcon = GetIcon("ReferenceIcon");
-            var assemblyDisplayName = assemblyNode.Name;
-            var assemblyPath = assemblyLookup.TryGetValue(assemblyNode, out var asmInfo)
-                ? asmInfo.FilePath
-                : assemblyNode.Name;
-
-            if (MatchesMode("Assembly") && assemblyName.Contains(term, comparer))
-            {
-                results.Add(new BasicSearchResult
-                {
-                    MatchedString = assemblyName,
-                    DisplayName = assemblyName,
-                    DisplayLocation = assemblyPath,
-                    DisplayAssembly = assemblyDisplayName,
-                    IconPath = assemblyIcon,
-                    LocationIconPath = GetIcon("FileDialogReportIcon"),
-                    AssemblyIconPath = assemblyIcon,
-                    TargetNode = assemblyNode
-                });
-            }
-
-            if (MatchesMode("Resource"))
-            {
-                var resourcesNode = assemblyNode.Children.OfType<ResourcesNode>().FirstOrDefault();
-                if (resourcesNode != null)
-                {
-                    foreach (var resource in resourcesNode.Items)
-                    {
-                        if (!resource.Name.Contains(term, comparer))
-                            continue;
-
-                        results.Add(new BasicSearchResult
-                        {
-                            MatchedString = resource.Name,
-                            DisplayName = resource.Name,
-                            DisplayLocation = "Resources",
-                            DisplayAssembly = assemblyDisplayName,
-                            IconPath = GetIcon("ResourceFileIcon"),
-                            LocationIconPath = GetIcon("ResourcesIcon"),
-                            AssemblyIconPath = assemblyIcon,
-                            TargetNode = resource
-                        });
-                    }
-                }
-            }
-
-            var namespaces = assemblyNode.Children.OfType<NamespaceNode>().ToList();
-            foreach (var ns in namespaces)
-            {
-                var nsIcon = GetIcon("NamespaceIcon");
-                if (MatchesMode("Namespace") && ns.Name != "-" && ns.Name.Contains(term, comparer))
-                {
-                    results.Add(new BasicSearchResult
-                    {
-                        MatchedString = ns.Name,
-                        DisplayName = ns.Name,
-                        DisplayLocation = assemblyName,
-                        DisplayAssembly = assemblyDisplayName,
-                        IconPath = nsIcon,
-                        LocationIconPath = assemblyIcon,
-                        AssemblyIconPath = assemblyIcon,
-                        TargetNode = ns
-                    });
-                }
-
-                foreach (var type in ns.Types)
-                {
-                    var typeName = type.TypeDefinition.Name;
-                    var typeNamespace = ns.Name;
-                    var typeIcon = GetIcon(type.IconKey);
-                    var fullTypeName = string.IsNullOrEmpty(typeNamespace) || typeNamespace == "-"
-                        ? typeName
-                        : $"{typeNamespace}.{typeName}";
-
-                    if ((MatchesMode("Type") || MatchesMode("Types and Members")) && typeName.Contains(term, comparer))
-                    {
-                        results.Add(new BasicSearchResult
-                        {
-                            MatchedString = typeName,
-                            DisplayName = typeName,
-                            DisplayLocation = typeNamespace,
-                            DisplayAssembly = assemblyDisplayName,
-                            IconPath = typeIcon,
-                            LocationIconPath = nsIcon,
-                            AssemblyIconPath = assemblyIcon,
-                            TargetNode = type
-                        });
-                    }
-
-                    foreach (var member in type.Members.OfType<MemberNode>())
-                    {
-                        var fieldNode = member as FieldNode;
-                        var isField = fieldNode is not null;
-                        var isConstant = fieldNode?.FieldDefinition.IsConst == true;
-                        var propertyNode = member as PropertyNode;
-                        var isProperty = propertyNode is not null;
-                        var returnKind = propertyNode?.PropertyDefinition.ReturnType.Kind;
-                        var isDelegateProperty = returnKind == TypeKind.Delegate || returnKind == TypeKind.FunctionPointer;
-                        var isEvent = member is EventNode;
-
-                        var isMemberMode = MatchesMode("Member") || MatchesMode("Types and Members");
-                        var isMethodMode = MatchesMode("Method") && member is MethodNode or ConstructorNode;
-                        var isFieldMode = MatchesMode("Field") && isField;
-                        var isPropertyMode = MatchesMode("Property") && isProperty && !isDelegateProperty;
-                        var isEventMode = MatchesMode("Event") && isEvent;
-                        var isConstantMode = MatchesMode("Constant") && isConstant;
-
-                        if (isMemberMode || isMethodMode || isFieldMode || isPropertyMode || isEventMode || isConstantMode)
-                        {
-                            var isConstructor = member is ConstructorNode;
-                            var displayName = isConstructor ? $"{typeName}()" : $"{typeName}.{member.Name}";
-                            var matchedString = isConstructor ? typeName : member.Name;
-                            var nameMatches = member.Name.Contains(term, comparer);
-                            if (isConstructor && !nameMatches)
-                            {
-                                nameMatches = typeName.Contains(term, comparer);
-                            }
-
-                            if (nameMatches)
-                            {
-                                results.Add(new BasicSearchResult
-                                {
-                                    MatchedString = matchedString,
-                                    DisplayName = displayName,
-                                    DisplayLocation = fullTypeName,
-                                    DisplayAssembly = assemblyDisplayName,
-                                    IconPath = GetIcon(GetMemberIconKey(member.Entity)),
-                                    LocationIconPath = nsIcon,
-                                    AssemblyIconPath = assemblyIcon,
-                                    TargetNode = member
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        var adapter = new IlSpyXSearchAdapter();
+        var ilspyAssemblies = assemblyLookup.Values.Select(a => a.LoadedAssembly).ToList();
+        var results = adapter.Search(ilspyAssemblies, term, SelectedSearchMode.Name, ResolveNode);
 
         SearchResults.Clear();
         foreach (var r in results)
@@ -987,12 +847,6 @@ public partial class MainWindowViewModel : ObservableObject
             SearchResults.Add(r);
         }
         NumberOfResultsText = $"Found {results.Count} result(s)";
-
-        bool MatchesMode(string modeName) => string.Equals(SelectedSearchMode.Name, modeName, comparer);
-
-        static string GetIcon(string key) => Application.Current?.TryGetResource(key, Application.Current.ActualThemeVariant, out var value) == true
-            ? value as string ?? string.Empty
-            : string.Empty;
     }
 
     partial void OnIsSearchDockVisibleChanged(bool value)
@@ -1470,12 +1324,44 @@ public partial class MainWindowViewModel : ObservableObject
             .Concat(events);
     }
 
+    private void IndexAssemblyHandles(AssemblyNode assemblyNode)
+    {
+        foreach (var ns in assemblyNode.Children.OfType<NamespaceNode>())
+        {
+            foreach (var type in ns.Types)
+            {
+                IndexTypeHandles(type);
+            }
+        }
+    }
+
+    private void IndexTypeHandles(TypeNode typeNode)
+    {
+        RegisterHandle(typeNode, typeNode.TypeDefinition.MetadataToken);
+
+        foreach (var member in typeNode.Members)
+        {
+            switch (member)
+            {
+                case TypeNode nested:
+                    IndexTypeHandles(nested);
+                    break;
+                case MemberNode memberNode:
+                    RegisterHandle(memberNode, memberNode.MetadataToken);
+                    break;
+            }
+        }
+    }
+
     private void RegisterHandle(Node node, EntityHandle metadataToken)
     {
         if (metadataToken.IsNil)
             return;
         handleToNodeMap[metadataToken] = node;
     }
+
+    private Node? ResolveNode(EntityHandle handle) =>
+        handleToNodeMap.TryGetValue(handle, out var node) ? node : null;
 
     public record ThemeOption(string Name, ThemeVariant Variant);
 

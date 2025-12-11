@@ -27,7 +27,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: recursive
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -59,7 +59,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: recursive
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -85,7 +85,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: recursive
 
     - name: Publish
       run: dotnet publish -r osx-arm64 -c Release
@@ -109,7 +109,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: recursive
 
     - name: Publish
       run: dotnet publish -r osx-x64 -c Release

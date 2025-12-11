@@ -1,6 +1,6 @@
 # Project Rover
 
-Project Rover is a cross-platform desktop UI for ILSpy, focused on giving macOS and Linux users a first-class experience (Windows too). It succeeds the now-deprecated AvaloniaILSpy with native packaging and a modern shell. The UI foundation originated in the CodeMerx decompiler app.
+Project Rover is a cross-platform desktop UI for ILSpy, focused on giving macOS and Linux users a first-class experience (Windows too). It is the successor to the deprecated AvaloniaILSpy and keeps pace with upstream ILSpy through `ICSharpCode.ILSpyX`. The UI foundation came from the CodeMerx decompiler app and is now maintained by LeXtudio Inc.
 
 ## Quick start
 
@@ -39,7 +39,8 @@ dotnet build ProjectRover.sln
 - `src/AvaloniaEdit` – bundled text editor control.
 
 ## Status
-The UI opens assemblies and decompiles members via ILSpy's `CSharpDecompiler`. Project export and full-text search are stubbed out while the backend integration is completed.
+- Assemblies, tree navigation, and search are powered by ILSpyX/`ICSharpCode.Decompiler`.
+- Project export is still disabled while we complete the ILSpyX-based pipeline.
 
 ## License
-This project is [AGPL](COPYING) licensed. It uses the ILSpy decompiler via the `ICSharpCode.Decompiler` NuGet package, which is MIT licensed.
+This project is [AGPL](COPYING) licensed. It depends on ILSpyX/`ICSharpCode.Decompiler` (MIT); see [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md).

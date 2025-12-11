@@ -47,8 +47,11 @@ public static AssemblyNode? BuildAssemblyNode(LoadedAssembly loaded)
     };
     assemblyNode.Children.Add(debugMetadataNode);
 
-    // References placeholder (ILSpyX resolver handles resolution)
-    assemblyNode.Children.Add(assemblyNode.References);
+    // References
+    PopulateReferences(assemblyNode, loaded);
+
+    // Resources
+    PopulateResources(assemblyNode, (PEFile)metadata);
 
     var namespaces = new Dictionary<string, NamespaceNode>(System.StringComparer.Ordinal);
     foreach (var typeHandle in reader.TypeDefinitions)
@@ -63,6 +66,50 @@ public static AssemblyNode? BuildAssemblyNode(LoadedAssembly loaded)
     }
 
     return assemblyNode;
+}
+
+private static void PopulateReferences(AssemblyNode assemblyNode, LoadedAssembly loaded)
+{
+    var referencesNode = assemblyNode.References;
+    var assemblies = loaded.AssemblyList.GetAssemblies();
+    foreach (var reference in assemblies)
+    {
+        // Skip self
+        if (string.Equals(reference.ShortName, loaded.ShortName, System.StringComparison.OrdinalIgnoreCase))
+            continue;
+
+        referencesNode.Items.Add(new ResolvedReferenceNode
+        {
+            Name = reference.ShortName,
+            Parent = referencesNode,
+            FilePath = reference.FileName
+        });
+    }
+
+    // Unresolved references are not exposed directly by ILSpyX resolver; placeholder for future enhancement.
+}
+
+private static void PopulateResources(AssemblyNode assemblyNode, PEFile peFile)
+{
+    var resourcesNode = new ResourcesNode
+    {
+        Name = "Resources",
+        Parent = assemblyNode
+    };
+
+    foreach (var resource in peFile.Resources)
+    {
+        resourcesNode.Items.Add(new ResourceEntryNode
+        {
+            Name = resource.Name,
+            ResourceName = resource.Name,
+            Parent = resourcesNode,
+            IconKey = "ResourceFileIcon"
+        });
+    }
+
+    if (resourcesNode.Items.Count > 0)
+        assemblyNode.Children.Add(resourcesNode);
 }
 
 private static void AddType(ICompilation compilation, AssemblyNode assemblyNode, Dictionary<string, NamespaceNode> namespaces, TypeDefinitionHandle handle, MetadataReader reader)
@@ -205,4 +252,3 @@ private static string GetMemberIconKey(IEntity entity)
         };
     }
 }
-

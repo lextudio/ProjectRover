@@ -69,6 +69,12 @@
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
+      <TreeDataTemplate DataType="nodes:ResourceEntryNode">
+        <StackPanel Orientation="Horizontal">
+          <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
+          <TextBlock Text="{Binding Name}" />
+        </StackPanel>
+      </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:MetadataTableNode">
         <StackPanel Orientation="Horizontal">
           <Svg Path="{DynamicResource DataTableIcon}" />
@@ -93,12 +99,6 @@
             <Svg Path="{DynamicResource ResourcesIconClosed}" IsVisible="{Binding !IsExpanded}" />
             <Svg Path="{DynamicResource ResourcesIconOpen}" IsVisible="{Binding IsExpanded}" />
           </Panel>
-          <TextBlock Text="{Binding Name}" />
-        </StackPanel>
-      </TreeDataTemplate>
-      <TreeDataTemplate DataType="nodes:ResourceEntryNode">
-        <StackPanel Orientation="Horizontal">
-          <Svg Path="{DynamicResource ResourceFileIcon}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>

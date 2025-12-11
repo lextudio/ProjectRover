@@ -23,6 +23,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Linq;
 using System.Threading;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
@@ -67,6 +68,19 @@ public sealed class IlSpyBackend : IDisposable
         var typeSystem = new DecompilerTypeSystem(peFile, resolver, new DecompilerSettings(LanguageVersion.Latest));
 
         return new IlSpyAssembly(filePath, peFile, resolver, typeSystem, loaded);
+    }
+
+    public IEnumerable<string> GetPersistedAssemblyFiles()
+    {
+        return assemblyList.GetAssemblies()
+            .Select(a => a.FileName)
+            .Where(File.Exists)
+            .ToArray();
+    }
+
+    public void UnloadAssembly(IlSpyAssembly assembly)
+    {
+        assemblyList.Unload(assembly.LoadedAssembly);
     }
 
     public string DecompileMember(IlSpyAssembly assembly, EntityHandle handle, DecompilationLanguage language, DecompilerSettings? settings = null)

@@ -106,17 +106,17 @@
               <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[6].Width}" />
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0" ColumnDefinitions="Auto,*">
-               <Svg Width="16" Height="16" Path="{Binding IconPath}" Margin="0,0,6,0" />
+               <Svg Width="16" Height="16" Path="{Binding IconPath, Converter={StaticResource IconKeyToPathConverter}}" Margin="0,0,6,0" />
                <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" VerticalAlignment="Center" />
             </Grid>
             <Rectangle Grid.Column="1" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
             <Grid Grid.Column="2" ColumnDefinitions="Auto,*">
-               <Svg Width="16" Height="16" Path="{Binding LocationIconPath}" Margin="0,0,6,0" />
+               <Svg Width="16" Height="16" Path="{Binding LocationIconPath, Converter={StaticResource IconKeyToPathConverter}}" Margin="0,0,6,0" />
                <TextBlock Grid.Column="1" Text="{Binding Location}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Location}" VerticalAlignment="Center" />
             </Grid>
             <Rectangle Grid.Column="3" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
             <Grid Grid.Column="4" ColumnDefinitions="Auto,*">
-               <Svg Width="16" Height="16" Path="{Binding AssemblyIconPath}" Margin="0,0,6,0" />
+               <Svg Width="16" Height="16" Path="{Binding AssemblyIconPath, Converter={StaticResource IconKeyToPathConverter}}" Margin="0,0,6,0" />
                <TextBlock Grid.Column="1" Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Assembly}" VerticalAlignment="Center" />
             </Grid>
             <Rectangle Grid.Column="5" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />

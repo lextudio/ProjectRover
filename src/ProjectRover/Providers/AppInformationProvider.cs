@@ -58,7 +58,7 @@ public class AppInformationProvider : IAppInformationProvider
     public AdditionalInfo AdditionalInfo { get; private set; } = new()
     {
         Title = "Credits",
-        Text = "Originally created by CodeMerx and now maintained by LeXtudio Inc."
+        Text = "Built by CodeMerx and now maintained by LeXtudio Inc. for the ILSpy community."
     };
 
     public async Task TryLoadRemoteAdditionalInfoAsync()
