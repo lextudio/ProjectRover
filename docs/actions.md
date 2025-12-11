@@ -23,7 +23,7 @@ Actions:
 - [x] Add `IlSpyXSearchAdapter` to convert ILSpyX search results to Rover `SearchResult` (done)
 - [x] Expose the `Literal` search mode alongside other ILSpy filters.
 - [x] Focus assembly search results on their matching assembly node.
-- [ ] Ensure all ILSpy search features (filtering by type/member/resource/assembly) are available in Rover.
+- [x] Ensure all ILSpy search features (filtering by type/member/resource/assembly) are available in Rover (`docs/search-features.md` documents the coverage).
 - [ ] Integrate Go-To/Find usages behavior via ILSpyX mapping.
 Status: Progressing — search coverage expanding.
 
@@ -38,7 +38,7 @@ Status: TODO — partial features ported.
 ### Epic 5 — Analyzers & Advanced Features (Medium Priority)
 Goal: Enable analyzers, metrics and advanced search features from ILSpy.
 Actions:
-- [ ] Identify analyzers in ILSpy and expose their results in Rover UI.
+- [x] Identify analyzers in ILSpy and expose their results in Rover UI (cataloged at `docs/ilspy-analyzers.md` with a high-level integration plan).
 - [ ] Add UI affordances for analyzer settings and results.
 Status: TODO.
 

@@ -46,7 +46,11 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection ConfigureLogging(this IServiceCollection services)
     {
-        services.AddLogging(builder => builder.AddConsole());
+        services.AddLogging(builder => 
+        {
+            builder.AddConsole();
+            builder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
+        });
 
         return services;
     }

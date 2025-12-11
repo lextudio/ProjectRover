@@ -2052,9 +2052,14 @@ public partial class MainWindowViewModel : ObservableObject
 
     public void NavigateToSearchResult(SearchResult? result)
     {
+        logger.LogInformation("[NavigateToSearchResult] Called with: {Type}, DisplayName: {DisplayName}", result?.GetType().Name, (result as BasicSearchResult)?.DisplayName);
         if (result is not BasicSearchResult basic || basic.TargetNode is not { } target)
+        {
+            logger.LogWarning("[NavigateToSearchResult] No valid target node found.");
             return;
+        }
 
+        logger.LogInformation("[NavigateToSearchResult] Navigating to node: {NodeType}, Name: {NodeName}", target.GetType().Name, target.Name);
         SelectedNode = target;
         ExpandParents(target);
     }
@@ -2271,292 +2276,6 @@ public partial class MainWindowViewModel : ObservableObject
         return tablesNode;
     }
 
-    private void BuildReferences(IlSpyAssembly assembly, AssemblyNode assemblyNode)
-    {
-        var reader = assembly.PeFile.Metadata;
-        var resolver = assembly.Resolver;
-        IsResolving = true;
-        try
-        {
-            foreach (var handle in reader.AssemblyReferences)
-            {
-                var reference = reader.GetAssemblyReference(handle);
-                var name = reader.GetString(reference.Name);
-                Node node;
-                try
-                {
-                    var metadataRef = new MetadataAssemblyReference(reference, reader);
-                    var resolved = resolver.Resolve(metadataRef);
-                    node = resolved is not null
-                        ? new ResolvedReferenceNode { Name = name, Parent = assemblyNode.References, FilePath = resolved.FileName }
-                        : new UnresolvedReferenceNode { Name = name, Parent = assemblyNode.References };
-                }
-                catch
-                {
-                    node = new UnresolvedReferenceNode { Name = name, Parent = assemblyNode.References };
-                }
-
-                assemblyNode.References.Items.Add(node);
-            }
-        }
-        finally
-        {
-            IsResolving = false;
-        }
-    }
-
-    private void BuildResources(IlSpyAssembly assembly, AssemblyNode assemblyNode)
-    {
-        var reader = assembly.PeFile.Metadata;
-        if (!reader.ManifestResources.Any())
-            return;
-
-        var resourcesNode = new ResourcesNode
-        {
-            Name = "Resources",
-            Parent = assemblyNode
-        };
-        assemblyNode.Children.Add(resourcesNode);
-
-        foreach (var handle in reader.ManifestResources)
-        {
-            var resource = reader.GetManifestResource(handle);
-            var name = reader.GetString(resource.Name);
-            resourcesNode.Items.Add(new ResourceEntryNode
-            {
-                Name = name,
-                Parent = resourcesNode,
-                ResourceName = name
-            });
-        }
-    }
-
-    private void BuildTypes(IlSpyAssembly assembly, AssemblyNode assemblyNode)
-    {
-        var typeSystem = assembly.TypeSystem;
-        var module = typeSystem.MainModule;
-        var types = module.TypeDefinitions
-            .Where(t => ShowCompilerGeneratedMembers || !IsCompilerGenerated(t));
-
-        foreach (var namespaceGroup in types.GroupBy(t => t.Namespace).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            var typesInNamespace = namespaceGroup.OrderBy(t => t.Name).ToList();
-            if (typesInNamespace.Count == 0)
-                continue;
-
-            var namespaceNode = new NamespaceNode
-            {
-                Name = string.IsNullOrEmpty(namespaceGroup.Key) ? "-" : namespaceGroup.Key,
-                Parent = assemblyNode,
-                IsPublicAPI = typesInNamespace.Any(IsPublicApi)
-            };
-
-            foreach (var typeDefinition in typesInNamespace)
-            {
-                var typeNode = BuildTypeSubtree(typeDefinition, namespaceNode, assembly);
-                if (typeNode != null)
-                {
-                    namespaceNode.Types.Add(typeNode);
-                }
-            }
-
-            if (namespaceNode.Types.Count > 0)
-            {
-                assemblyNode.AddNamespace(namespaceNode);
-            }
-        }
-    }
-
-    private TypeNode? BuildTypeSubtree(ITypeDefinition typeDefinition, Node parentNode, IlSpyAssembly assembly)
-    {
-        if (!ShowCompilerGeneratedMembers && IsCompilerGenerated(typeDefinition))
-            return null;
-
-        TypeNode typeNode = typeDefinition.Kind switch
-        {
-            TypeKind.Enum => new EnumNode
-            {
-                Name = typeDefinition.Name,
-                Parent = parentNode,
-                TypeDefinition = typeDefinition,
-                IsPublicAPI = IsPublicApi(typeDefinition),
-                IconKey = GetClassIconKey(typeDefinition),
-                Entity = typeDefinition
-            },
-            TypeKind.Struct => new StructNode
-            {
-                Name = typeDefinition.Name,
-                Parent = parentNode,
-                TypeDefinition = typeDefinition,
-                IsPublicAPI = IsPublicApi(typeDefinition),
-                IconKey = GetClassIconKey(typeDefinition),
-                Entity = typeDefinition
-            },
-            TypeKind.Interface => new InterfaceNode
-            {
-                Name = typeDefinition.Name,
-                Parent = parentNode,
-                TypeDefinition = typeDefinition,
-                IsPublicAPI = IsPublicApi(typeDefinition),
-                IconKey = GetClassIconKey(typeDefinition),
-                Entity = typeDefinition
-            },
-            _ => new ClassNode
-            {
-                Name = typeDefinition.Name,
-                Parent = parentNode,
-                TypeDefinition = typeDefinition,
-                IsPublicAPI = IsPublicApi(typeDefinition),
-                IconKey = GetClassIconKey(typeDefinition),
-                Entity = typeDefinition
-            }
-        };
-
-        RegisterHandle(typeNode, typeDefinition.MetadataToken, assembly.FilePath);
-
-        var directBases = typeDefinition.DirectBaseTypes.Where(t => t.Kind != TypeKind.Unknown).ToList();
-        if (directBases.Count > 0)
-        {
-            var baseTypesNode = new BaseTypesNode
-            {
-                Name = "Base Types",
-                Parent = typeNode
-            };
-            typeNode.Members.Add(baseTypesNode);
-
-            foreach (var baseType in directBases)
-            {
-                baseTypesNode.Items.Add(new BaseTypeNode
-                {
-                    Name = baseType.FullName,
-                    Parent = baseTypesNode,
-                    Type = baseType
-                });
-            }
-        }
-
-        foreach (var member in GetMembers(typeDefinition))
-        {
-            switch (member)
-            {
-                case IField fieldDefinition:
-                    var fieldNode = new FieldNode
-                    {
-                        Name = fieldDefinition.Name,
-                        FieldDefinition = fieldDefinition,
-                        Parent = typeNode,
-                        Entity = fieldDefinition,
-                        IsPublicAPI = IsPublicApi(fieldDefinition),
-                        IconKey = GetMemberIconKey(fieldDefinition)
-                    };
-                    typeNode.Members.Add(fieldNode);
-                    RegisterHandle(fieldNode, fieldDefinition.MetadataToken, assembly.FilePath);
-                    break;
-                case IMethod { IsConstructor: true } methodDefinition:
-                    var ctorNode = new ConstructorNode
-                    {
-                        Name = $"{typeDefinition.Name}()",
-                        MethodDefinition = methodDefinition,
-                        Parent = typeNode,
-                        Entity = methodDefinition,
-                        IsPublicAPI = IsPublicApi(methodDefinition),
-                        IconKey = GetMemberIconKey(methodDefinition)
-                    };
-                    typeNode.Members.Add(ctorNode);
-                    RegisterHandle(ctorNode, methodDefinition.MetadataToken, assembly.FilePath);
-                    break;
-                case IMethod methodDefinition:
-                    var methodNode = new MethodNode
-                    {
-                        Name = methodDefinition.Name,
-                        MethodDefinition = methodDefinition,
-                        Parent = typeNode,
-                        Entity = methodDefinition,
-                        IsPublicAPI = IsPublicApi(methodDefinition),
-                        IconKey = GetMemberIconKey(methodDefinition)
-                    };
-                    typeNode.Members.Add(methodNode);
-                    RegisterHandle(methodNode, methodDefinition.MetadataToken, assembly.FilePath);
-                    break;
-                case IProperty propertyDefinition:
-                    var propNode = new PropertyNode
-                    {
-                        Name = propertyDefinition.Name,
-                        PropertyDefinition = propertyDefinition,
-                        Parent = typeNode,
-                        Entity = propertyDefinition,
-                        IsPublicAPI = IsPublicApi(propertyDefinition),
-                        IconKey = GetMemberIconKey(propertyDefinition)
-                    };
-                    typeNode.Members.Add(propNode);
-                    RegisterHandle(propNode, propertyDefinition.MetadataToken, assembly.FilePath);
-                    break;
-                case IEvent eventDefinition:
-                    var evtNode = new EventNode
-                    {
-                        Name = eventDefinition.Name,
-                        EventDefinition = eventDefinition,
-                        Parent = typeNode,
-                        Entity = eventDefinition,
-                        IsPublicAPI = IsPublicApi(eventDefinition),
-                        IconKey = GetMemberIconKey(eventDefinition)
-                    };
-                    typeNode.Members.Add(evtNode);
-                    RegisterHandle(evtNode, eventDefinition.MetadataToken, assembly.FilePath);
-                    break;
-                case ITypeDefinition nestedTypeDefinition:
-                    var nested = BuildTypeSubtree(nestedTypeDefinition, typeNode, assembly);
-                    if (nested != null)
-                    {
-                        typeNode.Members.Add(nested);
-                    }
-                    break;
-            }
-        }
-
-        return typeNode;
-    }
-
-    private IEnumerable<IEntity> GetMembers(ITypeDefinition typeDefinition)
-    {
-        IEnumerable<IEntity> Filter(IEnumerable<IEntity> members) =>
-            ShowCompilerGeneratedMembers ? members : members.Where(m => !IsCompilerGenerated(m));
-
-        static IOrderedEnumerable<IEntity> OrderByToken(IEnumerable<IEntity> members) =>
-            members.OrderBy(m => MetadataTokens.GetToken(m.MetadataToken));
-
-        var fields = OrderByToken(Filter(typeDefinition.Fields));
-        var properties = OrderByToken(Filter(typeDefinition.Properties));
-        var constructors = OrderByToken(Filter(typeDefinition.Methods.Where(m => m.IsConstructor)));
-        var methods = OrderByToken(Filter(typeDefinition.Methods.Where(m => !m.IsConstructor)));
-        var events = OrderByToken(Filter(typeDefinition.Events));
-        var nestedTypes = OrderByToken(Filter(typeDefinition.NestedTypes));
-
-        var fieldList = fields.ToList();
-        var constants = fieldList.Where(f => ((IField)f).IsConst);
-        var instanceFields = fieldList.Where(f => ((IField)f).IsConst == false && !((IField)f).IsStatic);
-        var staticFields = fieldList.Where(f => ((IField)f).IsConst == false && ((IField)f).IsStatic);
-
-        var propertyList = properties.ToList();
-        var instanceProperties = propertyList.Where(p => !((IProperty)p).IsStatic);
-        var staticProperties = propertyList.Where(p => ((IProperty)p).IsStatic);
-
-        var methodList = methods.ToList();
-        var instanceMethods = methodList.Where(m => !((IMethod)m).IsStatic);
-        var staticMethods = methodList.Where(m => ((IMethod)m).IsStatic);
-
-        return nestedTypes
-            .Concat<IEntity>(constants)
-            .Concat(instanceFields)
-            .Concat(staticFields)
-            .Concat(instanceProperties)
-            .Concat(staticProperties)
-            .Concat(constructors)
-            .Concat(instanceMethods)
-            .Concat(staticMethods)
-            .Concat(events);
-    }
-
     private void IndexAssemblyHandles(AssemblyNode assemblyNode, string assemblyPath)
     {
         foreach (var ns in assemblyNode.Children.OfType<NamespaceNode>())
@@ -2598,21 +2317,32 @@ public partial class MainWindowViewModel : ObservableObject
 
     private Node? ResolveResourceNode(string assemblyName, string resourceName)
     {
+        logger.LogInformation("[ResolveResourceNode] Searching for resource '{ResourceName}' in assembly '{AssemblyName}'", resourceName, assemblyName);
         var assemblyNode = AssemblyNodes.FirstOrDefault(a => string.Equals(a.Name, assemblyName, StringComparison.OrdinalIgnoreCase));
         if (assemblyNode == null)
+        {
+            logger.LogWarning("[ResolveResourceNode] Assembly not found: {AssemblyName}", assemblyName);
             return null;
+        }
 
         var resourcesNode = assemblyNode.Children.OfType<ResourcesNode>().FirstOrDefault();
         if (resourcesNode == null)
+        {
+            logger.LogWarning("[ResolveResourceNode] ResourcesNode not found in assembly: {AssemblyName}", assemblyName);
             return null;
+        }
 
         foreach (var resourceNode in resourcesNode.Items)
         {
             var candidate = FindResourceEntry(resourceNode, resourceName);
             if (candidate != null)
+            {
+                logger.LogInformation("[ResolveResourceNode] Found resource node: {ResourceNodeName}", candidate.Name);
                 return candidate;
+            }
         }
 
+        logger.LogWarning("[ResolveResourceNode] Resource not found: {ResourceName}", resourceName);
         return null;
     }
 

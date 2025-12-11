@@ -308,9 +308,9 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
     {
         public ITreeNode CreateDecompilerTreeNode(ILanguage language, System.Reflection.Metadata.EntityHandle handle, MetadataFile module) => new DummyTreeNode();
 
-        public ITreeNode CreateResourcesList(MetadataFile module) => new DummyTreeNode();
+        public ITreeNode CreateResourcesList(MetadataFile module) => new DummyTreeNode { Text = "Resources" };
 
-        public ITreeNode Create(Resource resource) => new DummyTreeNode();
+        public ITreeNode Create(Resource resource) => new DummyTreeNode { Text = resource.Name, Resource = resource };
     }
 
     private sealed class RoverSearchResultFactory : ISearchResultFactory
@@ -336,13 +336,14 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
         }
     }
 
-    private sealed class DummyTreeNode : ITreeNode
+    private sealed class DummyTreeNode : ITreeNode, IResourcesFileTreeNode
     {
         public object Icon => string.Empty;
-        public object Text => string.Empty;
+        public object Text { get; init; } = string.Empty;
         public IEnumerable<ITreeNode> Children => Enumerable.Empty<ITreeNode>();
         public bool IsExpanded => false;
         public void EnsureLazyChildren() { }
+        public Resource Resource { get; init; }
     }
 
     private sealed class BasicLanguage : ILanguage
