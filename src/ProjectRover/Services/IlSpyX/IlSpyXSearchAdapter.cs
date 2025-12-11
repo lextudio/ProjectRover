@@ -25,7 +25,7 @@ public class IlSpyXSearchAdapter
     private readonly ILanguage language = new BasicLanguage();
     private readonly DecompilerSettings decompilerSettings = new();
 
-public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, string term, string modeName, Func<EntityHandle, Node?>? resolveNode = null, Func<string, string, Node?>? resolveResource = null, bool includeInternal = false, bool includeCompilerGenerated = true)
+public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, string term, string modeName, Func<EntityHandle, Node?>? resolveNode = null, Func<string, Node?>? resolveAssembly = null, Func<string, string, Node?>? resolveResource = null, bool includeInternal = false, bool includeCompilerGenerated = true)
 {
         var trimmed = term?.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
@@ -70,7 +70,7 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
 
         return results
             .Where(r => FilterByMode(r, searchMode, constantOnly, includeCompilerGenerated))
-            .Select(r => MapToBasicResult(r, resolveNode, resolveResource))
+            .Select(r => MapToBasicResult(r, resolveNode, resolveAssembly, resolveResource))
             .ToList();
 }
 
@@ -137,7 +137,7 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
         };
     }
 
-    private static BasicSearchResult MapToBasicResult(ICSharpCode.ILSpyX.Search.SearchResult r, Func<EntityHandle, Node?>? resolveNode, Func<string, string, Node?>? resolveResource)
+    private static BasicSearchResult MapToBasicResult(ICSharpCode.ILSpyX.Search.SearchResult r, Func<EntityHandle, Node?>? resolveNode, Func<string, Node?>? resolveAssembly, Func<string, string, Node?>? resolveResource)
     {
         string name = r.Name;
         string location = r.Location;
@@ -201,10 +201,11 @@ public IList<BasicSearchResult> Search(IEnumerable<LoadedAssembly> assemblies, s
             iconKey = "NamespaceIcon";
             locationIconKey = "AssemblyIcon";
         }
-        else if (r is AssemblySearchResult)
+        else if (r is AssemblySearchResult assemblyResult)
         {
             iconKey = "AssemblyIcon";
             assemblyIconKey = "AssemblyIcon";
+            targetNode = resolveAssembly?.Invoke(assemblyResult.Assembly);
         }
         else if (r is ResourceSearchResult resourceResult)
         {

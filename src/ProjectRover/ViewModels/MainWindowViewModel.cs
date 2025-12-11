@@ -2080,7 +2080,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         var adapter = new IlSpyXSearchAdapter();
         var ilspyAssemblies = assemblyLookup.Values.Select(a => a.LoadedAssembly).ToList();
-        var results = adapter.Search(ilspyAssemblies, term, SelectedSearchMode.Name, ResolveNode, ResolveResourceNode, includeInternal: ShowInternalApi, includeCompilerGenerated: ShowCompilerGeneratedMembers);
+        var results = adapter.Search(ilspyAssemblies, term, SelectedSearchMode.Name, ResolveNode, ResolveAssemblyNode, ResolveResourceNode, includeInternal: ShowInternalApi, includeCompilerGenerated: ShowCompilerGeneratedMembers);
 
         SearchResults.Clear();
         foreach (var r in results)
@@ -2623,6 +2623,9 @@ public partial class MainWindowViewModel : ObservableObject
 
         return null;
     }
+
+    private Node? ResolveAssemblyNode(string assemblyName) =>
+        AssemblyNodes.FirstOrDefault(a => string.Equals(a.Name, assemblyName, StringComparison.OrdinalIgnoreCase));
 
     private static ResourceEntryNode? FindResourceEntry(ResourceEntryNode node, string resourceName)
     {
