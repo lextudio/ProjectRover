@@ -101,13 +101,27 @@ public class NavigationService : INavigationService
             string? toLoad = null;
             if (token.HasValue && token.Value.IsNil == false)
             {
-                // Prefer candidates that probe true for the token
-                foreach (var c in candidates)
+                // Attempt resolver which may do MVID/symbol probing
+                try
                 {
-                    if (assemblyTreeModel.Backend.ProbeAssemblyForHandle(c, token.Value))
+                    var resolved = await assemblyTreeModel.Backend.ResolveAssemblyForHandleAsync(token.Value, simpleName, basicResult.DisplayLocation, null, progress, cancellationToken).ConfigureAwait(false);
+                    if (!string.IsNullOrEmpty(resolved))
                     {
-                        toLoad = c;
-                        break;
+                        toLoad = resolved;
+                    }
+                }
+                catch { }
+
+                // If resolver didn't return a path, fall back to probing candidates
+                if (toLoad == null)
+                {
+                    foreach (var c in candidates)
+                    {
+                        if (await assemblyTreeModel.Backend.ProbeAssemblyForHandleAsync(c, token.Value, progress, cancellationToken).ConfigureAwait(false))
+                        {
+                            toLoad = c;
+                            break;
+                        }
                     }
                 }
             }

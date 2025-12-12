@@ -501,41 +501,60 @@ public partial class AssemblyTreeModel : ObservableObject
         var simpleName = Path.GetFileNameWithoutExtension(assemblyPath);
         progress?.Report($"Probing candidates for {simpleName}...");
 
-        // Collect candidates from backend
-        var candidates = Backend.ResolveAssemblyCandidates(simpleName, null).ToList();
-        if (!candidates.Contains(assemblyPath, StringComparer.OrdinalIgnoreCase))
-            candidates.Add(assemblyPath);
-
-        // If metadata token exists, try to prefer matches
+        // First try backend-assisted resolution using available metadata token or symbol hints
         var token = basicResult.MetadataToken;
-        string? chosen = null;
-        if (token.HasValue && !token.Value.IsNil)
+        string? resolvedPath = null;
+        try
         {
-            foreach (var c in candidates)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    return null;
-
-                progress?.Report($"Probing {c} for token...");
-                try
-                {
-                    if (Backend.ProbeAssemblyForHandle(c, token.Value))
-                    {
-                        chosen = c;
-                        break;
-                    }
-                }
-                catch
-                {
-                    // ignore
-                }
-            }
+            progress?.Report("Attempting resolver-based assembly discovery...");
+            var hintName = simpleName;
+            var symbolName = basicResult.DisplayLocation; // can be null or a type/member full name
+            // Prefer using the token if available, otherwise try symbol name
+            resolvedPath = await Backend.ResolveAssemblyForHandleAsync(token ?? default, hintName, symbolName, null, progress, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // ignore resolver errors and fallback to candidate probing
         }
 
-        if (chosen == null)
-            chosen = candidates.FirstOrDefault();
+        var chosen = resolvedPath;
 
-        if (chosen == null)
+        if (string.IsNullOrEmpty(chosen))
+        {
+            // Collect candidates from backend
+            var candidates = Backend.ResolveAssemblyCandidates(simpleName, null).ToList();
+            if (!candidates.Contains(assemblyPath, StringComparer.OrdinalIgnoreCase))
+                candidates.Add(assemblyPath);
+
+            // If metadata token exists, try to prefer matches
+            if (token.HasValue && !token.Value.IsNil)
+            {
+                foreach (var c in candidates)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return null;
+
+                    progress?.Report($"Probing {c} for token...");
+                    try
+                    {
+                        if (await Backend.ProbeAssemblyForHandleAsync(c, token.Value, progress, cancellationToken).ConfigureAwait(false))
+                        {
+                            chosen = c;
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                        // ignore
+                    }
+                }
+            }
+
+            if (chosen == null)
+                chosen = candidates.FirstOrDefault();
+        }
+
+        if (string.IsNullOrEmpty(chosen))
             return null;
 
         progress?.Report($"Loading chosen candidate: {chosen}");

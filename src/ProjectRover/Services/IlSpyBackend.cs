@@ -272,6 +272,437 @@ public string DecompileMember(IlSpyAssembly assembly, EntityHandle handle, Decom
         }
     }
 
+    public async System.Threading.Tasks.Task<bool> ProbeAssemblyForHandleAsync(string filePath, EntityHandle handle, IProgress<string>? progress = null, System.Threading.CancellationToken cancellationToken = default)
+    {
+        return await System.Threading.Tasks.Task.Run(() => ProbeAssemblyForHandle(filePath, handle), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Attempt to locate the best assembly file that contains the specified metadata handle or symbol name.
+    /// Heuristics used (in order):
+    /// - If a simple assembly name is provided, prefer candidates from <see cref="ResolveAssemblyCandidates"/> and MVID matches.
+    /// - Probe candidates by directly checking for the handle via <see cref="ProbeAssemblyForHandle"/> for definition handles.
+    /// - If a symbolic name is provided, probe by looking up type/member names and exported type forwards.
+    /// - As a last resort, scan all known/persisted assemblies and return the first positive probe.
+    /// Returns the file path of the matching assembly or null if none found.
+    /// </summary>
+    public string? ResolveAssemblyForHandle(EntityHandle handle, string? simpleAssemblyName = null, string? symbolName = null, Guid? mvid = null)
+    {
+        if (handle.IsNil && string.IsNullOrEmpty(symbolName))
+            return null;
+
+        // Build candidate set
+        var candidates = new List<string>();
+        if (!string.IsNullOrWhiteSpace(simpleAssemblyName))
+        {
+            candidates.AddRange(ResolveAssemblyCandidates(simpleAssemblyName!, mvid));
+        }
+
+        // Add persisted assemblies and currently loaded ones if not already present
+        foreach (var p in GetPersistedAssemblyFiles())
+        {
+            if (!candidates.Contains(p) && File.Exists(p))
+                candidates.Add(p);
+        }
+
+        foreach (var a in assemblyList.GetAssemblies())
+        {
+            try
+            {
+                var fn = a.FileName;
+                if (!string.IsNullOrEmpty(fn) && File.Exists(fn) && !candidates.Contains(fn))
+                    candidates.Add(fn);
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        // Prefer MVID exact matches first
+        if (mvid.HasValue && candidates.Count > 0)
+        {
+            var mvidMatches = new List<string>();
+            foreach (var file in candidates)
+            {
+                try
+                {
+                    using var fs = File.OpenRead(file);
+                    using var pe = new PEReader(fs, PEStreamOptions.Default);
+                    if (!pe.HasMetadata)
+                        continue;
+                    var reader = pe.GetMetadataReader();
+                    var guid = reader.GetGuid(reader.GetModuleDefinition().Mvid);
+                    if (guid == mvid.Value)
+                        mvidMatches.Add(file);
+                }
+                catch
+                {
+                }
+            }
+
+            if (mvidMatches.Count > 0)
+            {
+                // Probe exact MVID matches for the handle/symbol
+                foreach (var f in mvidMatches)
+                {
+                    try
+                    {
+                        if (!handle.IsNil && ProbeAssemblyForHandle(f, handle))
+                            return f;
+
+                        if (!string.IsNullOrEmpty(symbolName) && ProbeAssemblyForSymbolName(f, symbolName))
+                            return f;
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        // Probe candidate list in order
+        foreach (var f in candidates)
+        {
+            try
+            {
+                if (!handle.IsNil && ProbeAssemblyForHandle(f, handle))
+                    return f;
+
+                if (!string.IsNullOrEmpty(symbolName) && ProbeAssemblyForSymbolName(f, symbolName))
+                    return f;
+            }
+            catch
+            {
+                // ignore per-file errors
+            }
+        }
+
+        // As a final attempt, do a broader scan across sibling directories of known candidates for common file names
+        try
+        {
+            var extra = new List<string>();
+            foreach (var known in candidates.ToArray())
+            {
+                try
+                {
+                    var dir = Path.GetDirectoryName(known);
+                    if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+                        continue;
+
+                    foreach (var f in Directory.EnumerateFiles(dir, "*.dll"))
+                    {
+                        if (!extra.Contains(f) && !candidates.Contains(f))
+                            extra.Add(f);
+                    }
+                    foreach (var f in Directory.EnumerateFiles(dir, "*.exe"))
+                    {
+                        if (!extra.Contains(f) && !candidates.Contains(f))
+                            extra.Add(f);
+                    }
+                }
+                catch { }
+            }
+
+            foreach (var f in extra)
+            {
+                try
+                {
+                    if (!handle.IsNil && ProbeAssemblyForHandle(f, handle))
+                        return f;
+
+                    if (!string.IsNullOrEmpty(symbolName) && ProbeAssemblyForSymbolName(f, symbolName))
+                        return f;
+                }
+                catch { }
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
+    public async System.Threading.Tasks.Task<string?> ResolveAssemblyForHandleAsync(EntityHandle handle, string? simpleAssemblyName = null, string? symbolName = null, Guid? mvid = null, IProgress<string>? progress = null, System.Threading.CancellationToken cancellationToken = default)
+    {
+        if (handle.IsNil && string.IsNullOrEmpty(symbolName))
+            return null;
+
+        progress?.Report("Collecting candidates...");
+
+        var candidates = new List<string>();
+        if (!string.IsNullOrWhiteSpace(simpleAssemblyName))
+        {
+            candidates.AddRange(ResolveAssemblyCandidates(simpleAssemblyName!, mvid));
+        }
+
+        foreach (var p in GetPersistedAssemblyFiles())
+        {
+            if (!candidates.Contains(p) && File.Exists(p))
+                candidates.Add(p);
+        }
+
+        foreach (var a in assemblyList.GetAssemblies())
+        {
+            try
+            {
+                var fn = a.FileName;
+                if (!string.IsNullOrEmpty(fn) && File.Exists(fn) && !candidates.Contains(fn))
+                    candidates.Add(fn);
+            }
+            catch { }
+        }
+
+        // Prefer MVID exact matches
+        if (mvid.HasValue && candidates.Count > 0)
+        {
+            var mvidMatches = new List<string>();
+            foreach (var file in candidates)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    using var fs = File.OpenRead(file);
+                    using var pe = new PEReader(fs, PEStreamOptions.Default);
+                    if (!pe.HasMetadata)
+                        continue;
+                    var reader = pe.GetMetadataReader();
+                    var guid = reader.GetGuid(reader.GetModuleDefinition().Mvid);
+                    if (guid == mvid.Value)
+                        mvidMatches.Add(file);
+                }
+                catch { }
+            }
+
+            if (mvidMatches.Count > 0)
+            {
+                foreach (var f in mvidMatches)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    progress?.Report($"Probing {f} (MVID match)...");
+                    try
+                    {
+                        if (!handle.IsNil && await ProbeAssemblyForHandleAsync(f, handle, progress, cancellationToken).ConfigureAwait(false))
+                            return f;
+
+                        if (!string.IsNullOrEmpty(symbolName) && await ProbeAssemblyForSymbolNameAsync(f, symbolName, progress, cancellationToken).ConfigureAwait(false))
+                            return f;
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        // Probe candidate list
+        foreach (var f in candidates)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            progress?.Report($"Probing {f}...");
+            try
+            {
+                if (!handle.IsNil && await ProbeAssemblyForHandleAsync(f, handle, progress, cancellationToken).ConfigureAwait(false))
+                    return f;
+
+                if (!string.IsNullOrEmpty(symbolName) && await ProbeAssemblyForSymbolNameAsync(f, symbolName, progress, cancellationToken).ConfigureAwait(false))
+                    return f;
+            }
+            catch { }
+        }
+
+        // broad scan in sibling directories
+        try
+        {
+            var extra = new List<string>();
+            foreach (var known in candidates.ToArray())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    var dir = Path.GetDirectoryName(known);
+                    if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+                        continue;
+
+                    foreach (var ff in Directory.EnumerateFiles(dir, "*.dll"))
+                    {
+                        if (!extra.Contains(ff) && !candidates.Contains(ff))
+                            extra.Add(ff);
+                    }
+                    foreach (var ff in Directory.EnumerateFiles(dir, "*.exe"))
+                    {
+                        if (!extra.Contains(ff) && !candidates.Contains(ff))
+                            extra.Add(ff);
+                    }
+                }
+                catch { }
+            }
+
+            foreach (var ff in extra)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress?.Report($"Probing {ff} (broad scan)...");
+                try
+                {
+                    if (!handle.IsNil && await ProbeAssemblyForHandleAsync(ff, handle, progress, cancellationToken).ConfigureAwait(false))
+                        return ff;
+
+                    if (!string.IsNullOrEmpty(symbolName) && await ProbeAssemblyForSymbolNameAsync(ff, symbolName, progress, cancellationToken).ConfigureAwait(false))
+                        return ff;
+                }
+                catch { }
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
+    public async System.Threading.Tasks.Task<bool> ProbeAssemblyForSymbolNameAsync(string filePath, string symbolName, IProgress<string>? progress = null, System.Threading.CancellationToken cancellationToken = default)
+    {
+        return await System.Threading.Tasks.Task.Run(() => ProbeAssemblyForSymbolName(filePath, symbolName), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Probe a file for a symbol by textual name. The probe checks type definitions, exported type forwards,
+    /// and simple member name matches (methods/fields/properties/events).
+    /// This is a best-effort heuristic and may produce false positives for generic or overloaded members.
+    /// </summary>
+    private bool ProbeAssemblyForSymbolName(string filePath, string symbolName)
+    {
+        if (string.IsNullOrEmpty(symbolName) || string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+            return false;
+
+        try
+        {
+            using var fs = File.OpenRead(filePath);
+            using var pe = new PEReader(fs, PEStreamOptions.Default);
+            if (!pe.HasMetadata)
+                return false;
+            var reader = pe.GetMetadataReader();
+
+            // Normalize symbolName: allow both full name (Namespace.Type) and short name
+            var shortName = symbolName.Contains('.') ? symbolName.Substring(symbolName.LastIndexOf('.') + 1) : symbolName;
+
+            // Check TypeDefinitions (type name match)
+            foreach (var tdHandle in reader.TypeDefinitions)
+            {
+                var td = reader.GetTypeDefinition(tdHandle);
+                var name = reader.GetString(td.Name);
+                if (string.Equals(name, shortName, StringComparison.Ordinal))
+                    return true;
+                var ns = reader.GetString(td.Namespace);
+                if (!string.IsNullOrEmpty(ns) && string.Equals(ns + "." + name, symbolName, StringComparison.Ordinal))
+                    return true;
+            }
+
+            // Check exported types (type forwards)
+            foreach (var etHandle in reader.ExportedTypes)
+            {
+                var et = reader.GetExportedType(etHandle);
+                var name = reader.GetString(et.Name);
+                var ns = reader.GetString(et.Namespace);
+                if (string.Equals(name, shortName, StringComparison.Ordinal))
+                    return true;
+                if (!string.IsNullOrEmpty(ns) && string.Equals(ns + "." + name, symbolName, StringComparison.Ordinal))
+                    return true;
+            }
+
+            // Member-level probes with improved signature checks
+            // For methods, compare name and parameter count when a signature hint is present like "TypeName.MethodName(paramCount)"
+            int? hintedParamCount = null;
+            string hintedTypePrefix = null;
+            // Try parse hints like "Namespace.Type.Method" or "Type.Method(2)"
+            var paramStart = symbolName.IndexOf('(');
+            if (paramStart >= 0)
+            {
+                var paramEnd = symbolName.IndexOf(')', paramStart + 1);
+                if (paramEnd > paramStart)
+                {
+                    var between = symbolName.Substring(paramStart + 1, paramEnd - paramStart - 1);
+                    if (int.TryParse(between.Trim(), out var pc))
+                        hintedParamCount = pc;
+                }
+            }
+
+            // Optionally extract type prefix (e.g., "Namespace.Type.") to prioritize methods on that type
+            var lastDot = symbolName.LastIndexOf('.');
+            if (lastDot > 0)
+            {
+                hintedTypePrefix = symbolName.Substring(0, lastDot);
+            }
+
+            foreach (var tdHandle in reader.TypeDefinitions)
+            {
+                var td = reader.GetTypeDefinition(tdHandle);
+                var typeName = reader.GetString(td.Name);
+                var typeNs = reader.GetString(td.Namespace);
+                var fullTypeName = string.IsNullOrEmpty(typeNs) ? typeName : typeNs + "." + typeName;
+
+                // If hint provided, skip types that don't match
+                if (!string.IsNullOrEmpty(hintedTypePrefix) && !string.Equals(fullTypeName, hintedTypePrefix, StringComparison.Ordinal) && !fullTypeName.StartsWith(hintedTypePrefix + "+", StringComparison.Ordinal))
+                    continue;
+
+                // Methods
+                foreach (var mh in td.GetMethods())
+                {
+                    var md = reader.GetMethodDefinition(mh);
+                    var mname = reader.GetString(md.Name);
+                    if (!string.Equals(mname, shortName, StringComparison.Ordinal) && !string.Equals(mname, symbolName, StringComparison.Ordinal))
+                        continue;
+
+                    if (hintedParamCount.HasValue)
+                    {
+                        try
+                        {
+                            // Use parameter declarations table to estimate parameter count
+                            var pcount = md.GetParameters().Count;
+                            if (pcount == hintedParamCount.Value)
+                                return true;
+                        }
+                        catch
+                        {
+                            // fallback to name-only match on error
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+
+                // Fields
+                foreach (var fh in td.GetFields())
+                {
+                    var fd = reader.GetFieldDefinition(fh);
+                    var fname = reader.GetString(fd.Name);
+                    if (string.Equals(fname, symbolName, StringComparison.Ordinal) || string.Equals(fname, shortName, StringComparison.Ordinal))
+                        return true;
+                }
+
+                // Properties
+                foreach (var ph in td.GetProperties())
+                {
+                    var pd = reader.GetPropertyDefinition(ph);
+                    var pname = reader.GetString(pd.Name);
+                    if (string.Equals(pname, symbolName, StringComparison.Ordinal) || string.Equals(pname, shortName, StringComparison.Ordinal))
+                        return true;
+                }
+
+                // Events
+                foreach (var eh in td.GetEvents())
+                {
+                    var ed = reader.GetEventDefinition(eh);
+                    var ename = reader.GetString(ed.Name);
+                    if (string.Equals(ename, symbolName, StringComparison.Ordinal) || string.Equals(ename, shortName, StringComparison.Ordinal))
+                        return true;
+                }
+            }
+        }
+        catch
+        {
+            return false;
+        }
+
+        return false;
+    }
+
     public IEnumerable<(EntityHandle Handle, string DisplayName, string AssemblyPath)> AnalyzeSymbolReferences(IlSpyAssembly assembly, EntityHandle handle, DecompilationLanguage language)
     {
         Serilog.Log.Debug("[IlSpyBackend] AnalyzeSymbolReferences called for assembly={Assembly} handle={Handle}", assembly.FilePath, handle);
