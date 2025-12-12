@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
-using Avalonia.Threading;
+using ICSharpCode.ILSpy;
 using ICSharpCode.Decompiler.TypeSystem;
 using ProjectRover.Nodes;
 using ProjectRover.Notifications;
@@ -21,17 +21,19 @@ public partial class AssemblyTreeModel : ObservableObject
     private readonly IlSpyBackend ilSpyBackend;
     private readonly INotificationService notificationService;
     private readonly ILogger<AssemblyTreeModel> logger;
+    private readonly IPlatformService platformService;
     private readonly Dictionary<AssemblyNode, IlSpyAssembly> assemblyLookup;
     private readonly Dictionary<(string AssemblyPath, EntityHandle Handle), Node> handleToNodeMap;
     private readonly Stack<Node> backStack;
     private readonly Stack<Node> forwardStack;
     private bool isBackForwardNavigation;
 
-    public AssemblyTreeModel(IlSpyBackend backend, INotificationService notificationService, ILogger<AssemblyTreeModel> logger)
+    public AssemblyTreeModel(IlSpyBackend backend, INotificationService notificationService, ILogger<AssemblyTreeModel> logger, IPlatformService platformService)
     {
         ilSpyBackend = backend ?? throw new ArgumentNullException(nameof(backend));
         this.notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this.platformService = platformService ?? throw new ArgumentNullException(nameof(platformService));
         AssemblyNodes = new ObservableCollection<AssemblyNode>();
         assemblyLookup = new Dictionary<AssemblyNode, IlSpyAssembly>();
         handleToNodeMap = new Dictionary<(string AssemblyPath, EntityHandle Handle), Node>();
@@ -188,18 +190,20 @@ public partial class AssemblyTreeModel : ObservableObject
 
             progress?.Report($"Loading {filePath}...");
 
-            if (!File.Exists(filePath))
-            {
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                if (!File.Exists(filePath))
                 {
-                    notificationService.ShowNotification(new Notification
+                    await platformService.InvokeOnUIAsync(() =>
                     {
-                        Message = $"The file \"{filePath}\" does not exist.",
-                        Level = NotificationLevel.Error
+                        notificationService.ShowNotification(new Notification
+                        {
+                            Message = $"The file \"{filePath}\" does not exist.",
+                            Level = NotificationLevel.Error
+                        });
+
+                        return System.Threading.Tasks.Task.CompletedTask;
                     });
-                });
-                continue;
-            }
+                    continue;
+                }
 
             // Load PE/metadata off the UI thread
             IlSpyAssembly? assembly = null;
@@ -211,28 +215,32 @@ public partial class AssemblyTreeModel : ObservableObject
             {
                 break;
             }
-            catch (Exception ex)
-            {
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                catch (Exception ex)
                 {
-                    notificationService.ShowNotification(new Notification
+                    await platformService.InvokeOnUIAsync(() =>
                     {
-                        Message = $"Failed to load \"{filePath}\": {ex.Message}",
-                        Level = NotificationLevel.Error
+                        notificationService.ShowNotification(new Notification
+                        {
+                            Message = $"Failed to load \"{filePath}\": {ex.Message}",
+                            Level = NotificationLevel.Error
+                        });
+
+                        return System.Threading.Tasks.Task.CompletedTask;
                     });
-                });
-                continue;
-            }
+                    continue;
+                }
 
             if (assembly == null)
             {
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                await platformService.InvokeOnUIAsync(() =>
                 {
                     notificationService.ShowNotification(new Notification
                     {
                         Message = $"Failed to load \"{filePath}\".",
                         Level = NotificationLevel.Error
                     });
+
+                    return System.Threading.Tasks.Task.CompletedTask;
                 });
                 continue;
             }
@@ -245,7 +253,7 @@ public partial class AssemblyTreeModel : ObservableObject
             AssemblyNode? assemblyNode = null;
             try
             {
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                await platformService.InvokeOnUIAsync(() =>
                 {
                     assemblyNode = IlSpyXTreeAdapter.BuildAssemblyNode(assembly.LoadedAssembly, includeCompilerGenerated, includeInternal);
                     if (assemblyNode == null)
@@ -255,7 +263,7 @@ public partial class AssemblyTreeModel : ObservableObject
                             Message = $"Failed to build tree for \"{filePath}\".",
                             Level = NotificationLevel.Error
                         });
-                        return;
+                        return System.Threading.Tasks.Task.CompletedTask;
                     }
 
                     IndexAssemblyHandles(assemblyNode, assembly.FilePath);
@@ -263,6 +271,8 @@ public partial class AssemblyTreeModel : ObservableObject
                     assemblyLookup[assemblyNode] = assembly;
                     addedAssemblies.Add(assemblyNode);
                     SelectedNode = assemblyNode;
+
+                    return System.Threading.Tasks.Task.CompletedTask;
                 });
             }
             catch (OperationCanceledException)
@@ -271,13 +281,15 @@ public partial class AssemblyTreeModel : ObservableObject
             }
             catch (Exception ex)
             {
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                await platformService.InvokeOnUIAsync(() =>
                 {
                     notificationService.ShowNotification(new Notification
                     {
                         Message = $"Failed to build tree for \"{filePath}\": {ex.Message}",
                         Level = NotificationLevel.Error
                     });
+
+                    return System.Threading.Tasks.Task.CompletedTask;
                 });
                 continue;
             }

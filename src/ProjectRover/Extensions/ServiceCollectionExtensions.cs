@@ -21,6 +21,7 @@ using System;
 using ProjectRover.Options;
 using ProjectRover.Providers;
 using ProjectRover.Services;
+using ICSharpCode.ILSpy;
 using ProjectRover.ViewModels;
 using ProjectRover.Views;
 using Microsoft.Extensions.Configuration;
@@ -70,6 +71,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddServices(this IServiceCollection services) =>
         services
             .AddSingleton<IlSpyBackend>()
+            .AddSingleton<ICSharpCode.ILSpy.IDockWorkspace, AvaloniaDockWorkspace>()
+            .AddSingleton<IPlatformService>(sp => new AvaloniaPlatformService(sp.GetRequiredService<ICSharpCode.ILSpy.IDockWorkspace>()))
             .AddSingleton<INotificationService, NotificationService>()
             .AddTransient<IProjectGenerationService, ProjectGenerationService>()
             .AddTransient<IAutoUpdateService, AutoUpdateService>()

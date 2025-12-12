@@ -25,6 +25,9 @@ using ProjectRover.Extensions;
 using ProjectRover.Services;
 using ProjectRover.Views;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
+using System.Collections.Generic;
+using System.Composition.Hosting;
 
 namespace ProjectRover;
 
@@ -33,6 +36,8 @@ public partial class App : Application
     public new static App Current => (App)Application.Current!;
     
     public IServiceProvider Services { get; } = ConfigureServices();
+    public object? CompositionHost { get; private set; }
+    public IExportProvider? ExportProvider { get; private set; }
     
     public override void Initialize()
     {
@@ -44,6 +49,78 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = Services.GetRequiredService<MainWindow>();
+
+            // Initialize CompositionHost for MEF-style exports (compose ILSpy parts) using ContainerConfiguration
+            try
+            {
+                var assemblies = new List<Assembly> { Assembly.GetExecutingAssembly() };
+                try { assemblies.Add(Assembly.Load("ICSharpCode.ILSpyX")); } catch { }
+
+                var config = new System.Composition.Hosting.ContainerConfiguration()
+                    .WithAssemblies(assemblies);
+
+                // Explicitly register our wrapper parts so they are discoverable
+                config = config.WithParts(typeof(ProjectRover.Services.ExportedIlSpyBackend), typeof(ProjectRover.Services.ExportedServiceProvider));
+
+                var container = config.CreateContainer();
+                CompositionHost = container;
+                ExportProvider = new CompositionHostExportProvider(container, Services);
+            }
+            catch
+            {
+                CompositionHost = null;
+                ExportProvider = null;
+            }
+
+            // Exercise docking workspace once at startup (diagnostic)
+            try
+            {
+                var dockWorkspace = Services.GetService<ICSharpCode.ILSpy.IDockWorkspace>();
+                if (dockWorkspace != null)
+                {
+                    // Add a diagnostic tab and show some text
+                    var doc = dockWorkspace.AddTabPage(null);
+                    dockWorkspace.ShowText("ProjectRover: diagnostic tab created at startup.");
+                }
+            }
+            catch
+            {
+                // swallow diagnostic errors
+            }
+
+                // Runtime MEF diagnostics: try to resolve the exported IlSpy backend wrapper
+                try
+                {
+                    if (ExportProvider != null)
+                    {
+                        try
+                        {
+                            var exportedBackend = ExportProvider.GetExportedValue<ProjectRover.Services.ExportedIlSpyBackend>();
+                            if (exportedBackend != null && exportedBackend.Backend != null)
+                            {
+                                Console.WriteLine("MEF: Resolved ExportedIlSpyBackend via ExportProvider.");
+                                try
+                                {
+                                    // Call a safe method to verify the backend is callable
+                                    exportedBackend.Backend.Clear();
+                                    Console.WriteLine("IlSpyBackend.Clear() invoked successfully.");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine("IlSpyBackend.Clear failed: " + ex.Message);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("MEF: ExportedIlSpyBackend not resolved via ExportProvider: " + ex.Message);
+                        }
+                    }
+                }
+                catch
+                {
+                    // swallow diagnostics
+                }
 
             desktop.ShutdownRequested += (_, _) =>
             {
@@ -74,5 +151,61 @@ public partial class App : Application
     {
         _ = Services.GetRequiredService<IAnalyticsService>().TrackEventAsync(AnalyticsEvents.About);
         Services.GetRequiredService<IDialogService>().ShowDialog<AboutDialog>();
+    }
+
+    // Small adapter so existing ILSpy code can call GetExportedValue<T>() against a provider.
+    class CompositionHostExportProvider : IExportProvider
+    {
+        private readonly object _host;
+        private readonly IServiceProvider _services;
+
+        public CompositionHostExportProvider(object host, IServiceProvider services)
+        {
+            _host = host;
+            _services = services;
+        }
+
+        public T GetExportedValue<T>()
+        {
+            try
+            {
+                // Prefer composition host via reflection
+                var hgType = _host.GetType();
+                var getExport = hgType.GetMethod("GetExport", BindingFlags.Instance | BindingFlags.Public);
+                if (getExport != null && getExport.IsGenericMethodDefinition)
+                {
+                    var generic = getExport.MakeGenericMethod(typeof(T));
+                    var result = generic.Invoke(_host, null);
+                    if (result is T t)
+                        return t;
+                }
+            }
+            catch { }
+
+            // Fallback to service provider
+            var svc = (T?)_services.GetService(typeof(T));
+            if (svc != null)
+                return svc;
+            throw new InvalidOperationException($"Export not found: {typeof(T).FullName}");
+        }
+    }
+
+    public interface IExportProvider
+    {
+        T GetExportedValue<T>();
+    }
+
+    // Small holder type that can be discovered by MEF consumers if they import IServiceProvider
+    // We keep this type internal to avoid adding new public API surface.
+    class ProjectRoverExportedServiceProvider
+    {
+        private readonly IServiceProvider _provider;
+
+        public ProjectRoverExportedServiceProvider(IServiceProvider provider)
+        {
+            _provider = provider;
+        }
+
+        public object GetService(Type serviceType) => _provider.GetService(serviceType)!;
     }
 }
