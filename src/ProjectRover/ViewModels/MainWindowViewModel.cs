@@ -745,28 +745,7 @@ public partial class MainWindowViewModel : ObservableObject
         PersistLastAssemblies();
     }
 
-    [RelayCommand]
-    private void SortAssemblies()
-    {
-        if (AssemblyNodes.Count <= 1)
-            return;
-
-        var sorted = AssemblyNodes.OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase).ToList();
-        AssemblyNodes.Clear();
-        foreach (var assemblyNode in sorted)
-        {
-            AssemblyNodes.Add(assemblyNode);
-        }
-
-        // adjust selection to the same assembly if possible
-        if (SelectedNode is AssemblyNode assemblySelection)
-        {
-            SelectedNode = AssemblyNodes.FirstOrDefault(a => string.Equals(a.Name, assemblySelection.Name, StringComparison.OrdinalIgnoreCase))
-                           ?? SelectedNode;
-        }
-
-        PersistLastAssemblies();
-    }
+    private bool CanClearAssemblyList() => AssemblyNodes.Count > 0;
 
     private void ClearHistory()
     {
@@ -776,7 +755,14 @@ public partial class MainWindowViewModel : ObservableObject
         ForwardCommand.NotifyCanExecuteChanged();
     }
 
-    private bool CanClearAssemblyList() => assemblyLookup.Any();
+    [RelayCommand]
+    private void SortAssemblies()
+    {
+        var sorted = AssemblyNodes.OrderBy(n => n.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        AssemblyNodes.Clear();
+        foreach (var n in sorted)
+            AssemblyNodes.Add(n);
+    }
 
     partial void OnSelectedNodeChanged(Node? oldValue, Node? newValue)
     {
@@ -2052,15 +2038,77 @@ public partial class MainWindowViewModel : ObservableObject
     public void NavigateToSearchResult(SearchResult? result)
     {
         logger.LogInformation("[NavigateToSearchResult] Called with: {Type}, DisplayName: {DisplayName}", result?.GetType().Name, (result as BasicSearchResult)?.DisplayName);
-        if (result is not BasicSearchResult basic || basic.TargetNode is not { } target)
+        if (result is not BasicSearchResult basic)
         {
-            logger.LogWarning("[NavigateToSearchResult] No valid target node found.");
+            logger.LogWarning("[NavigateToSearchResult] Result is not BasicSearchResult or is null.");
             return;
         }
 
-        logger.LogInformation("[NavigateToSearchResult] Navigating to node: {NodeType}, Name: {NodeName}", target.GetType().Name, target.Name);
-        SelectedNode = target;
-        ExpandParents(target);
+        // If we already have the target node, navigate immediately
+        if (basic.TargetNode is { } target)
+        {
+            logger.LogInformation("[NavigateToSearchResult] Navigating to node: {NodeType}, Name: {NodeName}", target.GetType().Name, target.Name);
+            SelectedNode = target;
+            ExpandParents(target);
+            return;
+        }
+
+        // No target node - attempt to load the assembly if we have an assembly path
+        var assemblyPath = basic.DisplayAssembly;
+        if (string.IsNullOrWhiteSpace(assemblyPath))
+        {
+            logger.LogWarning("[NavigateToSearchResult] No valid target node found and no assembly information present.");
+            return;
+        }
+
+        // Try to find loaded assembly by filename or full path
+        var existing = AssemblyNodes.FirstOrDefault(a => string.Equals(a.Name, Path.GetFileNameWithoutExtension(assemblyPath), StringComparison.OrdinalIgnoreCase)
+                                                        || string.Equals(assemblyLookup.TryGetValue(a, out var p) ? p.FilePath : string.Empty, assemblyPath, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+        {
+            // The assembly is present but target wasn't resolved earlier; reindex and attempt resolve
+            IndexAssemblyHandles(existing, assemblyLookup[existing].FilePath);
+            var resolved = ResolveNode(((BasicSearchResult)result).TargetNode?.GetType() == null ? default : default);
+            // Attempt to resolve by scanning handleToNodeMap entries matching assembly filename
+            var candidate = handleToNodeMap.FirstOrDefault(kvp => string.Equals(Path.GetFileName(kvp.Key.AssemblyPath), Path.GetFileName(assemblyPath), StringComparison.OrdinalIgnoreCase)).Value;
+            if (candidate != null)
+            {
+                SelectedNode = candidate;
+                ExpandParents(candidate);
+                return;
+            }
+        }
+
+        // Attempt to load assembly automatically (silent). If unsuccessful, notify the user.
+        var loaded = ilSpyBackend.LoadAssembly(assemblyPath);
+        if (loaded == null)
+        {
+            notificationService.ShowNotification(new ProjectRover.Notifications.Notification
+            {
+                Message = $"Failed to load assembly: {assemblyPath}",
+                Level = ProjectRover.Notifications.NotificationLevel.Error
+            });
+            return;
+        }
+
+        // Build assembly node and index
+        var asmNode = IlSpyXTreeAdapter.BuildAssemblyNode(loaded.LoadedAssembly, includeCompilerGenerated: ShowCompilerGeneratedMembers, includeInternal: ShowInternalApi);
+        if (asmNode != null)
+        {
+            AssemblyNodes.Add(asmNode);
+            assemblyLookup[asmNode] = loaded;
+            IndexAssemblyHandles(asmNode, loaded.FilePath);
+            // Try to resolve again using the analyzer result: we don't store the raw handle here, so attempt by name
+            var candidate = handleToNodeMap.FirstOrDefault(kvp => string.Equals(Path.GetFileName(kvp.Key.AssemblyPath), Path.GetFileName(assemblyPath), StringComparison.OrdinalIgnoreCase)).Value;
+            if (candidate != null)
+            {
+                SelectedNode = candidate;
+                ExpandParents(candidate);
+                return;
+            }
+        }
+
+        logger.LogWarning("[NavigateToSearchResult] No valid target node found after loading assembly {Assembly}", assemblyPath);
     }
 
     private void RunSearch()
@@ -2108,6 +2156,56 @@ public partial class MainWindowViewModel : ObservableObject
     {
         _ = analyticsService.TrackEventAsync(AnalyticsEvents.About);
         dialogService.ShowDialog<AboutWindow>();
+    }
+
+    [RelayCommand]
+    private void FindUsages()
+    {
+        if (SelectedNode is not MemberNode member)
+        {
+            notificationService.ShowNotification(new Notification
+            {
+                Message = "Select a member to find usages.",
+                Level = NotificationLevel.Warning
+            });
+            return;
+        }
+
+        var asmNode = GetAssemblyNode(member);
+        if (asmNode == null || !assemblyLookup.TryGetValue(asmNode, out var ilspyAssembly))
+        {
+            notificationService.ShowNotification(new Notification
+            {
+                Message = "Assembly not loaded for this member.",
+                Level = NotificationLevel.Warning
+            });
+            return;
+        }
+
+        SearchResults.Clear();
+        NumberOfResultsText = null;
+
+        var refs = ilSpyBackend.AnalyzeSymbolReferences(ilspyAssembly, member.MetadataToken, SelectedLanguage.Language).ToList();
+        foreach (var (handle, displayName, assemblyPath) in refs)
+        {
+            // Try to resolve node in current tree
+            var node = ResolveNode(handle);
+
+            var basic = new BasicSearchResult
+            {
+                MatchedString = displayName,
+                DisplayName = displayName,
+                DisplayLocation = node?.ToString() ?? string.Empty,
+                DisplayAssembly = assemblyPath ?? string.Empty,
+                IconPath = string.Empty,
+                LocationIconPath = string.Empty,
+                AssemblyIconPath = string.Empty,
+                TargetNode = node
+            };
+            SearchResults.Add(basic);
+        }
+
+        NumberOfResultsText = $"Found {SearchResults.Count} usage(s)";
     }
 
     [RelayCommand]
@@ -2399,8 +2497,43 @@ public partial class MainWindowViewModel : ObservableObject
     private static Window? GetMainWindow() =>
         (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
 
-    private Node? TryResolveHandle(EntityHandle handle) =>
-        handleToNodeMap.FirstOrDefault(kvp => kvp.Key.Handle.Equals(handle)).Value;
+    private Node? TryResolveHandle(EntityHandle handle)
+    {
+        // Exact match first
+        var exact = handleToNodeMap.FirstOrDefault(kvp => kvp.Key.Handle.Equals(handle)).Value;
+        if (exact != null)
+            return exact;
+
+        try
+        {
+            var kind = handle.Kind;
+            var handleStr = handle.ToString();
+            // Try matching by handle string + kind across all assemblies (fallback)
+            foreach (var kvp in handleToNodeMap)
+            {
+                try
+                {
+                    if (kvp.Key.Handle.Kind == kind && string.Equals(kvp.Key.Handle.ToString(), handleStr, StringComparison.OrdinalIgnoreCase))
+                    {
+                        logger.LogInformation("[TryResolveHandle] Fallback matched handle string {HandleStr} kind={Kind} in assembly {Asm}", handleStr, kind, kvp.Key.AssemblyPath);
+                        return kvp.Value;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "[TryResolveHandle] Error inspecting handle in map for assembly {Asm}", kvp.Key.AssemblyPath);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "[TryResolveHandle] Failed to get token from handle {Handle}", handle);
+        }
+
+        return null;
+    }
+
+
 
     public record ThemeOption(string Name, ThemeVariant Variant);
 

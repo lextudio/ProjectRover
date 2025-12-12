@@ -185,30 +185,60 @@
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:FieldNode">
         <StackPanel Orientation="Horizontal">
+          <StackPanel.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Find Usages"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).FindUsagesCommand}" />
+            </ContextMenu>
+          </StackPanel.ContextMenu>
           <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:PropertyNode">
         <StackPanel Orientation="Horizontal">
+          <StackPanel.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Find Usages"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).FindUsagesCommand}" />
+            </ContextMenu>
+          </StackPanel.ContextMenu>
           <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:ConstructorNode">
         <StackPanel Orientation="Horizontal">
+          <StackPanel.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Find Usages"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).FindUsagesCommand}" />
+            </ContextMenu>
+          </StackPanel.ContextMenu>
           <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:MethodNode">
         <StackPanel Orientation="Horizontal">
+          <StackPanel.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Find Usages"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).FindUsagesCommand}" />
+            </ContextMenu>
+          </StackPanel.ContextMenu>
           <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>
       </TreeDataTemplate>
       <TreeDataTemplate DataType="nodes:EventNode">
         <StackPanel Orientation="Horizontal">
+          <StackPanel.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Find Usages"
+                        Command="{Binding $parent[TreeView].((vm:MainWindowViewModel)DataContext).FindUsagesCommand}" />
+            </ContextMenu>
+          </StackPanel.ContextMenu>
           <Svg Path="{Binding IconKey, Converter={StaticResource IconKeyToPathConverter}}" />
           <TextBlock Text="{Binding Name}" />
         </StackPanel>

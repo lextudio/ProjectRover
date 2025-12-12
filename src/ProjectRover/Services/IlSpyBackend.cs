@@ -124,6 +124,127 @@ public string DecompileMember(IlSpyAssembly assembly, EntityHandle handle, Decom
         Clear();
     }
 
+    public IEnumerable<(EntityHandle Handle, string DisplayName, string AssemblyPath)> AnalyzeSymbolReferences(IlSpyAssembly assembly, EntityHandle handle, DecompilationLanguage language)
+    {
+        Serilog.Log.Debug("[IlSpyBackend] AnalyzeSymbolReferences called for assembly={Assembly} handle={Handle}", assembly.FilePath, handle);
+        if (handle.IsNil)
+        {
+            Serilog.Log.Debug("[IlSpyBackend] AnalyzeSymbolReferences: handle is nil, returning");
+            return Array.Empty<(EntityHandle, string, string)>();
+        }
+
+        // Resolve IEntity from handle using the assembly's type system
+        var typeSystem = assembly.TypeSystem;
+        ICSharpCode.Decompiler.TypeSystem.IEntity? entity = null;
+        try
+        {
+            var module = typeSystem.MainModule as ICSharpCode.Decompiler.TypeSystem.MetadataModule;
+            if (module != null)
+            {
+                switch (handle.Kind)
+                {
+                    case HandleKind.TypeDefinition:
+                        entity = module.GetDefinition((TypeDefinitionHandle)handle) as ICSharpCode.Decompiler.TypeSystem.IEntity;
+                        break;
+                    case HandleKind.MethodDefinition:
+                        entity = module.GetDefinition((MethodDefinitionHandle)handle) as ICSharpCode.Decompiler.TypeSystem.IEntity;
+                        break;
+                    case HandleKind.FieldDefinition:
+                        entity = module.GetDefinition((FieldDefinitionHandle)handle) as ICSharpCode.Decompiler.TypeSystem.IEntity;
+                        break;
+                    case HandleKind.PropertyDefinition:
+                        entity = module.GetDefinition((PropertyDefinitionHandle)handle) as ICSharpCode.Decompiler.TypeSystem.IEntity;
+                        break;
+                    case HandleKind.EventDefinition:
+                        entity = module.GetDefinition((EventDefinitionHandle)handle) as ICSharpCode.Decompiler.TypeSystem.IEntity;
+                        break;
+                    default:
+                        entity = null;
+                        break;
+                }
+            }
+        }
+        catch
+        {
+            entity = null;
+        }
+
+        if (entity == null)
+        {
+            Serilog.Log.Debug("[IlSpyBackend] AnalyzeSymbolReferences: failed to resolve IEntity for handle={Handle}", handle);
+            return Array.Empty<(EntityHandle, string, string)>();
+        }
+        Serilog.Log.Debug("[IlSpyBackend] AnalyzeSymbolReferences: resolved entity {Entity} (type={Type})", entity.Name ?? entity.MetadataToken.ToString(), entity.GetType().FullName);
+
+        // Discover analyzer types
+        var analyzerTypes = ICSharpCode.ILSpyX.Analyzers.ExportAnalyzerAttribute.GetAnnotatedAnalyzers()
+            .Select(t => t.AnalyzerType)
+            .ToList();
+        Serilog.Log.Debug("[IlSpyBackend] AnalyzeSymbolReferences: discovered {Count} analyzer types", analyzerTypes.Count);
+
+        // Build AnalyzerContext using the existing assemblyList and a simple language adapter
+        var context = new ICSharpCode.ILSpyX.Analyzers.AnalyzerContext
+        {
+            AssemblyList = assemblyList,
+            Language = new ProjectRover.Services.IlSpyX.BasicLanguage(),
+            CancellationToken = CancellationToken.None
+        };
+
+        var results = new List<(EntityHandle, string, string)>();
+
+        foreach (var analyzerType in analyzerTypes)
+        {
+            Serilog.Log.Debug("[IlSpyBackend] Trying analyzer type {AnalyzerType}", analyzerType.FullName);
+            ICSharpCode.ILSpyX.Analyzers.IAnalyzer? analyzer = null;
+            try
+            {
+                analyzer = Activator.CreateInstance(analyzerType) as ICSharpCode.ILSpyX.Analyzers.IAnalyzer;
+            }
+            catch
+            {
+                analyzer = null;
+            }
+
+            if (analyzer == null)
+            {
+                Serilog.Log.Debug("[IlSpyBackend] Skipping analyzer {AnalyzerType} - could not instantiate", analyzerType.FullName);
+                continue;
+            }
+
+            try
+            {
+                if (!analyzer.Show(entity))
+                {
+                    Serilog.Log.Debug("[IlSpyBackend] Analyzer {AnalyzerType} .Show returned false for entity {Entity}", analyzerType.FullName, entity.Name ?? entity.MetadataToken.ToString());
+                    continue;
+                }
+                Serilog.Log.Debug("[IlSpyBackend] Analyzer {AnalyzerType} will run for entity {Entity}", analyzerType.FullName, entity.Name ?? entity.MetadataToken.ToString());
+
+                foreach (var sym in analyzer.Analyze(entity, context))
+                {
+                    if (sym is ICSharpCode.Decompiler.TypeSystem.IEntity ie && ie.ParentModule?.MetadataFile != null)
+                    {
+                        var mdFile = ie.ParentModule.MetadataFile;
+                        var asmPath = mdFile.FileName ?? assembly.FilePath ?? string.Empty;
+                        var displayName = ie.Name ?? ie.MetadataToken.ToString() ?? string.Empty;
+                        results.Add((ie.MetadataToken, displayName, asmPath));
+                        Serilog.Log.Debug("[IlSpyBackend] Analyzer {AnalyzerType} found symbol {Symbol} handle={Handle} in assembly={Asm}", analyzerType.FullName, displayName, ie.MetadataToken, asmPath);
+                    }
+                    else
+                    {
+                        Serilog.Log.Debug("[IlSpyBackend] Analyzer {AnalyzerType} returned non-entity or unresolved symbol", analyzerType.FullName);
+                    }
+                }
+            }
+            catch
+            {
+                // analyzer errors are non-fatal
+            }
+        }
+
+        return results;
+    }
+
     private static string DecompileCSharp(IlSpyAssembly assembly, EntityHandle handle, DecompilerSettings? settings)
     {
         var decompiler = new CSharpDecompiler(assembly.PeFile, assembly.Resolver, settings ?? new DecompilerSettings(LanguageVersion.Latest));
