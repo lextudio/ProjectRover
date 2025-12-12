@@ -30,6 +30,6 @@ public partial class NotificationsView : UserControl
         InitializeComponent();
         
         if (!Design.IsDesignMode)
-            DataContext = App.Current.Services.GetRequiredService<INotificationsViewModel>();
+            DataContext = App.Current.Services.GetRequiredService<IUpdatePanelViewModel>();
     }
 }

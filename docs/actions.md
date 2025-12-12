@@ -18,6 +18,10 @@ This document tracks the prioritized epics for bringing ILSpyRover (Avalonia) cl
 - [ ] Map Rover settings and session persistence to ILSpy WPF settings where possible.
 - [ ] Replace ad-hoc assembly-load calls across the codebase with IlSpyBackend and AssemblyList APIs.
 
+### Resolver Improvements
+
+- [ ] I can implement more accurate signature decoding (strongly recommended) or wire cancellation/progress more deeply into the UI.
+
 ### Epic: ILSpyX Adoption & Tree Unification (High Priority)
 - [x] Verify UsingLocalIlSpyX conditional project reference works.
 - [x] Provide IlSpyXTreeAdapter to map LoadedAssembly → ResourceNode/TypeNode.

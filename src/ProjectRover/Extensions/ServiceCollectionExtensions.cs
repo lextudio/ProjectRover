@@ -65,7 +65,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton<AssemblyTreeModel>()
             .AddSingleton<MainWindowViewModel>()
             .AddTransient<IAboutWindowViewModel, AboutWindowViewModel>()
-            .AddSingleton<INotificationsViewModel, NotificationsViewModel>();
+            .AddSingleton<IUpdatePanelViewModel, UpdatePanelViewModel>();
 
     public static IServiceCollection AddServices(this IServiceCollection services) =>
         services
@@ -75,7 +75,7 @@ public static class ServiceCollectionExtensions
             .AddTransient<IAutoUpdateService, AutoUpdateService>()
             .AddTransient<IAnalyticsService, NullAnalyticsService>()
             .AddTransient<IDialogService, DialogService>()
-            .AddSingleton<IRoverSettingsService, RoverSettingsService>()
+            .AddSingleton<ISettingsService, SettingsService>()
             .AddSingleton<ICommandCatalog, CommandCatalog>()
             .AddSingleton<ProjectRover.Services.Navigation.INavigationService, ProjectRover.Services.Navigation.NavigationService>()
             .AddSingleton<IDockLayoutDescriptorProvider, DefaultDockLayoutDescriptorProvider>();

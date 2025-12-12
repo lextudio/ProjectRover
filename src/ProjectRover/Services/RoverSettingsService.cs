@@ -4,9 +4,9 @@ using ProjectRover.Settings;
 
 namespace ProjectRover.Services;
 
-public sealed class RoverSettingsService : SettingsServiceBase, IRoverSettingsService
+public sealed class SettingsService : SettingsServiceBase, ISettingsService
 {
-    public RoverSettingsService()
+    public SettingsService()
         : base(LoadSettingsSafe())
     {
     }

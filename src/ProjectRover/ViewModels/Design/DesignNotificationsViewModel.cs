@@ -23,7 +23,7 @@ using ProjectRover.Services;
 
 namespace ProjectRover.ViewModels.Design;
 
-public class DesignNotificationsViewModel : NotificationsViewModel
+public class DesignNotificationsViewModel : UpdatePanelViewModel
 {
     public DesignNotificationsViewModel()
         : base(new DesignNotificationService())

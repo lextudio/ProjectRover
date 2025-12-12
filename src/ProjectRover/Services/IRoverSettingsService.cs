@@ -2,7 +2,7 @@ using ProjectRover.Settings;
 
 namespace ProjectRover.Services;
 
-public interface IRoverSettingsService
+public interface ISettingsService
 {
     RoverStartupSettings StartupSettings { get; }
     RoverSessionSettings SessionSettings { get; }

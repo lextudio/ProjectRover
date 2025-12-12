@@ -23,7 +23,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace ProjectRover.ViewModels;
 
-public interface INotificationsViewModel
+public interface IUpdatePanelViewModel
 {
     ObservableCollection<Notification> Notifications { get; }
     

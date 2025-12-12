@@ -76,7 +76,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IDialogService dialogService;
     private readonly ILogger<MainWindowViewModel> logger;
     private readonly ProjectRover.Services.Navigation.INavigationService navigationService;
-    private readonly IRoverSettingsService roverSettingsService;
+    private readonly ISettingsService roverSettingsService;
     private readonly ICommandCatalog commandCatalog;
     private readonly RoverSessionSettings roverSessionSettings;
     private readonly string startupStateFilePath = Path.Combine(
@@ -89,7 +89,7 @@ public partial class MainWindowViewModel : ObservableObject
         INotificationService notificationService,
         IAnalyticsService analyticsService,
         IDialogService dialogService,
-        IRoverSettingsService roverSettingsService,
+        ISettingsService roverSettingsService,
         ICommandCatalog commandCatalog,
         AssemblyTreeModel assemblyTreeModel,
         ProjectRover.Services.Navigation.INavigationService navigationService)

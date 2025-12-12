@@ -27,7 +27,7 @@
              xmlns:converters="clr-namespace:ProjectRover.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="ProjectRover.Views.NotificationsView"
-             x:DataType="viewModels:INotificationsViewModel">
+             x:DataType="viewModels:IUpdatePanelViewModel">
 
     <Design.DataContext>
         <designViewModels:DesignNotificationsViewModel />
@@ -91,13 +91,13 @@
                             <TextBlock Grid.Column="1"
                                        Text="{Binding Message}"
                                        TextWrapping="Wrap" />
-                            <Button Grid.Column="2"
+                                    <Button Grid.Column="2"
                                     Margin="10 0 0 0"
                                     Background="Transparent"
                                     VerticalAlignment="Top"
                                     Padding="2"
                                     Cursor="Hand"
-                                    Command="{Binding $parent[ItemsControl].((viewModels:INotificationsViewModel)DataContext).CloseNotificationCommand}"
+                                    Command="{Binding $parent[ItemsControl].((viewModels:IUpdatePanelViewModel)DataContext).CloseNotificationCommand}"
                                     CommandParameter="{Binding}">
                                 <Svg Path="/Assets/Close.svg"
                                      Width="12" />
@@ -117,7 +117,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="notifications:NotificationAction">
-                                    <Button Command="{Binding #root.((viewModels:INotificationsViewModel)DataContext).ExecuteNotificationActionCommand}"
+                                        <Button Command="{Binding #root.((viewModels:IUpdatePanelViewModel)DataContext).ExecuteNotificationActionCommand}"
                                             CommandParameter="{Binding}">
                                         <TextBlock Text="{Binding Title}" />
                                     </Button>

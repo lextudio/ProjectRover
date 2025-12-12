@@ -25,9 +25,9 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace ProjectRover.ViewModels;
 
-public partial class NotificationsViewModel : ObservableObject, INotificationsViewModel, INotificationHandler
+public partial class UpdatePanelViewModel : ObservableObject, IUpdatePanelViewModel, INotificationHandler
 {
-    public NotificationsViewModel(INotificationService notificationService)
+    public UpdatePanelViewModel(INotificationService notificationService)
     {
         notificationService.RegisterHandler(this);
     }
