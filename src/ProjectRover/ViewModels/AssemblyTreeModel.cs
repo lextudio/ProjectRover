@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
+using Avalonia.Threading;
 using ICSharpCode.Decompiler.TypeSystem;
 using ProjectRover.Nodes;
 using ProjectRover.Notifications;
@@ -166,6 +167,121 @@ public partial class AssemblyTreeModel : ObservableObject
             {
                 // Dependency loading can be triggered explicitly when needed.
             }
+        }
+
+        return addedAssemblies;
+    }
+
+    public async System.Threading.Tasks.Task<IReadOnlyList<AssemblyNode>> LoadAssembliesAsync(IEnumerable<string> filePaths, bool includeCompilerGenerated, bool includeInternal, bool loadDependencies = false, IProgress<string>? progress = null, System.Threading.CancellationToken cancellationToken = default)
+    {
+        var addedAssemblies = new List<AssemblyNode>();
+        var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var filePath in filePaths)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                break;
+
+            if (!processed.Add(filePath))
+                continue;
+
+            progress?.Report($"Loading {filePath}...");
+
+            if (!File.Exists(filePath))
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    notificationService.ShowNotification(new Notification
+                    {
+                        Message = $"The file \"{filePath}\" does not exist.",
+                        Level = NotificationLevel.Error
+                    });
+                });
+                continue;
+            }
+
+            // Load PE/metadata off the UI thread
+            IlSpyAssembly? assembly = null;
+            try
+            {
+                assembly = await System.Threading.Tasks.Task.Run(() => ilSpyBackend.LoadAssembly(filePath), cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    notificationService.ShowNotification(new Notification
+                    {
+                        Message = $"Failed to load \"{filePath}\": {ex.Message}",
+                        Level = NotificationLevel.Error
+                    });
+                });
+                continue;
+            }
+
+            if (assembly == null)
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    notificationService.ShowNotification(new Notification
+                    {
+                        Message = $"Failed to load \"{filePath}\".",
+                        Level = NotificationLevel.Error
+                    });
+                });
+                continue;
+            }
+
+            // If already present, skip
+            if (assemblyLookup.Values.Any(existing => string.Equals(existing.FilePath, assembly.FilePath, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            // Build UI nodes and index on UI thread to avoid threading issues with Node objects
+            AssemblyNode? assemblyNode = null;
+            try
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    assemblyNode = IlSpyXTreeAdapter.BuildAssemblyNode(assembly.LoadedAssembly, includeCompilerGenerated, includeInternal);
+                    if (assemblyNode == null)
+                    {
+                        notificationService.ShowNotification(new Notification
+                        {
+                            Message = $"Failed to build tree for \"{filePath}\".",
+                            Level = NotificationLevel.Error
+                        });
+                        return;
+                    }
+
+                    IndexAssemblyHandles(assemblyNode, assembly.FilePath);
+                    AssemblyNodes.Add(assemblyNode);
+                    assemblyLookup[assemblyNode] = assembly;
+                    addedAssemblies.Add(assemblyNode);
+                    SelectedNode = assemblyNode;
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    notificationService.ShowNotification(new Notification
+                    {
+                        Message = $"Failed to build tree for \"{filePath}\": {ex.Message}",
+                        Level = NotificationLevel.Error
+                    });
+                });
+                continue;
+            }
+
+            progress?.Report($"Loaded {filePath}");
         }
 
         return addedAssemblies;
