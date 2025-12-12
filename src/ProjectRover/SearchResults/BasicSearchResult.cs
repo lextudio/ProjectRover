@@ -24,10 +24,10 @@ namespace ProjectRover.SearchResults;
 
 public class BasicSearchResult : SearchResult
 {
-    public Node? TargetNode { get; init; }
+    public Node? TargetNode { get; set; }
     public EntityHandle? MetadataToken { get; init; }
     public required string DisplayName { get; init; }
-    public required string DisplayLocation { get; init; }
+    public required string DisplayLocation { get; set; }
     public required string DisplayAssembly { get; init; }
     public required string IconPath { get; init; }
     public required string LocationIconPath { get; init; }

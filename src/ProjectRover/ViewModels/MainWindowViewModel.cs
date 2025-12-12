@@ -2025,9 +2025,81 @@ public partial class MainWindowViewModel : ObservableObject
                 MetadataToken = handle
             };
             SearchResults.Add(basic);
+            if (basic.TargetNode == null)
+            {
+                OfferBackgroundResolve(basic);
+            }
         }
 
         NumberOfResultsText = $"Found {SearchResults.Count} usage(s)";
+    }
+
+    private async void OfferBackgroundResolve(BasicSearchResult basic)
+    {
+        if (basic == null)
+            return;
+
+        // Create a notification with an action to attempt background resolution
+        // Gather candidates
+        var simpleName = System.IO.Path.GetFileNameWithoutExtension(basic.DisplayAssembly);
+        var candidates = assemblyTreeModel.Backend.ResolveAssemblyCandidates(simpleName, null).ToList();
+        if (!candidates.Contains(basic.DisplayAssembly, System.StringComparer.OrdinalIgnoreCase))
+            candidates.Add(basic.DisplayAssembly);
+
+            if (candidates.Count > 1)
+        {
+            // Present chooser dialog to the user for explicit selection
+            var chooserVm = new AssemblyCandidateChooserViewModel(candidates);
+            var chooser = new ProjectRover.Views.AssemblyCandidateChooserWindow();
+            chooser.SetViewModel(chooserVm);
+            var owner = App.Current.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop ? desktop.MainWindow : null;
+            var picked = await chooser.ShowDialog<string?>(owner);
+            if (!string.IsNullOrEmpty(picked))
+            {
+                var progress = new Progress<string>(s => notificationService.ShowNotification(new Notification { Message = s, Level = NotificationLevel.Information }));
+                var cts = new System.Threading.CancellationTokenSource();
+                var temp = new ProjectRover.SearchResults.BasicSearchResult { MatchedString = basic.MatchedString, DisplayAssembly = picked, DisplayName = basic.DisplayName, MetadataToken = basic.MetadataToken, DisplayLocation = string.Empty, IconPath = string.Empty, LocationIconPath = string.Empty, AssemblyIconPath = string.Empty };
+                var resolved = await System.Threading.Tasks.Task.Run(async () => await assemblyTreeModel.TryBackgroundResolveAsync(temp, progress, cts.Token));
+                if (resolved != null)
+                {
+                    basic.TargetNode = resolved;
+                    basic.DisplayLocation = resolved.ToString();
+                    notificationService.ShowNotification(new Notification { Message = $"Resolved {basic.DisplayName} in {picked}", Level = NotificationLevel.Success });
+                }
+                else
+                {
+                    notificationService.ShowNotification(new Notification { Message = $"Background resolve failed for {picked}", Level = NotificationLevel.Warning });
+                }
+            }
+            return;
+        }
+
+        // Single candidate: proceed as before
+        var action = new NotificationAction
+        {
+            Title = "Attempt background resolve",
+            Action = async () =>
+            {
+                var chosen = candidates.FirstOrDefault();
+                var progress = new Progress<string>(s => notificationService.ShowNotification(new Notification { Message = s, Level = NotificationLevel.Information }));
+                var cts = new System.Threading.CancellationTokenSource();
+                var temp = new ProjectRover.SearchResults.BasicSearchResult { MatchedString = basic.MatchedString, DisplayAssembly = chosen ?? basic.DisplayAssembly, DisplayName = basic.DisplayName, MetadataToken = basic.MetadataToken, DisplayLocation = string.Empty, IconPath = string.Empty, LocationIconPath = string.Empty, AssemblyIconPath = string.Empty };
+                var resolved = await System.Threading.Tasks.Task.Run(async () => await assemblyTreeModel.TryBackgroundResolveAsync(temp, progress, cts.Token));
+                if (resolved != null)
+                {
+                    basic.TargetNode = resolved;
+                    basic.DisplayLocation = resolved.ToString();
+                    notificationService.ShowNotification(new Notification { Message = $"Resolved {basic.DisplayName} in {basic.DisplayAssembly}", Level = NotificationLevel.Success });
+                }
+                else
+                {
+                    notificationService.ShowNotification(new Notification { Message = $"Background resolve failed for {basic.DisplayAssembly}", Level = NotificationLevel.Warning });
+                }
+            }
+        };
+
+        var notification = new Notification { Message = $"Unresolved result in {basic.DisplayAssembly}: {basic.DisplayName}", Level = NotificationLevel.Information, Actions = new[] { action } };
+        notificationService.ShowNotification(notification);
     }
 
     [RelayCommand]

@@ -489,6 +489,75 @@ public partial class AssemblyTreeModel : ObservableObject
         return match;
     }
 
+    public async System.Threading.Tasks.Task<Node?> TryBackgroundResolveAsync(ProjectRover.SearchResults.BasicSearchResult basicResult, IProgress<string>? progress = null, System.Threading.CancellationToken cancellationToken = default)
+    {
+        if (basicResult == null)
+            return null;
+
+        var assemblyPath = basicResult.DisplayAssembly;
+        if (string.IsNullOrWhiteSpace(assemblyPath))
+            return null;
+
+        var simpleName = Path.GetFileNameWithoutExtension(assemblyPath);
+        progress?.Report($"Probing candidates for {simpleName}...");
+
+        // Collect candidates from backend
+        var candidates = Backend.ResolveAssemblyCandidates(simpleName, null).ToList();
+        if (!candidates.Contains(assemblyPath, StringComparer.OrdinalIgnoreCase))
+            candidates.Add(assemblyPath);
+
+        // If metadata token exists, try to prefer matches
+        var token = basicResult.MetadataToken;
+        string? chosen = null;
+        if (token.HasValue && !token.Value.IsNil)
+        {
+            foreach (var c in candidates)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    return null;
+
+                progress?.Report($"Probing {c} for token...");
+                try
+                {
+                    if (Backend.ProbeAssemblyForHandle(c, token.Value))
+                    {
+                        chosen = c;
+                        break;
+                    }
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+        }
+
+        if (chosen == null)
+            chosen = candidates.FirstOrDefault();
+
+        if (chosen == null)
+            return null;
+
+        progress?.Report($"Loading chosen candidate: {chosen}");
+        try
+        {
+            var loaded = await LoadAssembliesAsync(new[] { chosen }, false, false, false, progress, cancellationToken).ConfigureAwait(false);
+            var resolved = FindAnyNodeForAssembly(chosen);
+            if (resolved != null)
+                return resolved;
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+        catch
+        {
+            // ignore load failures
+        }
+
+        return null;
+    }
+
     public static AssemblyNode? GetAssemblyNode(Node node)
     {
         var current = node;
