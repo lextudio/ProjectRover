@@ -60,7 +60,17 @@ public partial class App : Application
                     .WithAssemblies(assemblies);
 
                 // Explicitly register our wrapper parts so they are discoverable
-                config = config.WithParts(typeof(ProjectRover.Services.ExportedIlSpyBackend), typeof(ProjectRover.Services.ExportedServiceProvider));
+                config = config.WithParts(
+                    typeof(ProjectRover.Services.ExportedIlSpyBackend),
+                    typeof(ProjectRover.Services.ExportedServiceProvider),
+                    typeof(ProjectRover.Services.ExportedMainWindowViewModel),
+                    typeof(ProjectRover.Services.ExportedTabPageModel)
+                );
+                // Register language and settings shims
+                config = config.WithParts(
+                    typeof(ICSharpCode.ILSpy.Languages.LanguageService),
+                    typeof(ICSharpCode.ILSpy.Util.SettingsService)
+                );
 
                 var container = config.CreateContainer();
                 CompositionHost = container;

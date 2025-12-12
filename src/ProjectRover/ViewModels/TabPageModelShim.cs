@@ -1,10 +1,13 @@
 using System;
+using System.Linq;
 using System.ComponentModel;
 using System.Composition;
 using System.Windows.Input;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ProjectRover;
+using ICSharpCode.ILSpy;
+using ICSharpCode.ILSpy.TextView;
 
 namespace ICSharpCode.ILSpy.ViewModels
 {
@@ -67,7 +70,7 @@ namespace ICSharpCode.ILSpy.ViewModels
         public string Title { get => title; set { if (SetProperty(ref title, value)) OnPropertyChanged(nameof(Title)); } }
     }
 
-    [Export]
+    [Export(typeof(ICSharpCode.ILSpy.ViewModels.TabPageModel))]
     [Shared]
     public class TabPageModel : PaneModel
     {
@@ -124,27 +127,78 @@ namespace ICSharpCode.ILSpy.ViewModels
                 var export = App.Current?.ExportProvider;
                 if (export != null)
                 {
-                    var languageServiceType = Type.GetType("ICSharpCode.ILSpy.Languages.LanguageService, ICSharpCode.ILSpyX") ?? Type.GetType("ICSharpCode.ILSpy.Languages.LanguageService");
-                    var settingsServiceType = Type.GetType("ICSharpCode.ILSpy.Util.SettingsService, ICSharpCode.ILSpyX") ?? Type.GetType("ICSharpCode.ILSpy.Util.SettingsService");
-                    object? languageService = null, settingsService = null;
-                    try { var m = export.GetType().GetMethod("GetExportedValue"); if (m != null) { languageService = m.MakeGenericMethod(languageServiceType ?? typeof(object)).Invoke(export, null); settingsService = m.MakeGenericMethod(settingsServiceType ?? typeof(object)).Invoke(export, null); } }
-                    catch { }
+                        try
+                        {
+                            var provider = App.Current.ExportProvider;
+                            ICSharpCode.ILSpy.Languages.LanguageService? languageService = null;
+                            ICSharpCode.ILSpy.Util.SettingsService? settingsService = null;
+                            try
+                            {
+                                if (provider != null)
+                                {
+                                    languageService = provider.GetExportedValue<ICSharpCode.ILSpy.Languages.LanguageService>();
+                                    settingsService = provider.GetExportedValue<ICSharpCode.ILSpy.Util.SettingsService>();
+                                }
+                            }
+                            catch { }
 
-                    if (languageService != null && settingsService != null)
-                    {
-                        return new DecompilationOptions();
-                    }
+                            if (languageService != null || settingsService != null)
+                            {
+                                object? languageVersion = languageService?.LanguageVersion;
+                                object? decompilerSettings = settingsService?.DecompilerSettings;
+                                object? displaySettings = settingsService?.DisplaySettings;
+
+                                if (decompilerSettings == null)
+                                {
+                                    try { decompilerSettings = new ICSharpCode.ILSpyX.Settings.DecompilerSettings(); } catch { decompilerSettings = null; }
+                                }
+
+                                if (displaySettings == null)
+                                {
+                                    try { displaySettings = new ICSharpCode.ILSpy.Options.DisplaySettings(); } catch { displaySettings = null; }
+                                }
+
+                                try
+                                {
+                                    var decoType = typeof(DecompilationOptions);
+                                    var ctor = decoType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == 3);
+                                    if (ctor != null)
+                                    {
+                                        var args = new object?[] { languageVersion, decompilerSettings, displaySettings };
+                                        var obj = ctor.Invoke(args);
+                                        if (obj is DecompilationOptions d)
+                                            return d;
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+                        catch { }
                 }
             }
             catch { }
 
-            return new DecompilationOptions();
+            // Require the language and settings shims to be available via ExportProvider
+            var provider2 = App.Current.ExportProvider ?? throw new InvalidOperationException("ExportProvider is not initialized");
+            var ls = provider2.GetExportedValue<ICSharpCode.ILSpy.Languages.LanguageService>();
+            var ss = provider2.GetExportedValue<ICSharpCode.ILSpy.Util.SettingsService>();
+            if (ls == null || ss == null)
+                throw new InvalidOperationException("Required ILSpy services (LanguageService or SettingsService) are not available from the ExportProvider.");
+
+            var languageVersion2 = ls.LanguageVersion ?? new ICSharpCode.ILSpyX.LanguageVersion("Latest");
+            var decompilerSettings2 = ss.DecompilerSettings ?? new ICSharpCode.ILSpyX.Settings.DecompilerSettings();
+            var displaySettings2 = ss.DisplaySettings ?? new ICSharpCode.ILSpy.Options.DisplaySettings();
+
+            var decoType2 = typeof(DecompilationOptions);
+            var ctor2 = decoType2.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == 3);
+            if (ctor2 == null)
+                throw new InvalidOperationException("DecompilationOptions constructor with 3 parameters not found.");
+
+            var args2 = new object?[] { languageVersion2, decompilerSettings2, displaySettings2 };
+            var obj2 = ctor2.Invoke(args2);
+            if (obj2 is DecompilationOptions dd)
+                return dd;
+            throw new InvalidOperationException("Failed to construct DecompilationOptions from provided services.");
         }
     }
-}
-
-namespace ICSharpCode.ILSpy
-{
-    public class ViewState { }
-    public class DecompilationOptions { }
 }

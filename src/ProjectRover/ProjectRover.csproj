@@ -78,5 +78,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Services\IDockWorkspace.cs">
       <Link>Services\IDockWorkspace.cs</Link>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\DecompilationOptions.cs">
+      <Link>ILSpy\DecompilationOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Options\DisplaySettings.cs">
+      <Link>ILSpy\Options\DisplaySettings.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>
