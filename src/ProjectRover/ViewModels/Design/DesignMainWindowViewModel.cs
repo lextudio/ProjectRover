@@ -30,13 +30,23 @@ namespace ProjectRover.ViewModels.Design;
 
 public class DesignMainWindowViewModel : MainWindowViewModel
 {
+    private static readonly INotificationService NotificationServiceInstance = new DesignNotificationService();
+    private static readonly IAnalyticsService AnalyticsServiceInstance = new DesignAnalyticsService();
+    private static readonly IDialogService DialogServiceInstance = new DesignDialogService();
+    private static readonly IRoverSettingsService RoverSettingsServiceInstance = new DesignRoverSettingsService();
+    private static readonly ICommandCatalog CommandCatalogInstance = new DesignCommandCatalog();
+    private static readonly AssemblyTreeModel DesignAssemblyTreeModel = new(new IlSpyBackend(), NotificationServiceInstance, new DesignLogger<AssemblyTreeModel>());
+    private static readonly ProjectRover.Services.Navigation.INavigationService DesignNavigationService = new ProjectRover.Services.Navigation.NavigationService(DesignAssemblyTreeModel, new DesignLogger<ProjectRover.Services.Navigation.NavigationService>());
+
     public DesignMainWindowViewModel()
-        : base(new DesignLogger(),
-            new DesignNotificationService(),
-            new DesignAnalyticsService(),
-            new DesignDialogService(),
-            new DesignRoverSettingsService(),
-            new DesignCommandCatalog())
+        : base(new DesignLogger<MainWindowViewModel>(),
+            NotificationServiceInstance,
+            AnalyticsServiceInstance,
+            DialogServiceInstance,
+            RoverSettingsServiceInstance,
+            CommandCatalogInstance,
+            DesignAssemblyTreeModel,
+            DesignNavigationService)
     {
     }
 }
@@ -88,7 +98,7 @@ file class DesignCommandCatalog : ICommandCatalog
     public IReadOnlyList<CommandDescriptor> Commands { get; } = Array.Empty<CommandDescriptor>();
 }
 
-file class DesignLogger : ILogger<MainWindowViewModel>
+file class DesignLogger<T> : ILogger<T>
 {
     public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
     public bool IsEnabled(LogLevel logLevel) => false;

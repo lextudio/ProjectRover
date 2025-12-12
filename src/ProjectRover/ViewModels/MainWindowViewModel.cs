@@ -18,8 +18,8 @@
 */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -69,11 +69,13 @@ public record SearchMode(string Name, string IconKey);
 
 public partial class MainWindowViewModel : ObservableObject
 {
+    private readonly AssemblyTreeModel assemblyTreeModel;
     private readonly IlSpyBackend ilSpyBackend;
     private readonly INotificationService notificationService;
     private readonly IAnalyticsService analyticsService;
     private readonly IDialogService dialogService;
     private readonly ILogger<MainWindowViewModel> logger;
+    private readonly ProjectRover.Services.Navigation.INavigationService navigationService;
     private readonly IRoverSettingsService roverSettingsService;
     private readonly ICommandCatalog commandCatalog;
     private readonly RoverSessionSettings roverSessionSettings;
@@ -82,20 +84,15 @@ public partial class MainWindowViewModel : ObservableObject
         "ProjectRover",
         "startup.json");
 
-    private readonly Dictionary<AssemblyNode, IlSpyAssembly> assemblyLookup = new();
-    private readonly Dictionary<(string AssemblyPath, EntityHandle Handle), Node> handleToNodeMap = new();
-    private readonly Stack<Node> backStack = new();
-    private readonly Stack<Node> forwardStack = new();
-
-    private bool isBackForwardNavigation;
-
     public MainWindowViewModel(
         ILogger<MainWindowViewModel> logger,
         INotificationService notificationService,
         IAnalyticsService analyticsService,
         IDialogService dialogService,
         IRoverSettingsService roverSettingsService,
-        ICommandCatalog commandCatalog)
+        ICommandCatalog commandCatalog,
+        AssemblyTreeModel assemblyTreeModel,
+        ProjectRover.Services.Navigation.INavigationService navigationService)
     {
         this.logger = logger;
         this.notificationService = notificationService;
@@ -103,16 +100,17 @@ public partial class MainWindowViewModel : ObservableObject
         this.dialogService = dialogService;
         this.roverSettingsService = roverSettingsService;
         this.commandCatalog = commandCatalog;
+        this.assemblyTreeModel = assemblyTreeModel ?? throw new ArgumentNullException(nameof(assemblyTreeModel));
+        this.navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
 
         var startupSettings = roverSettingsService.StartupSettings;
         var sessionSettings = roverSettingsService.SessionSettings;
         roverSessionSettings = sessionSettings;
 
-        ilSpyBackend = new IlSpyBackend
-        {
-            UseDebugSymbols = startupSettings.UseDebugSymbols,
-            ApplyWinRtProjections = startupSettings.ApplyWinRtProjections
-        };
+        ilSpyBackend = assemblyTreeModel.Backend;
+        ilSpyBackend.UseDebugSymbols = startupSettings.UseDebugSymbols;
+        ilSpyBackend.ApplyWinRtProjections = startupSettings.ApplyWinRtProjections;
+        assemblyTreeModel.PropertyChanged += AssemblyTreeModelOnPropertyChanged;
 
         Languages = new ObservableCollection<LanguageOption>
         {
@@ -141,14 +139,30 @@ public partial class MainWindowViewModel : ObservableObject
         RestoreLastAssemblies();
     }
 
+    private void AssemblyTreeModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AssemblyTreeModel.SelectedNode))
+        {
+            OnPropertyChanged(nameof(SelectedNode));
+            GenerateProjectCommand.NotifyCanExecuteChanged();
+            Decompile(assemblyTreeModel.SelectedNode);
+            UpdateNavigationCommands();
+            return;
+        }
+
+        if (e.PropertyName == nameof(AssemblyTreeModel.CanGoBack) || e.PropertyName == nameof(AssemblyTreeModel.CanGoForward))
+        {
+            UpdateNavigationCommands();
+        }
+    }
+
     internal void NavigateByFullName(string fullName)
     {
-        var match = handleToNodeMap.FirstOrDefault(kvp =>
-            kvp.Value is MemberNode member && string.Equals(member.Entity.FullName, fullName, StringComparison.Ordinal));
-        if (match.Value != null)
+        var match = assemblyTreeModel.FindByFullName(fullName);
+        if (match != null)
         {
-            SelectedNode = match.Value;
-            ExpandParents(match.Value);
+            SelectedNode = match;
+            ExpandParents(match);
             return;
         }
 
@@ -159,7 +173,7 @@ public partial class MainWindowViewModel : ObservableObject
         });
     }
 
-    public ObservableCollection<AssemblyNode> AssemblyNodes { get; } = new();
+    public ObservableCollection<AssemblyNode> AssemblyNodes => assemblyTreeModel.AssemblyNodes;
 
     public ObservableCollection<LanguageOption> Languages { get; }
 
@@ -193,9 +207,19 @@ public partial class MainWindowViewModel : ObservableObject
 
     public IReadOnlyList<CommandDescriptor> SharedCommands => commandCatalog.Commands;
 
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(GenerateProjectCommand))]
-    private Node? selectedNode;
+    public Node? SelectedNode
+    {
+        get => assemblyTreeModel.SelectedNode;
+        set
+        {
+            if (assemblyTreeModel.SelectedNode != value)
+            {
+                assemblyTreeModel.SelectedNode = value;
+                OnPropertyChanged();
+                GenerateProjectCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDocument))]
@@ -257,50 +281,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     public void RemoveAssembly(AssemblyNode assemblyNode)
     {
-        if (!AssemblyNodes.Remove(assemblyNode))
-            return;
-
-        if (assemblyLookup.TryGetValue(assemblyNode, out var ilSpyAssembly))
-        {
-            ilSpyBackend.UnloadAssembly(ilSpyAssembly);
-            assemblyLookup.Remove(assemblyNode);
-        }
-
-        var assemblyPath = assemblyLookup.TryGetValue(assemblyNode, out var removedAsm)
-            ? removedAsm.FilePath
-            : string.Empty;
-
-        var toRemove = handleToNodeMap
-            .Where(kvp => GetAssemblyNode(kvp.Value) == assemblyNode
-                          || (assemblyPath != null && string.Equals(kvp.Key.AssemblyPath, assemblyPath, StringComparison.OrdinalIgnoreCase)))
-            .Select(kvp => kvp.Key)
-            .ToList();
-        foreach (var key in toRemove)
-        {
-            handleToNodeMap.Remove(key);
-        }
-
-        FilterStack(backStack);
-        FilterStack(forwardStack);
-        BackCommand.NotifyCanExecuteChanged();
-        ForwardCommand.NotifyCanExecuteChanged();
-
-        if (SelectedNode is null || GetAssemblyNode(SelectedNode) == assemblyNode)
-        {
-            SelectedNode = AssemblyNodes.FirstOrDefault();
-        }
-
+        assemblyTreeModel.RemoveAssembly(assemblyNode);
+        UpdateNavigationCommands();
         PersistLastAssemblies();
-
-        void FilterStack(Stack<Node> stack)
-        {
-            var filtered = stack.Where(n => GetAssemblyNode(n) != assemblyNode).Reverse().ToList();
-            stack.Clear();
-            foreach (var node in filtered)
-            {
-                stack.Push(node);
-            }
-        }
     }
 
     [RelayCommand]
@@ -542,22 +525,11 @@ public partial class MainWindowViewModel : ObservableObject
         if (handle.IsNil)
             return;
 
-        var node = TryResolveHandle(handle);
+        var node = assemblyTreeModel.ResolveNode(handle);
         if (node != null)
         {
             SelectedNode = node;
             ExpandParents(node);
-            return;
-        }
-
-        // Try matching full name if token wasn't indexed (e.g., auto-loaded dependency not mapped yet)
-        var fallback = handleToNodeMap.Values
-            .OfType<MemberNode>()
-            .FirstOrDefault(m => m.Entity.MetadataToken.Equals(handle));
-        if (fallback != null)
-        {
-            SelectedNode = fallback;
-            ExpandParents(fallback);
             return;
         }
 
@@ -570,7 +542,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     public void NavigateToType(EntityHandle typeHandle)
     {
-        var node = TryResolveHandle(typeHandle);
+        var node = assemblyTreeModel.ResolveNode(typeHandle);
         if (node != null)
         {
             SelectedNode = node;
@@ -644,88 +616,35 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanGoBack))]
     private void Back()
     {
-        isBackForwardNavigation = true;
-        forwardStack.Push(SelectedNode!);
-        SelectedNode = backStack.Pop();
-        ForwardCommand.NotifyCanExecuteChanged();
-        BackCommand.NotifyCanExecuteChanged();
+        assemblyTreeModel.GoBack();
+        UpdateNavigationCommands();
     }
 
-    private bool CanGoBack() => backStack.Any();
+    private bool CanGoBack() => assemblyTreeModel.CanGoBack;
 
     [RelayCommand(CanExecute = nameof(CanGoForward))]
     private void Forward()
     {
-        isBackForwardNavigation = true;
-        backStack.Push(SelectedNode!);
-        SelectedNode = forwardStack.Pop();
+        assemblyTreeModel.GoForward();
+        UpdateNavigationCommands();
+    }
+
+    private bool CanGoForward() => assemblyTreeModel.CanGoForward;
+
+    private void UpdateNavigationCommands()
+    {
         BackCommand.NotifyCanExecuteChanged();
         ForwardCommand.NotifyCanExecuteChanged();
     }
 
-    private bool CanGoForward() => forwardStack.Any();
-
     internal AssemblyNode? FindAssemblyNodeByFilePath(string filePath)
     {
-        return assemblyLookup.FirstOrDefault(kvp => string.Equals(kvp.Value.FilePath, filePath, StringComparison.OrdinalIgnoreCase)).Key;
+        return assemblyTreeModel.FindAssemblyNodeByPath(filePath);
     }
 
     internal IReadOnlyList<AssemblyNode> LoadAssemblies(IEnumerable<string> filePaths, bool loadDependencies = false)
     {
-        var addedAssemblies = new List<AssemblyNode>();
-        var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var filePath in filePaths)
-        {
-            if (!processed.Add(filePath))
-                continue;
-
-            if (!File.Exists(filePath))
-            {
-                notificationService.ShowNotification(new Notification
-                {
-                    Message = $"The file \"{filePath}\" does not exist.",
-                    Level = NotificationLevel.Error
-                });
-                continue;
-            }
-
-            var assembly = ilSpyBackend.LoadAssembly(filePath);
-            if (assembly == null)
-            {
-                notificationService.ShowNotification(new Notification
-                {
-                    Message = $"Failed to load \"{filePath}\".",
-                    Level = NotificationLevel.Error
-                });
-                continue;
-            }
-
-            if (!assemblyLookup.Any(kvp => string.Equals(kvp.Value.FilePath, assembly.FilePath, StringComparison.OrdinalIgnoreCase)))
-            {
-                var assemblyNode = IlSpyXTreeAdapter.BuildAssemblyNode(assembly.LoadedAssembly, includeCompilerGenerated: ShowCompilerGeneratedMembers, includeInternal: ShowInternalApi);
-                if (assemblyNode == null)
-                {
-                    notificationService.ShowNotification(new Notification
-                    {
-                        Message = $"Failed to build tree for \"{filePath}\".",
-                        Level = NotificationLevel.Error
-                    });
-                    continue;
-                }
-                IndexAssemblyHandles(assemblyNode, assembly.FilePath);
-                AssemblyNodes.Add(assemblyNode);
-                assemblyLookup[assemblyNode] = assembly;
-                addedAssemblies.Add(assemblyNode);
-                SelectedNode = assemblyNode;
-            }
-
-            if (loadDependencies)
-            {
-                // Dependency loading can be triggered explicitly when needed.
-            }
-        }
-
+        var addedAssemblies = assemblyTreeModel.LoadAssemblies(filePaths, ShowCompilerGeneratedMembers, ShowInternalApi, loadDependencies);
         PersistLastAssemblies();
         return addedAssemblies;
     }
@@ -735,47 +654,17 @@ public partial class MainWindowViewModel : ObservableObject
     {
         _ = analyticsService.TrackEventAsync(AnalyticsEvents.CloseAll);
 
-        SelectedNode = null;
-        AssemblyNodes.Clear();
-        handleToNodeMap.Clear();
-        assemblyLookup.Clear();
-
-        ClearHistory();
-        ilSpyBackend.Clear();
+        assemblyTreeModel.ClearAssemblies();
+        UpdateNavigationCommands();
         PersistLastAssemblies();
     }
 
     private bool CanClearAssemblyList() => AssemblyNodes.Count > 0;
 
-    private void ClearHistory()
-    {
-        backStack.Clear();
-        forwardStack.Clear();
-        BackCommand.NotifyCanExecuteChanged();
-        ForwardCommand.NotifyCanExecuteChanged();
-    }
-
     [RelayCommand]
     private void SortAssemblies()
     {
-        var sorted = AssemblyNodes.OrderBy(n => n.Name, StringComparer.OrdinalIgnoreCase).ToList();
-        AssemblyNodes.Clear();
-        foreach (var n in sorted)
-            AssemblyNodes.Add(n);
-    }
-
-    partial void OnSelectedNodeChanged(Node? oldValue, Node? newValue)
-    {
-        if (!isBackForwardNavigation && oldValue != null)
-        {
-            backStack.Push(oldValue);
-            forwardStack.Clear();
-            BackCommand.NotifyCanExecuteChanged();
-            ForwardCommand.NotifyCanExecuteChanged();
-        }
-
-        Decompile(newValue);
-        isBackForwardNavigation = false;
+        assemblyTreeModel.SortAssemblies();
     }
 
     partial void OnSelectedLanguageChanged(LanguageOption value)
@@ -815,7 +704,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void ReloadAssemblies()
     {
-        var openedAssemblies = assemblyLookup.Values.Select(a => a.FilePath).ToArray();
+        var openedAssemblies = assemblyTreeModel.GetAssemblyFilePaths()
+            .Where(p => !string.IsNullOrEmpty(p))
+            .Select(p => p!)
+            .ToArray();
         ClearAssemblyList();
         LoadAssemblies(openedAssemblies);
     }
@@ -879,8 +771,7 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        var assemblyNode = GetAssemblyNode(node);
-        if (assemblyNode == null || !assemblyLookup.TryGetValue(assemblyNode, out var assembly))
+        if (!assemblyTreeModel.TryGetAssembly(node, out var assembly))
         {
             return;
         }
@@ -1796,17 +1687,6 @@ public partial class MainWindowViewModel : ObservableObject
         return sb.ToString();
     }
 
-    private static AssemblyNode? GetAssemblyNode(Node node)
-    {
-        var current = node;
-        while (current.Parent != null)
-        {
-            current = current.Parent;
-        }
-
-        return current as AssemblyNode;
-    }
-
     private DecompilerSettings BuildDecompilerSettings()
     {
         var languageVersion = SelectedLanguage.Language == DecompilationLanguage.CSharp
@@ -1994,8 +1874,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PersistLastAssemblies()
     {
-        var files = AssemblyNodes
-            .Select(a => assemblyLookup.TryGetValue(a, out var asm) ? asm.FilePath : null)
+        var files = assemblyTreeModel.GetAssemblyFilePaths()
             .Where(p => p != null)
             .ToArray();
 
@@ -2043,72 +1922,15 @@ public partial class MainWindowViewModel : ObservableObject
             logger.LogWarning("[NavigateToSearchResult] Result is not BasicSearchResult or is null.");
             return;
         }
-
-        // If we already have the target node, navigate immediately
-        if (basic.TargetNode is { } target)
+        var targetNode = navigationService.ResolveSearchResultTarget(basic);
+        if (targetNode is { })
         {
-            logger.LogInformation("[NavigateToSearchResult] Navigating to node: {NodeType}, Name: {NodeName}", target.GetType().Name, target.Name);
-            SelectedNode = target;
-            ExpandParents(target);
+            SelectedNode = targetNode;
+            ExpandParents(targetNode);
             return;
         }
 
-        // No target node - attempt to load the assembly if we have an assembly path
-        var assemblyPath = basic.DisplayAssembly;
-        if (string.IsNullOrWhiteSpace(assemblyPath))
-        {
-            logger.LogWarning("[NavigateToSearchResult] No valid target node found and no assembly information present.");
-            return;
-        }
-
-        // Try to find loaded assembly by filename or full path
-        var existing = AssemblyNodes.FirstOrDefault(a => string.Equals(a.Name, Path.GetFileNameWithoutExtension(assemblyPath), StringComparison.OrdinalIgnoreCase)
-                                                        || string.Equals(assemblyLookup.TryGetValue(a, out var p) ? p.FilePath : string.Empty, assemblyPath, StringComparison.OrdinalIgnoreCase));
-        if (existing != null)
-        {
-            // The assembly is present but target wasn't resolved earlier; reindex and attempt resolve
-            IndexAssemblyHandles(existing, assemblyLookup[existing].FilePath);
-            var resolved = ResolveNode(((BasicSearchResult)result).TargetNode?.GetType() == null ? default : default);
-            // Attempt to resolve by scanning handleToNodeMap entries matching assembly filename
-            var candidate = handleToNodeMap.FirstOrDefault(kvp => string.Equals(Path.GetFileName(kvp.Key.AssemblyPath), Path.GetFileName(assemblyPath), StringComparison.OrdinalIgnoreCase)).Value;
-            if (candidate != null)
-            {
-                SelectedNode = candidate;
-                ExpandParents(candidate);
-                return;
-            }
-        }
-
-        // Attempt to load assembly automatically (silent). If unsuccessful, notify the user.
-        var loaded = ilSpyBackend.LoadAssembly(assemblyPath);
-        if (loaded == null)
-        {
-            notificationService.ShowNotification(new ProjectRover.Notifications.Notification
-            {
-                Message = $"Failed to load assembly: {assemblyPath}",
-                Level = ProjectRover.Notifications.NotificationLevel.Error
-            });
-            return;
-        }
-
-        // Build assembly node and index
-        var asmNode = IlSpyXTreeAdapter.BuildAssemblyNode(loaded.LoadedAssembly, includeCompilerGenerated: ShowCompilerGeneratedMembers, includeInternal: ShowInternalApi);
-        if (asmNode != null)
-        {
-            AssemblyNodes.Add(asmNode);
-            assemblyLookup[asmNode] = loaded;
-            IndexAssemblyHandles(asmNode, loaded.FilePath);
-            // Try to resolve again using the analyzer result: we don't store the raw handle here, so attempt by name
-            var candidate = handleToNodeMap.FirstOrDefault(kvp => string.Equals(Path.GetFileName(kvp.Key.AssemblyPath), Path.GetFileName(assemblyPath), StringComparison.OrdinalIgnoreCase)).Value;
-            if (candidate != null)
-            {
-                SelectedNode = candidate;
-                ExpandParents(candidate);
-                return;
-            }
-        }
-
-        logger.LogWarning("[NavigateToSearchResult] No valid target node found after loading assembly {Assembly}", assemblyPath);
+        logger.LogWarning("[NavigateToSearchResult] No valid target node found for search result {DisplayName}", basic.DisplayName);
     }
 
     private void RunSearch()
@@ -2122,8 +1944,8 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         var adapter = new IlSpyXSearchAdapter();
-        var ilspyAssemblies = assemblyLookup.Values.Select(a => a.LoadedAssembly).ToList();
-        var results = adapter.Search(ilspyAssemblies, term, SelectedSearchMode.Name, ResolveNode, ResolveAssemblyNode, ResolveResourceNode, includeInternal: ShowInternalApi, includeCompilerGenerated: ShowCompilerGeneratedMembers);
+        var ilspyAssemblies = assemblyTreeModel.GetAssemblies().Select(a => a.LoadedAssembly).ToList();
+        var results = adapter.Search(ilspyAssemblies, term, SelectedSearchMode.Name, assemblyTreeModel.ResolveNode, assemblyTreeModel.ResolveAssemblyNode, assemblyTreeModel.ResolveResourceNode, includeInternal: ShowInternalApi, includeCompilerGenerated: ShowCompilerGeneratedMembers);
 
         SearchResults.Clear();
         foreach (var r in results)
@@ -2171,8 +1993,7 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        var asmNode = GetAssemblyNode(member);
-        if (asmNode == null || !assemblyLookup.TryGetValue(asmNode, out var ilspyAssembly))
+        if (!assemblyTreeModel.TryGetAssembly(member, out var ilspyAssembly))
         {
             notificationService.ShowNotification(new Notification
             {
@@ -2189,7 +2010,7 @@ public partial class MainWindowViewModel : ObservableObject
         foreach (var (handle, displayName, assemblyPath) in refs)
         {
             // Try to resolve node in current tree
-            var node = ResolveNode(handle);
+            var node = assemblyTreeModel.ResolveNode(handle);
 
             var basic = new BasicSearchResult
             {
@@ -2373,167 +2194,8 @@ public partial class MainWindowViewModel : ObservableObject
         return tablesNode;
     }
 
-    private void IndexAssemblyHandles(AssemblyNode assemblyNode, string assemblyPath)
-    {
-        foreach (var ns in assemblyNode.Children.OfType<NamespaceNode>())
-        {
-            foreach (var type in ns.Types)
-            {
-                IndexTypeHandles(type, assemblyPath);
-            }
-        }
-    }
-
-    private void IndexTypeHandles(TypeNode typeNode, string assemblyPath)
-    {
-        RegisterHandle(typeNode, typeNode.TypeDefinition.MetadataToken, assemblyPath);
-
-        foreach (var member in typeNode.Members)
-        {
-            switch (member)
-            {
-                case TypeNode nested:
-                    IndexTypeHandles(nested, assemblyPath);
-                    break;
-                case MemberNode memberNode:
-                    RegisterHandle(memberNode, memberNode.MetadataToken, assemblyPath);
-                    break;
-            }
-        }
-    }
-
-    private void RegisterHandle(Node node, EntityHandle metadataToken, string assemblyPath)
-    {
-        if (metadataToken.IsNil)
-            return;
-        var keyPath = assemblyPath ?? string.Empty;
-        handleToNodeMap[(keyPath, metadataToken)] = node;
-    }
-
-    private Node? ResolveNode(EntityHandle handle)
-    {
-        try
-        {
-            logger.LogInformation("[ResolveNode] Called with handle: Kind={HandleKind}, IsNil={IsNil}, Raw={Handle}", handle.Kind, handle.IsNil, handle);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "[ResolveNode] Failed to log handle details");
-        }
-
-        var node = TryResolveHandle(handle);
-
-        if (node == null)
-        {
-            logger.LogInformation("[ResolveNode] Could not resolve handle: {Handle}", handle);
-        }
-        else
-        {
-            try
-            {
-                logger.LogInformation("[ResolveNode] Resolved to node: {NodeType}, Name: {NodeName}", node.GetType().Name, node.Name);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "[ResolveNode] Resolved node found but failed to log details");
-            }
-        }
-
-        return node;
-    }
-
-    private Node? ResolveResourceNode(string assemblyName, string resourceName)
-    {
-        logger.LogInformation("[ResolveResourceNode] Searching for resource '{ResourceName}' in assembly '{AssemblyName}'", resourceName, assemblyName);
-        var assemblyNode = AssemblyNodes.FirstOrDefault(a => string.Equals(a.Name, assemblyName, StringComparison.OrdinalIgnoreCase));
-        if (assemblyNode == null)
-        {
-            logger.LogWarning("[ResolveResourceNode] Assembly not found: {AssemblyName}", assemblyName);
-            return null;
-        }
-
-        var resourcesNode = assemblyNode.Children.OfType<ResourcesNode>().FirstOrDefault();
-        if (resourcesNode == null)
-        {
-            logger.LogWarning("[ResolveResourceNode] ResourcesNode not found in assembly: {AssemblyName}", assemblyName);
-            return null;
-        }
-
-        foreach (var resourceNode in resourcesNode.Items)
-        {
-            var candidate = FindResourceEntry(resourceNode, resourceName);
-            if (candidate != null)
-            {
-                logger.LogInformation("[ResolveResourceNode] Found resource node: {ResourceNodeName}", candidate.Name);
-                return candidate;
-            }
-        }
-
-        logger.LogWarning("[ResolveResourceNode] Resource not found: {ResourceName}", resourceName);
-        return null;
-    }
-
-    private Node? ResolveAssemblyNode(string assemblyName) =>
-        AssemblyNodes.FirstOrDefault(a => string.Equals(a.Name, assemblyName, StringComparison.OrdinalIgnoreCase));
-
-    private static ResourceEntryNode? FindResourceEntry(ResourceEntryNode node, string resourceName)
-    {
-        if (string.Equals(node.ResourceName ?? node.Name, resourceName, StringComparison.OrdinalIgnoreCase))
-            return node;
-
-        foreach (var child in node.Children)
-        {
-            if (child is ResourceEntryNode childResource)
-            {
-                var match = FindResourceEntry(childResource, resourceName);
-                if (match != null)
-                    return match;
-            }
-        }
-
-        return null;
-    }
-
     private static Window? GetMainWindow() =>
         (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
-
-    private Node? TryResolveHandle(EntityHandle handle)
-    {
-        // Exact match first
-        var exact = handleToNodeMap.FirstOrDefault(kvp => kvp.Key.Handle.Equals(handle)).Value;
-        if (exact != null)
-            return exact;
-
-        try
-        {
-            var kind = handle.Kind;
-            var handleStr = handle.ToString();
-            // Try matching by handle string + kind across all assemblies (fallback)
-            foreach (var kvp in handleToNodeMap)
-            {
-                try
-                {
-                    if (kvp.Key.Handle.Kind == kind && string.Equals(kvp.Key.Handle.ToString(), handleStr, StringComparison.OrdinalIgnoreCase))
-                    {
-                        logger.LogInformation("[TryResolveHandle] Fallback matched handle string {HandleStr} kind={Kind} in assembly {Asm}", handleStr, kind, kvp.Key.AssemblyPath);
-                        return kvp.Value;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "[TryResolveHandle] Error inspecting handle in map for assembly {Asm}", kvp.Key.AssemblyPath);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "[TryResolveHandle] Failed to get token from handle {Handle}", handle);
-        }
-
-        return null;
-    }
-
-
 
     public record ThemeOption(string Name, ThemeVariant Variant);
 
