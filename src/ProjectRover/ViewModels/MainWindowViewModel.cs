@@ -112,6 +112,9 @@ public partial class MainWindowViewModel : ObservableObject
         ilSpyBackend.ApplyWinRtProjections = startupSettings.ApplyWinRtProjections;
         assemblyTreeModel.PropertyChanged += AssemblyTreeModelOnPropertyChanged;
 
+        // initialize AutoLoadReferencedAssemblies from persisted startup settings
+        autoLoadReferencedAssemblies = startupSettings.AutoLoadReferencedAssemblies;
+
         Languages = new ObservableCollection<LanguageOption>
         {
             new("C#", DecompilationLanguage.CSharp),
@@ -217,6 +220,21 @@ public partial class MainWindowViewModel : ObservableObject
                 assemblyTreeModel.SelectedNode = value;
                 OnPropertyChanged();
                 GenerateProjectCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    private bool autoLoadReferencedAssemblies;
+    public bool AutoLoadReferencedAssemblies
+    {
+        get => autoLoadReferencedAssemblies;
+        set
+        {
+            if (autoLoadReferencedAssemblies != value)
+            {
+                autoLoadReferencedAssemblies = value;
+                roverSettingsService.StartupSettings.AutoLoadReferencedAssemblies = value;
+                OnPropertyChanged();
             }
         }
     }
@@ -1011,19 +1029,16 @@ public partial class MainWindowViewModel : ObservableObject
                 }
                 default:
                 {
-                    DocumentHighlighting = null;
-                    ResourceImage = null;
-                    ResourceInfo = DescribeResourceValue(value);
-                    InlineObjects = new List<InlineObjectSpec>();
-                    var header = BuildResourceHeader(resourceNode, 0);
-                    document = new TextDocument($"{header}// Value: {DescribeResourceValue(value)}");
-                    return true;
+                    // No preview available for this resource type.
+                    break;
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // fall through to a generic message
+            document = new TextDocument($"// Error reading resource: {ex.Message}");
+            InlineObjects = new List<InlineObjectSpec>();
+            return true;
         }
 
         document = new TextDocument("// Unable to render resource entry.");
@@ -2074,7 +2089,24 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        // Single candidate: proceed as before
+        // Single candidate: either autoload (if enabled) or offer the action
+        if (AutoLoadReferencedAssemblies)
+        {
+            var chosen = candidates.FirstOrDefault();
+            var progress = new Progress<string>(s => notificationService.ShowNotification(new Notification { Message = s, Level = NotificationLevel.Information }));
+            var cts = new System.Threading.CancellationTokenSource();
+            var temp = new ProjectRover.SearchResults.BasicSearchResult { MatchedString = basic.MatchedString, DisplayAssembly = chosen ?? basic.DisplayAssembly, DisplayName = basic.DisplayName, MetadataToken = basic.MetadataToken, DisplayLocation = string.Empty, IconPath = string.Empty, LocationIconPath = string.Empty, AssemblyIconPath = string.Empty };
+            var resolved = await System.Threading.Tasks.Task.Run(async () => await assemblyTreeModel.TryBackgroundResolveAsync(temp, progress, cts.Token));
+            if (resolved != null)
+            {
+                basic.TargetNode = resolved;
+                basic.DisplayLocation = resolved.ToString();
+                notificationService.ShowNotification(new Notification { Message = $"Resolved {basic.DisplayName} in {basic.DisplayAssembly}", Level = NotificationLevel.Success });
+                return;
+            }
+        }
+
+        // Single candidate: proceed as before (offer action)
         var action = new NotificationAction
         {
             Title = "Attempt background resolve",

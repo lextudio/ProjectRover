@@ -13,6 +13,7 @@ public sealed class RoverStartupSettings : ISettingsSection, INotifyPropertyChan
     private bool applyWinRtProjections;
     private bool showCompilerGeneratedMembers;
     private bool showInternalApi;
+    private bool autoLoadReferencedAssemblies;
 
     public XName SectionName => "RoverStartupSettings";
 
@@ -46,6 +47,12 @@ public sealed class RoverStartupSettings : ISettingsSection, INotifyPropertyChan
         set => SetProperty(ref showInternalApi, value);
     }
 
+    public bool AutoLoadReferencedAssemblies
+    {
+        get => autoLoadReferencedAssemblies;
+        set => SetProperty(ref autoLoadReferencedAssemblies, value);
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public void LoadFromXml(XElement section)
@@ -55,6 +62,7 @@ public sealed class RoverStartupSettings : ISettingsSection, INotifyPropertyChan
         ApplyWinRtProjections = (bool?)section.Attribute(nameof(ApplyWinRtProjections)) ?? false;
         ShowCompilerGeneratedMembers = (bool?)section.Attribute(nameof(ShowCompilerGeneratedMembers)) ?? false;
         ShowInternalApi = (bool?)section.Attribute(nameof(ShowInternalApi)) ?? false;
+        AutoLoadReferencedAssemblies = (bool?)section.Attribute(nameof(AutoLoadReferencedAssemblies)) ?? false;
     }
 
     public XElement SaveToXml()
@@ -66,6 +74,7 @@ public sealed class RoverStartupSettings : ISettingsSection, INotifyPropertyChan
         section.SetAttributeValue(nameof(ApplyWinRtProjections), ApplyWinRtProjections);
         section.SetAttributeValue(nameof(ShowCompilerGeneratedMembers), ShowCompilerGeneratedMembers);
         section.SetAttributeValue(nameof(ShowInternalApi), ShowInternalApi);
+        section.SetAttributeValue(nameof(AutoLoadReferencedAssemblies), AutoLoadReferencedAssemblies);
 
         return section;
     }
