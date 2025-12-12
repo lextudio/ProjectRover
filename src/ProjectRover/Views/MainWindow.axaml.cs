@@ -60,9 +60,9 @@ public partial class MainWindow : Window
     private MainWindowViewModel? viewModel;
     private readonly RegistryOptions? registryOptions;
     private readonly TextMate.Installation? textMateInstallation;
-    private LeftDockView leftDockView = null!;
-    private CenterDockView centerDockView = null!;
-    private SearchDockView searchDockView = null!;
+    private AssemblyListPane leftDockView = null!;
+    private DecompilerPane centerDockView = null!;
+    private SearchPane searchDockView = null!;
     private Document? documentHost;
     private ToolDock? searchDock;
     private ProportionalDockSplitter? searchSplitter;
@@ -235,9 +235,9 @@ public partial class MainWindow : Window
 
     private void ConfigureDockLayout()
     {
-        leftDockView = new LeftDockView { DataContext = viewModel };
-        centerDockView = new CenterDockView { DataContext = viewModel };
-        searchDockView = new SearchDockView { DataContext = viewModel };
+        leftDockView = new AssemblyListPane { DataContext = viewModel };
+        centerDockView = new DecompilerPane { DataContext = viewModel };
+        searchDockView = new SearchPane { DataContext = viewModel };
 
         documentHost = new Document
         {

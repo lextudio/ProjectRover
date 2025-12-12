@@ -1992,7 +1992,7 @@ public partial class MainWindowViewModel : ObservableObject
     private void OpenAboutDialog()
     {
         _ = analyticsService.TrackEventAsync(AnalyticsEvents.About);
-        dialogService.ShowDialog<AboutWindow>();
+        dialogService.ShowDialog<AboutDialog>();
     }
 
     [RelayCommand]
@@ -2065,8 +2065,8 @@ public partial class MainWindowViewModel : ObservableObject
         {
             // Present chooser dialog to the user for explicit selection
             var chooserVm = new AssemblyCandidateChooserViewModel(candidates);
-            var chooser = new ProjectRover.Views.AssemblyCandidateChooserWindow();
-            chooser.SetViewModel(chooserVm);
+            var chooser = new ProjectRover.Views.AssemblyCandidateChooserDialog();
+            chooser.DataContext = chooserVm;
             var owner = App.Current.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop ? desktop.MainWindow : null;
             var picked = await chooser.ShowDialog<string?>(owner);
             if (!string.IsNullOrEmpty(picked))

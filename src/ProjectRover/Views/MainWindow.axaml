@@ -284,6 +284,6 @@
                 </Grid>
             </Grid>
         </DockPanel>
-        <views:NotificationsView />
+        <views:UpdatePanel />
     </Grid>
 </Window>

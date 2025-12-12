@@ -4,9 +4,9 @@ using ProjectRover.ViewModels;
 
 namespace ProjectRover.Views;
 
-public partial class AssemblyCandidateChooser : Window
+public partial class AssemblyCandidateChooserDialog : Window
 {
-    public AssemblyCandidateChooser()
+    public AssemblyCandidateChooserDialog()
     {
         InitializeComponent();
         OkButton.Click += OkButton_Click;

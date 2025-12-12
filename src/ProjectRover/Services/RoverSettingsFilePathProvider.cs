@@ -4,7 +4,7 @@ using ICSharpCode.ILSpyX.Settings;
 
 namespace ProjectRover.Services
 {
-    public class RoverSettingsFilePathProvider : ISettingsFilePathProvider
+    public class SettingsFilePathProvider : ISettingsFilePathProvider
     {
         public string GetSettingsFilePath()
         {

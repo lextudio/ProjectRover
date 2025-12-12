@@ -18,7 +18,7 @@ public sealed class SettingsService : SettingsServiceBase, ISettingsService
     {
         if (ILSpySettings.SettingsFilePathProvider == null)
         {
-            ILSpySettings.SettingsFilePathProvider = new RoverSettingsFilePathProvider();
+            ILSpySettings.SettingsFilePathProvider = new SettingsFilePathProvider();
         }
 
         return ILSpySettings.Load();

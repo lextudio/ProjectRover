@@ -1,22 +1,4 @@
-<!--
-    Copyright 2024 CodeMerx
-    Copyright 2025 LeXtudio Inc.
-    This file is part of ProjectRover.
-
-    ProjectRover is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    ProjectRover is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
--->
-
+<!-- AboutDialog copied from AboutWindow -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -24,7 +6,7 @@
         xmlns:viewModels="clr-namespace:ProjectRover.ViewModels"
         xmlns:design="clr-namespace:ProjectRover.ViewModels.Design"
         mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="400"
-        x:Class="ProjectRover.Views.AboutWindow"
+        x:Class="ProjectRover.Views.AboutDialog"
         x:DataType="viewModels:IAboutWindowViewModel"
         Width="500"
         Padding="30"

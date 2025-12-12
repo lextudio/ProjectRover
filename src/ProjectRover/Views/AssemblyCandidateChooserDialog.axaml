@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="clr-namespace:ProjectRover.ViewModels"
-  x:Class="ProjectRover.Views.AssemblyCandidateChooser"
+  x:Class="ProjectRover.Views.AssemblyCandidateChooserDialog"
   x:DataType="vm:AssemblyCandidateChooserViewModel"
   Width="600" Height="320" Title="Select Assembly Candidate">
   <Design.DataContext>

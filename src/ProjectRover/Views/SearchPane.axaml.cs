@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using ProjectRover.SearchResults;
@@ -6,9 +6,9 @@ using ProjectRover.ViewModels;
 
 namespace ProjectRover.Views;
 
-public partial class SearchDockView : UserControl
+public partial class SearchPane : UserControl
 {
-    public SearchDockView()
+    public SearchPane()
     {
         InitializeComponent();
     }

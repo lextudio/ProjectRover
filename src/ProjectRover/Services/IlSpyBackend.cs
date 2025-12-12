@@ -48,7 +48,7 @@ public sealed class IlSpyBackend : IDisposable
     {
         if (ILSpySettings.SettingsFilePathProvider == null)
         {
-            ILSpySettings.SettingsFilePathProvider = new RoverSettingsFilePathProvider();
+            ILSpySettings.SettingsFilePathProvider = new SettingsFilePathProvider();
         }
         var settings = ILSpySettings.Load();
         var manager = new AssemblyListManager(settings);

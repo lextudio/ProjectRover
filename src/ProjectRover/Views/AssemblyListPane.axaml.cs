@@ -1,11 +1,11 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 
 namespace ProjectRover.Views;
 
-public partial class LeftDockView : UserControl
+public partial class AssemblyListPane : UserControl
 {
-    public LeftDockView()
+    public AssemblyListPane()
     {
         InitializeComponent();
     }

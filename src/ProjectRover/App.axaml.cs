@@ -73,6 +73,6 @@ public partial class App : Application
     private void About_OnClick(object? sender, EventArgs e)
     {
         _ = Services.GetRequiredService<IAnalyticsService>().TrackEventAsync(AnalyticsEvents.About);
-        Services.GetRequiredService<IDialogService>().ShowDialog<AboutWindow>();
+        Services.GetRequiredService<IDialogService>().ShowDialog<AboutDialog>();
     }
 }

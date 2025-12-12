@@ -58,7 +58,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddViews(this IServiceCollection services) =>
         services
             .AddSingleton<MainWindow>()
-            .AddTransient<AboutWindow>();
+            .AddTransient<AboutDialog>();
 
     public static IServiceCollection AddViewModels(this IServiceCollection services) =>
         services

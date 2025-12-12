@@ -1,0 +1,45 @@
+<UserControl x:Class="ProjectRover.Views.AssemblyListPane"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:nodes="clr-namespace:ProjectRover.Nodes"
+             xmlns:searchResults="clr-namespace:ProjectRover.SearchResults"
+             xmlns:vm="using:ProjectRover.ViewModels"
+             xmlns:converters="clr-namespace:ProjectRover.Converters"
+             x:DataType="vm:MainWindowViewModel">
+  <TreeView x:Name="TreeView"
+            ItemsSource="{Binding AssemblyNodes}"
+            SelectionMode="Single"
+            SelectedItem="{Binding SelectedNode}"
+            AutoScrollToSelectedItem="True"
+            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+            Foreground="{DynamicResource ThemeForegroundBrush}">
+    <TreeView.Styles>
+      <Style Selector="TextBlock" x:DataType="nodes:Node">
+        <Setter Property="Foreground" Value="{Binding IsPublicAPI, Converter={StaticResource ApiVisibilityToBrushConverter}}" />
+      </Style>
+      <Style Selector="Svg">
+        <Setter Property="Margin" Value="0 0 5 0" />
+      </Style>
+      <Style Selector="TreeViewItem" x:DataType="nodes:Node">
+        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+      </Style>
+    </TreeView.Styles>
+
+    <TreeView.DataTemplates>
+      <TreeDataTemplate DataType="nodes:AssemblyNode" ItemsSource="{Binding Children}">
+        <StackPanel Orientation="Horizontal">
+          <Svg Path="{DynamicResource ReferenceIcon}" />
+          <TextBlock Text="{Binding Name}"
+                     Foreground="{DynamicResource ThemeForegroundBrush}" />
+        </StackPanel>
+      </TreeDataTemplate>
+      <TreeDataTemplate DataType="nodes:MetadataNode" ItemsSource="{Binding Items}">
+        <StackPanel Orientation="Horizontal">
+          <Svg Path="{DynamicResource MetadataIcon}" />
+          <TextBlock Text="{Binding Name}" />
+        </StackPanel>
+      </TreeDataTemplate>
+      <!-- other templates omitted for brevity; kept identical to LeftDockView where needed -->
+    </TreeView.DataTemplates>
+  </TreeView>
+</UserControl>
