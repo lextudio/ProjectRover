@@ -2021,7 +2021,8 @@ public partial class MainWindowViewModel : ObservableObject
                 IconPath = string.Empty,
                 LocationIconPath = string.Empty,
                 AssemblyIconPath = string.Empty,
-                TargetNode = node
+                TargetNode = node,
+                MetadataToken = handle
             };
             SearchResults.Add(basic);
         }

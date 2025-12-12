@@ -12,6 +12,7 @@ using ProjectRover.Nodes;
 using ProjectRover.Notifications;
 using ProjectRover.Services;
 using ProjectRover.Services.IlSpyX;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ProjectRover.ViewModels;
 
@@ -93,7 +94,7 @@ public partial class AssemblyTreeModel : ObservableObject
     public IlSpyAssembly? GetIlSpyAssembly(AssemblyNode node) =>
         assemblyLookup.TryGetValue(node, out var asm) ? asm : null;
 
-    public bool TryGetAssembly(Node node, out IlSpyAssembly assembly)
+    public bool TryGetAssembly(Node node, [NotNullWhen(true)] out IlSpyAssembly? assembly)
     {
         var asmNode = GetAssemblyNode(node);
         if (asmNode != null && assemblyLookup.TryGetValue(asmNode, out assembly))
@@ -101,7 +102,7 @@ public partial class AssemblyTreeModel : ObservableObject
             return true;
         }
 
-        assembly = null!;
+        assembly = null;
         return false;
     }
 

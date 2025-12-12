@@ -36,6 +36,7 @@ using ICSharpCode.ILSpyX;
 using ICSharpCode.ILSpyX.Settings;
 using DecompilerSettings = ICSharpCode.Decompiler.DecompilerSettings;
 using LanguageVersion = ICSharpCode.Decompiler.CSharp.LanguageVersion;
+using System.Collections.Immutable;
 
 namespace ProjectRover.Services;
 
@@ -122,6 +123,153 @@ public string DecompileMember(IlSpyAssembly assembly, EntityHandle handle, Decom
     public void Dispose()
     {
         Clear();
+    }
+
+    /// <summary>
+    /// Resolve candidate assembly file paths for a simple assembly name and optional MVID.
+    /// The method consults the current <see cref="assemblyList"/>, persisted assemblies, and sibling directories
+    /// for likely candidates (simpleName.dll/.exe) and, if an MVID is provided, will prefer candidates matching it.
+    /// </summary>
+    public IEnumerable<string> ResolveAssemblyCandidates(string simpleName, Guid? mvid = null)
+    {
+        if (string.IsNullOrWhiteSpace(simpleName))
+            return Array.Empty<string>();
+
+        var nameVariants = new[] { simpleName, simpleName + ".dll", simpleName + ".exe" };
+        var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            foreach (var a in assemblyList.GetAssemblies())
+            {
+                try
+                {
+                    var fn = a.FileName;
+                    if (string.IsNullOrEmpty(fn))
+                        continue;
+
+                    var fileNameOnly = Path.GetFileName(fn);
+                    if (nameVariants.Contains(fileNameOnly, StringComparer.OrdinalIgnoreCase) ||
+                        Path.GetFileNameWithoutExtension(fn).Equals(simpleName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!candidates.Contains(fn))
+                            candidates.Add(fn);
+                    }
+                }
+                catch
+                {
+                    // ignore per-assembly probing errors
+                }
+            }
+
+            foreach (var p in GetPersistedAssemblyFiles())
+            {
+                if (!candidates.Contains(p) && File.Exists(p))
+                    candidates.Add(p);
+            }
+
+            // Probing sibling directories of known candidates for simpleName.dll/.exe
+            var snapshot = candidates.ToList();
+            foreach (var known in snapshot)
+            {
+                try
+                {
+                    var dir = Path.GetDirectoryName(known);
+                    if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+                        continue;
+
+                    foreach (var ext in new[] { ".dll", ".exe" })
+                    {
+                        var path = Path.Combine(dir, simpleName + ext);
+                        if (File.Exists(path) && !candidates.Contains(path))
+                            candidates.Add(path);
+                    }
+                }
+                catch
+                {
+                    // ignore directory probe errors
+                }
+            }
+
+            // If MVID provided, filter to matches (prefer exact matches)
+            if (mvid.HasValue)
+            {
+                var matches = new List<string>();
+                foreach (var file in candidates)
+                {
+                    try
+                    {
+                        using var fs = File.OpenRead(file);
+                        using var pe = new PEReader(fs, PEStreamOptions.Default);
+                        if (!pe.HasMetadata)
+                            continue;
+                        var reader = pe.GetMetadataReader();
+                        var guid = reader.GetGuid(reader.GetModuleDefinition().Mvid);
+                        if (guid == mvid.Value)
+                            matches.Add(file);
+                    }
+                    catch
+                    {
+                        // ignore unreadable files
+                    }
+                }
+
+                if (matches.Count > 0)
+                    return matches;
+            }
+        }
+        catch
+        {
+            // top-level defensive catch - return what we have
+        }
+
+        return candidates;
+    }
+
+    /// <summary>
+    /// Probe a candidate assembly file to see if it contains the specified metadata <paramref name="handle"/>.
+    /// Returns true when the handle resolves in the metadata without throwing.
+    /// </summary>
+    public bool ProbeAssemblyForHandle(string filePath, EntityHandle handle)
+    {
+        if (handle.IsNil)
+            return false;
+        if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+            return false;
+
+        try
+        {
+            using var fs = File.OpenRead(filePath);
+            using var pe = new PEReader(fs, PEStreamOptions.Default);
+            if (!pe.HasMetadata)
+                return false;
+            var reader = pe.GetMetadataReader();
+
+            switch (handle.Kind)
+            {
+                case HandleKind.TypeDefinition:
+                    reader.GetTypeDefinition((TypeDefinitionHandle)handle);
+                    return true;
+                case HandleKind.MethodDefinition:
+                    reader.GetMethodDefinition((MethodDefinitionHandle)handle);
+                    return true;
+                case HandleKind.FieldDefinition:
+                    reader.GetFieldDefinition((FieldDefinitionHandle)handle);
+                    return true;
+                case HandleKind.PropertyDefinition:
+                    reader.GetPropertyDefinition((PropertyDefinitionHandle)handle);
+                    return true;
+                case HandleKind.EventDefinition:
+                    reader.GetEventDefinition((EventDefinitionHandle)handle);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public IEnumerable<(EntityHandle Handle, string DisplayName, string AssemblyPath)> AnalyzeSymbolReferences(IlSpyAssembly assembly, EntityHandle handle, DecompilationLanguage language)

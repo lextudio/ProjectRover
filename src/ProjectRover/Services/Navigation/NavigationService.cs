@@ -81,18 +81,52 @@ public class NavigationService : INavigationService
             }
         }
 
-        // Attempt to load assembly asynchronously
-        progress.Report($"Loading assembly: {assemblyPath}");
+        // Attempt to probe candidate assemblies before loading
+        progress.Report($"Probing candidate assemblies for: {assemblyPath}");
         try
         {
-            var loaded = await assemblyTreeModel.LoadAssembliesAsync(new[] { assemblyPath }, false, false, false, progress, cancellationToken).ConfigureAwait(false);
-            var loadedCandidate = assemblyTreeModel.FindAnyNodeForAssembly(assemblyPath);
-            if (loadedCandidate != null)
+            var token = basicResult.MetadataToken;
+            // Derive simple name from assembly path
+            var simpleName = System.IO.Path.GetFileNameWithoutExtension(assemblyPath);
+            var candidates = assemblyTreeModel.Backend.ResolveAssemblyCandidates(simpleName, null).ToList();
+
+            // If search result provided an explicit assembly path (often analyzers return full path), ensure it's included
+            if (!string.IsNullOrWhiteSpace(assemblyPath) && !candidates.Contains(assemblyPath))
+                candidates.Add(assemblyPath);
+
+            // If no candidates found, fallback to attempting to load the provided path
+            if (candidates.Count == 0)
+                candidates.Add(assemblyPath);
+
+            string? toLoad = null;
+            if (token.HasValue && token.Value.IsNil == false)
             {
-                progress.Report($"Resolved after load: {assemblyPath}");
-                // Ensure selection and UI operations happen on UI thread
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { /* caller will set SelectedNode */ });
-                return loadedCandidate;
+                // Prefer candidates that probe true for the token
+                foreach (var c in candidates)
+                {
+                    if (assemblyTreeModel.Backend.ProbeAssemblyForHandle(c, token.Value))
+                    {
+                        toLoad = c;
+                        break;
+                    }
+                }
+            }
+
+            // If we didn't find by probing, pick first candidate (best-effort)
+            if (toLoad == null)
+                toLoad = candidates.FirstOrDefault();
+
+            if (toLoad != null)
+            {
+                progress.Report($"Loading assembly: {toLoad}");
+                var loaded = await assemblyTreeModel.LoadAssembliesAsync(new[] { toLoad }, false, false, false, progress, cancellationToken).ConfigureAwait(false);
+                var loadedCandidate = assemblyTreeModel.FindAnyNodeForAssembly(toLoad);
+                if (loadedCandidate != null)
+                {
+                    progress.Report($"Resolved after load: {toLoad}");
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { /* caller will set SelectedNode */ });
+                    return loadedCandidate;
+                }
             }
         }
         catch (OperationCanceledException)

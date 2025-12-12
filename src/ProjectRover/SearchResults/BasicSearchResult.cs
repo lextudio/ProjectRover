@@ -18,12 +18,14 @@
 */
 
 using ProjectRover.Nodes;
+using System.Reflection.Metadata;
 
 namespace ProjectRover.SearchResults;
 
 public class BasicSearchResult : SearchResult
 {
     public Node? TargetNode { get; init; }
+    public EntityHandle? MetadataToken { get; init; }
     public required string DisplayName { get; init; }
     public required string DisplayLocation { get; init; }
     public required string DisplayAssembly { get; init; }

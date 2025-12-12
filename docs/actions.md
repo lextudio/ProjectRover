@@ -11,8 +11,10 @@ This document tracks the prioritized epics for bringing ILSpyRover (Avalonia) cl
 - [ ] Implement AssemblyList and LoadedAssembly shim to centralize lifecycle, persistence, and resolution.
 - [ ] Add resolver-based referenced-assembly loading and an AutoLoadReferencedAssemblies preference with prompt UX.
 - [ ] Implement token+assembly identity resolution algorithm to robustly map EntityHandle to tree nodes.
-- [ ] Implement JumpToReferenceAsync (or NavigationService.JumpToReferenceAsync) to orchestrate async loads, indexing and navigation with progress.
+- [x] Implement JumpToReferenceAsync (or NavigationService.JumpToReferenceAsync) to orchestrate async loads, indexing and navigation with progress.
 - [ ] Expand indexing to exported/forwarded types and module-level constructs and add lazy indexing strategies.
+- [x] Add token probing across candidate assemblies (match by simple name/MVID and test token presence before loading)
+- [x] Expose `AssemblyList` resolution helper: ResolveAssemblyCandidates(name, mvid?) -> file paths
 - [ ] Map Rover settings and session persistence to ILSpy WPF settings where possible.
 - [ ] Replace ad-hoc assembly-load calls across the codebase with IlSpyBackend and AssemblyList APIs.
 
@@ -33,6 +35,9 @@ This document tracks the prioritized epics for bringing ILSpyRover (Avalonia) cl
 - [x] Focus assembly search results on their matching assembly node.
 - [x] Ensure all ILSpy search features (filtering by type/member/resource/assembly) are available in Rover.
 - [ ] Integrate Go-To/Find usages behavior via ILSpyX mapping.
+- [ ] Add UI affordances for unresolved analyzer/search results ("Load assembly" action)
+- [ ] Background-resolve unresolved analyzer/search results by attempting resolver-based loads and update results when resolved
+- [ ] Add tests validating Find Usages / Go-To parity for representative assemblies
 
 ### Epic: Decompilation & Editor Integration (High Priority)
 - [ ] Delegate token -> node mapping and symbol navigation to ILSpyX.

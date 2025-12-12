@@ -420,7 +420,10 @@ internal sealed class RoverSearchResultFactory : ISearchResultFactory
     public MemberSearchResult Create(IEntity entity)
     {
         Serilog.Log.Debug("[RoverSearchResultFactory] Create(Member) called for entity: {Entity}", entity?.FullName);
-        return new MemberSearchResult { Member = entity, Name = entity.Name, Location = entity.DeclaringType?.FullName ?? string.Empty, Assembly = entity.ParentModule?.AssemblyName ?? string.Empty, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
+        var name = entity?.Name ?? string.Empty;
+        var location = entity?.DeclaringType?.FullName ?? string.Empty;
+        var assembly = entity?.ParentModule?.AssemblyName ?? string.Empty;
+        return new MemberSearchResult { Member = entity, Name = name, Location = location, Assembly = assembly, Image = string.Empty, LocationImage = string.Empty, AssemblyImage = string.Empty };
     }
 
     public ResourceSearchResult Create(MetadataFile module, Resource resource, ITreeNode node, ITreeNode parent)
