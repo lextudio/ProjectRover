@@ -14,7 +14,7 @@ namespace ICSharpCode.ILSpy.ViewModels
     // Adapted PaneModel from ILSpy's WPF implementation. In Rover we reuse the project's ObservableObject pattern.
     public abstract class PaneModel : ObservableObject
     {
-        protected static IDockWorkspace DockWorkspace => App.Current.ExportProvider?.GetExportedValue<IDockWorkspace>()!;
+        protected static Docking.IDockWorkspace DockWorkspace => App.ExportProvider?.GetExportedValue<Docking.IDockWorkspace>()!;
 
         class CloseCommandImpl : ICommand
         {
@@ -42,7 +42,7 @@ namespace ICSharpCode.ILSpy.ViewModels
             {
                 try
                 {
-                    var dw = App.Current?.ExportProvider?.GetExportedValue<IDockWorkspace>();
+                    var dw = App.ExportProvider?.GetExportedValue<Docking.IDockWorkspace>();
                     dw?.Remove(model);
                 }
                 catch { }
@@ -124,19 +124,19 @@ namespace ICSharpCode.ILSpy.ViewModels
         {
             try
             {
-                var export = App.Current?.ExportProvider;
+                var export = App.ExportProvider;
                 if (export != null)
                 {
                         try
                         {
-                            var provider = App.Current.ExportProvider;
-                            ICSharpCode.ILSpy.Languages.LanguageService? languageService = null;
+                            var provider = App.ExportProvider;
+                            ICSharpCode.ILSpy.LanguageService? languageService = null;
                             ICSharpCode.ILSpy.Util.SettingsService? settingsService = null;
                             try
                             {
                                 if (provider != null)
                                 {
-                                    languageService = provider.GetExportedValue<ICSharpCode.ILSpy.Languages.LanguageService>();
+                                    languageService = provider.GetExportedValue<LanguageService>();
                                     settingsService = provider.GetExportedValue<ICSharpCode.ILSpy.Util.SettingsService>();
                                 }
                             }
@@ -179,8 +179,8 @@ namespace ICSharpCode.ILSpy.ViewModels
             catch { }
 
             // Require the language and settings shims to be available via ExportProvider
-            var provider2 = App.Current.ExportProvider ?? throw new InvalidOperationException("ExportProvider is not initialized");
-            var ls = provider2.GetExportedValue<ICSharpCode.ILSpy.Languages.LanguageService>();
+            var provider2 = App.ExportProvider ?? throw new InvalidOperationException("ExportProvider is not initialized");
+            var ls = provider2.GetExportedValue<ICSharpCode.ILSpy.LanguageService>();
             var ss = provider2.GetExportedValue<ICSharpCode.ILSpy.Util.SettingsService>();
             if (ls == null || ss == null)
                 throw new InvalidOperationException("Required ILSpy services (LanguageService or SettingsService) are not available from the ExportProvider.");

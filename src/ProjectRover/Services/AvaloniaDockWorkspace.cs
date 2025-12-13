@@ -15,7 +15,7 @@ namespace ProjectRover.Services
     /// Minimal scaffold implementation of ICSharpCode.ILSpy.IDockWorkspace for Avalonia.
     /// This is intentionally small and returns placeholder objects; extend as needed.
     /// </summary>
-    public class AvaloniaDockWorkspace : ICSharpCode.ILSpy.IDockWorkspace
+    public class AvaloniaDockWorkspace : ICSharpCode.ILSpy.Docking.IDockWorkspace
     {
         public IReadOnlyList<object> TabPages { get; private set; } = Array.Empty<object>();
 

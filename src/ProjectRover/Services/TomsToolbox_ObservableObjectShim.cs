@@ -1,17 +1,18 @@
+// Minimal shim for TomsToolbox.Wpf.ObservableObjectBase used by linked ILSpy sources
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace TomsToolbox.Wpf
 {
-    // Minimal ObservableObject shim to satisfy ILSpy core when compiled in Rover.
-    public abstract class ObservableObject : INotifyPropertyChanged
+    public class ObservableObjectBase : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
         {
-            if (Equals(field, value))
+            if (EqualityComparer<T>.Default.Equals(field, value))
                 return false;
             field = value;
             OnPropertyChanged(propertyName);
@@ -19,6 +20,12 @@ namespace TomsToolbox.Wpf
         }
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public class ObservableObject : ObservableObjectBase
+    {
     }
 }

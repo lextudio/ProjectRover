@@ -37,6 +37,7 @@ using ICSharpCode.ILSpyX.Settings;
 using DecompilerSettings = ICSharpCode.Decompiler.DecompilerSettings;
 using LanguageVersion = ICSharpCode.Decompiler.CSharp.LanguageVersion;
 using System.Collections.Immutable;
+using ICSharpCode.ILSpy;
 
 namespace ProjectRover.Services;
 
@@ -48,7 +49,7 @@ public sealed class IlSpyBackend : IDisposable
     {
         if (ILSpySettings.SettingsFilePathProvider == null)
         {
-            ILSpySettings.SettingsFilePathProvider = new SettingsFilePathProvider();
+            ILSpySettings.SettingsFilePathProvider = new ILSpySettingsFilePathProvider();
         }
         var settings = ILSpySettings.Load();
         var manager = new AssemblyListManager(settings);

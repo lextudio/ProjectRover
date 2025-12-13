@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using ICSharpCode.ILSpyX.Settings;
 
-namespace ProjectRover.Services
+namespace ICSharpCode.ILSpy
 {
-    public class SettingsFilePathProvider : ISettingsFilePathProvider
+    public class ILSpySettingsFilePathProvider : ISettingsFilePathProvider
     {
         public string GetSettingsFilePath()
         {

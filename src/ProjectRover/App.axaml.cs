@@ -68,7 +68,7 @@ public partial class App : Application
                 );
                 // Register language and settings shims
                 config = config.WithParts(
-                    typeof(ICSharpCode.ILSpy.Languages.LanguageService),
+                    typeof(ICSharpCode.ILSpy.LanguageService),
                     typeof(ICSharpCode.ILSpy.Util.SettingsService)
                 );
 
@@ -85,7 +85,7 @@ public partial class App : Application
             // Exercise docking workspace once at startup (diagnostic)
             try
             {
-                var dockWorkspace = Services.GetService<ICSharpCode.ILSpy.IDockWorkspace>();
+                var dockWorkspace = Services.GetService<ICSharpCode.ILSpy.Docking.IDockWorkspace>();
                 if (dockWorkspace != null)
                 {
                     // Add a diagnostic tab and show some text
@@ -198,11 +198,36 @@ public partial class App : Application
                 return svc;
             throw new InvalidOperationException($"Export not found: {typeof(T).FullName}");
         }
+
+        public T[] GetExportedValues<T>()
+        {
+            try
+            {
+                // Prefer composition host via reflection
+                var hgType = _host.GetType();
+                var getExports = hgType.GetMethod("GetExports", BindingFlags.Instance | BindingFlags.Public);
+                if (getExports != null && getExports.IsGenericMethodDefinition)
+                {
+                    var generic = getExports.MakeGenericMethod(typeof(T));
+                    var result = generic.Invoke(_host, null);
+                    if (result is IEnumerable<T> enumerable)
+                        return System.Linq.Enumerable.ToArray(enumerable);
+                }
+            }
+            catch { }
+
+            // Fallback to service provider
+            var svcs = (IEnumerable<T>?)_services.GetService(typeof(IEnumerable<T>));
+            if (svcs != null)
+                return System.Linq.Enumerable.ToArray(svcs);
+            return Array.Empty<T>();
+        }
     }
 
     public interface IExportProvider
     {
         T GetExportedValue<T>();
+        T[] GetExportedValues<T>();
     }
 
     // Small holder type that can be discovered by MEF consumers if they import IServiceProvider

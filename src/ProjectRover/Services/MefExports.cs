@@ -61,18 +61,18 @@ namespace ProjectRover.Services
         public ICSharpCode.ILSpy.ViewModels.TabPageModel Model { get; }
     }
 
-    [Export(typeof(ICSharpCode.ILSpy.Languages.LanguageService))]
-    public class ExportedLanguageService
-    {
-        [ImportingConstructor]
-        public ExportedLanguageService(ICSharpCode.ILSpy.Languages.LanguageService svc)
-        {
-            Service = svc;
-        }
+    // [Export(typeof(ICSharpCode.ILSpy.Languages.LanguageService))]
+    // public class ExportedLanguageService
+    // {
+    //     [ImportingConstructor]
+    //     public ExportedLanguageService(ICSharpCode.ILSpy.Languages.LanguageService svc)
+    //     {
+    //         Service = svc;
+    //     }
 
-        [Export]
-        public ICSharpCode.ILSpy.Languages.LanguageService Service { get; }
-    }
+    //     [Export]
+    //     public ICSharpCode.ILSpy.Languages.LanguageService Service { get; }
+    // }
 
     [Export(typeof(ICSharpCode.ILSpy.Util.SettingsService))]
     public class ExportedSettingsService

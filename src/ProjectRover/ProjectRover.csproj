@@ -75,14 +75,71 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Services\IPlatformService.cs">
       <Link>Services\IPlatformService.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Services\IDockWorkspace.cs">
-      <Link>Services\IDockWorkspace.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Docking\IDockWorkspace.cs">
+      <Link>Docking\IDockWorkspace.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\DecompilationOptions.cs">
       <Link>ILSpy\DecompilationOptions.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Options\DisplaySettings.cs">
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Options\DisplaySettings.cs">
       <Link>ILSpy\Options\DisplaySettings.cs</Link>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TextView\ViewState.cs">
+      <Link>ILSpy\TextView\ViewState.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\ILSpyTreeNode.cs">
+      <Link>ILSpy\TreeNodes\ILSpyTreeNode.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Languages\LanguageService.cs">
+      <Link>ILSpy\Languages\LanguageService.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Languages\Language.cs">
+      <Link>ILSpy\Languages\Language.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Languages\ILLanguage.cs">
+      <Link>ILSpy\Languages\ILLanguage.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Languages\ILAstLanguage.cs">
+      <Link>ILSpy\Languages\ILAstLanguage.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Languages\CSharpLanguage.cs">
+      <Link>ILSpy\Languages\CSharpLanguage.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\LanguageSettings.cs">
+      <Link>ILSpy\LanguageSettings.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Util\SettingsService.cs">
+      <Link>ILSpy\Util\SettingsService.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Languages\IResourceFileHandler.cs">
+      <Link>ILSpy\Languages\IResourceFileHandler.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\ResourceNodes\IResourceNodeFactory.cs">
+      <Link>ILSpy\TreeNodes\ResourceNodes\IResourceNodeFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\FilterResult.cs">
+      <Link>ILSpy\TreeNodes\FilterResult.cs</Link>
+    </Compile>
+    <!-- <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\AssemblyTree\AssemblyTreeModel.cs">
+      <Link>ILSpy\AssemblyTree\AssemblyTreeModel.cs</Link>
+    </Compile> -->
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Options\MiscSettings.cs">
+      <Link>ILSpy\Options\MiscSettings.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\SessionSettings.cs">
+      <Link>ILSpy\SessionSettings.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Util\SettingsChangedEventArgs.cs">
+      <Link>ILSpy\Util\SettingsChangedEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Util\WrappedEventArgs.cs">
+      <Link>ILSpy\Util\WrappedEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TextView\BracketSearchResult.cs">
+      <Link>ILSpy\TextView\BracketSearchResult.cs</Link>
+    </Compile>
+    <!-- <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\ILSpySettingsFilePathProvider.cs">
+      <Link>ILSpy\ILSpySettingsFilePathProvider.cs</Link>
+    </Compile> -->
   </ItemGroup>
 </Project>

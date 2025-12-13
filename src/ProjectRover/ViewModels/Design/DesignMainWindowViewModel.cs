@@ -56,7 +56,7 @@ file class DesignPlatformService : ICSharpCode.ILSpy.IPlatformService
     public void InvokeOnUI(Action action) => action();
     public Task InvokeOnUIAsync(Func<Task> action) => action();
     public bool TryFindResource(object key, out object? value) { value = null; return false; }
-    public ICSharpCode.ILSpy.IDockWorkspace? DockWorkspace { get; } = null;
+    public ICSharpCode.ILSpy.Docking.IDockWorkspace? DockWorkspace { get; } = null;
 }
 
 file class DesignNotificationService : INotificationService

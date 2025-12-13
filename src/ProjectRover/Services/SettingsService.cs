@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using ICSharpCode.ILSpy;
 using ICSharpCode.ILSpyX.Settings;
 using ProjectRover.Settings;
 
@@ -18,7 +19,7 @@ public sealed class SettingsService : SettingsServiceBase, ISettingsService
     {
         if (ILSpySettings.SettingsFilePathProvider == null)
         {
-            ILSpySettings.SettingsFilePathProvider = new SettingsFilePathProvider();
+            ILSpySettings.SettingsFilePathProvider = new ILSpySettingsFilePathProvider();
         }
 
         return ILSpySettings.Load();
