@@ -25,6 +25,7 @@
     <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.3.0.6" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="DeviceId" Version="6.9.0" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
@@ -81,6 +82,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\DecompilationOptions.cs">
       <Link>ILSpy\DecompilationOptions.cs</Link>
     </Compile>
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\IMemberTreeNode.cs">
+        <Link>ILSpy\TreeNodes\IMemberTreeNode.cs</Link>
+      </Compile>
       <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Options\DisplaySettings.cs">
       <Link>ILSpy\Options\DisplaySettings.cs</Link>
     </Compile>
@@ -120,9 +124,30 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\FilterResult.cs">
       <Link>ILSpy\TreeNodes\FilterResult.cs</Link>
     </Compile>
-    <!-- <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\AssemblyTree\AssemblyTreeModel.cs">
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Commands\ExportCommandAttribute.cs">
+      <Link>ILSpy\Commands\ExportCommandAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\NavigationState.cs">
+      <Link>ILSpy\NavigationState.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\NavigationHistory.cs">
+      <Link>ILSpy\NavigationHistory.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\AppEnv\CommandLineArguments.cs">
+      <Link>ILSpy\CommandLineArguments.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Updates\UpdateSettings.cs">
+      <Link>ILSpy\Updates\UpdateSettings.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\NamespaceTreeNode.cs">
+      <Link>ILSpy\TreeNodes\NamespaceTreeNode.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\TypeTreeNode.cs">
+      <Link>ILSpy\TreeNodes\TypeTreeNode.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\AssemblyTree\AssemblyTreeModel.cs">
       <Link>ILSpy\AssemblyTree\AssemblyTreeModel.cs</Link>
-    </Compile> -->
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Options\MiscSettings.cs">
       <Link>ILSpy\Options\MiscSettings.cs</Link>
     </Compile>
@@ -135,6 +160,30 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Util\WrappedEventArgs.cs">
       <Link>ILSpy\Util\WrappedEventArgs.cs</Link>
     </Compile>
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Images\TypeIcon.cs">
+        <Link>ILSpy\Images\TypeIcon.cs</Link>
+      </Compile>
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\Images\AccessOverlayIcon.cs">
+        <Link>ILSpy\Images\AccessOverlayIcon.cs</Link>
+      </Compile>
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\AssemblyListTreeNode.cs">
+        <Link>ILSpy\TreeNodes\AssemblyListTreeNode.cs</Link>
+      </Compile>
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\FieldTreeNode.cs">
+        <Link>ILSpy\TreeNodes\FieldTreeNode.cs</Link>
+      </Compile>
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\PropertyTreeNode.cs">
+        <Link>ILSpy\TreeNodes\PropertyTreeNode.cs</Link>
+      </Compile>
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\EventTreeNode.cs">
+        <Link>ILSpy\TreeNodes\EventTreeNode.cs</Link>
+      </Compile>
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\MethodTreeNode.cs">
+        <Link>ILSpy\TreeNodes\MethodTreeNode.cs</Link>
+      </Compile>
+      <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TreeNodes\PackageFolderTreeNode.cs">
+        <Link>ILSpy\TreeNodes\PackageFolderTreeNode.cs</Link>
+      </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)..\..\..\ilspy\ILSpy\TextView\BracketSearchResult.cs">
       <Link>ILSpy\TextView\BracketSearchResult.cs</Link>
     </Compile>

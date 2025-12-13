@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using ICSharpCode.ILSpy.TextView;
 
 namespace ICSharpCode.ILSpy.Util
 {
@@ -73,16 +74,16 @@ namespace ICSharpCode.ILSpy.Util
 
     public class ApplySessionSettingsEventArgs : EventArgs
     {
-        public object SessionSettings { get; }
-        public ApplySessionSettingsEventArgs(object sessionSettings) => SessionSettings = sessionSettings;
+        public SessionSettings SessionSettings { get; }
+        public ApplySessionSettingsEventArgs(SessionSettings sessionSettings) => SessionSettings = sessionSettings;
     }
 
     public class MainWindowLoadedEventArgs : EventArgs { }
 
     public class ActiveTabPageChangedEventArgs : EventArgs
     {
-        public object? ViewState { get; }
-        public ActiveTabPageChangedEventArgs(object? viewState) => ViewState = viewState;
+        public ViewState? ViewState { get; }
+        public ActiveTabPageChangedEventArgs(ViewState? viewState) => ViewState = viewState;
     }
 
     public class ResetLayoutEventArgs : EventArgs { }

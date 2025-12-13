@@ -28,6 +28,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Composition.Hosting;
+using TomsToolbox.Composition;
 
 namespace ProjectRover;
 
@@ -222,12 +223,6 @@ public partial class App : Application
                 return System.Linq.Enumerable.ToArray(svcs);
             return Array.Empty<T>();
         }
-    }
-
-    public interface IExportProvider
-    {
-        T GetExportedValue<T>();
-        T[] GetExportedValues<T>();
     }
 
     // Small holder type that can be discovered by MEF consumers if they import IServiceProvider
