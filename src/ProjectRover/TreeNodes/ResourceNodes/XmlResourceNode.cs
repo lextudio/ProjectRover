@@ -24,7 +24,7 @@ using System.Threading.Tasks;
 using AvaloniaEdit.Highlighting;
 
 using ICSharpCode.Decompiler.Metadata;
-using ICSharpCode.ILSpy.TextViewControl;
+using ICSharpCode.ILSpy.TextView;
 using ICSharpCode.ILSpy.TreeNodes;
 using ICSharpCode.ILSpy.ViewModels;
 using ICSharpCode.ILSpyX.Abstractions;

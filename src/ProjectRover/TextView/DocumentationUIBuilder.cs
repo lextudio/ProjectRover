@@ -21,7 +21,7 @@ using ICSharpCode.ILSpy.Options;
 
 using ICSharpCode.ILSpy.Views;
 
-namespace ICSharpCode.ILSpy.TextViewControl
+namespace ICSharpCode.ILSpy.TextView
 {
     /// <summary>
     /// Renders XML documentation into an Avalonia Control (ScrollViewer containing a StackPanel).

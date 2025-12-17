@@ -56,7 +56,6 @@ global using SolidColorBrush = Avalonia.Media.SolidColorBrush;
 global using StackPanel = Avalonia.Controls.StackPanel;
 global using TextBlock = Avalonia.Controls.TextBlock;
 global using TextEditor = AvaloniaEdit.TextEditor;
-global using TextView = AvaloniaEdit.Rendering.TextView;
 global using TextViewPosition = AvaloniaEdit.TextViewPosition;
 global using Thickness = Avalonia.Thickness;
 global using ToggleButton = Avalonia.Controls.Primitives.ToggleButton;

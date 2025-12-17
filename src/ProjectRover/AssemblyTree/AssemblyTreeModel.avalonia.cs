@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using ICSharpCode.ILSpy.AssemblyTree;
 using ICSharpCode.ILSpy.Docking;
-using ICSharpCode.ILSpy.TextViewControl;
+using ICSharpCode.ILSpy.TextView;
 using ICSharpCode.ILSpy.Updates;
 using ICSharpCode.ILSpy.Util;
 using ICSharpCode.ILSpy.ViewModels;

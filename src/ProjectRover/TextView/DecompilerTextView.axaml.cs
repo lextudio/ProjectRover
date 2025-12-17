@@ -79,7 +79,7 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using System.Windows.Threading;
 
-namespace ICSharpCode.ILSpy.TextViewControl
+namespace ICSharpCode.ILSpy.TextView
 {
 	/// <summary>
 	/// Manages the TextEditor showing the decompiled code.

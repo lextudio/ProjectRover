@@ -86,10 +86,10 @@
   <!-- Link XSHD syntax definition files from ILSpy TextViewControl -->
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\..\doc\ILSpyAboutPage.txt" />
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\Asm-Mode.xshd" />
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\CSharp-Mode.xshd" />
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\ILAsm-Mode.xshd" />
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\XML-Mode.xshd" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\Asm-Mode.xshd" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\CSharp-Mode.xshd" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\ILAsm-Mode.xshd" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\XML-Mode.xshd" />
   </ItemGroup>
 
   <ItemGroup>
@@ -456,56 +456,57 @@
       <Link>TaskHelper.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\AvalonEditTextOutput.cs">
-      <Link>TextViewControl\AvalonEditTextOutput.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\AvalonEditTextOutput.cs">
+      <Link>TextView\AvalonEditTextOutput.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\BracketHighlightRenderer.cs">
-      <Link>TextViewControl\BracketHighlightRenderer.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\BracketSearchResult.cs">
+      <Link>TextView\BracketSearchResult.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\BracketSearchResult.cs">
-      <Link>TextViewControl\BracketSearchResult.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\DecompilerTextEditor.cs">
+      <Link>TextView\DecompilerTextEditor.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\DecompilerTextEditor.cs">
-      <Link>TextViewControl\DecompilerTextEditor.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\DefaultBracketSearcher.cs">
+      <Link>TextView\DefaultBracketSearcher.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\EditorCommands.cs">
-      <Link>TextViewControl\EditorCommands.cs</Link>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\EditorCommands.cs">
+      <Link>TextView\EditorCommands.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\FoldingCommands.cs">
-      <Link>TextViewControl\FoldingCommands.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\FoldingCommands.cs">
+      <Link>TextView\FoldingCommands.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\IBracketSearcher.cs">
-      <Link>TextViewControl\IBracketSearcher.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\IBracketSearcher.cs">
+      <Link>TextView\IBracketSearcher.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\OutputLengthExceededException.cs">
-      <Link>TextViewControl\OutputLengthExceededException.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\OutputLengthExceededException.cs">
+      <Link>TextView\OutputLengthExceededException.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\ReferenceElementGenerator.cs">
-      <Link>TextViewControl\ReferenceElementGenerator.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\ReferenceElementGenerator.cs">
+      <Link>TextView\ReferenceElementGenerator.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\ThemeAwareHighlightingColorizer.cs">
-      <Link>TextViewControl\ThemeAwareHighlightingColorizer.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\ThemeAwareHighlightingColorizer.cs">
+      <Link>TextView\ThemeAwareHighlightingColorizer.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\UIElementGenerator.cs">
-      <Link>TextViewControl\UIElementGenerator.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\UIElementGenerator.cs">
+      <Link>TextView\UIElementGenerator.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\ViewState.cs">
-      <Link>TextViewControl\ViewState.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\ViewState.cs">
+      <Link>TextView\ViewState.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextViewControl\VisualLineReferenceText.cs">
-      <Link>TextViewControl\VisualLineReferenceText.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TextView\VisualLineReferenceText.cs">
+      <Link>TextView\VisualLineReferenceText.cs</Link>
     </Compile>
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\AssemblyListTreeNode.cs">

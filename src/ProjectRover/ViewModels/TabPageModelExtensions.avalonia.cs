@@ -28,7 +28,7 @@ using Avalonia.Input;
 using Avalonia.VisualTree;
 
 using ICSharpCode.Decompiler;
-using ICSharpCode.ILSpy.TextViewControl;
+using ICSharpCode.ILSpy.TextView;
 
 using TomsToolbox.Wpf;
 
