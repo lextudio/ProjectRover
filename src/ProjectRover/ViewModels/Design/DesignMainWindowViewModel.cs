@@ -35,7 +35,7 @@ public class DesignMainWindowViewModel : MainWindowViewModel
     private static readonly IDialogService DialogServiceInstance = new DesignDialogService();
     private static readonly ISettingsService RoverSettingsServiceInstance = new DesignRoverSettingsService();
     private static readonly ICommandCatalog CommandCatalogInstance = new DesignCommandCatalog();
-    private static readonly AssemblyTreeModel DesignAssemblyTreeModel = new(new IlSpyBackend(), NotificationServiceInstance, new DesignLogger<AssemblyTreeModel>(), new DesignPlatformService());
+    private static readonly AssemblyTreeModel DesignAssemblyTreeModel = new(new IlSpyBackend(), NotificationServiceInstance, new DesignLogger<AssemblyTreeModel>(), new AvaloniaPlatformService());
     private static readonly ProjectRover.Services.Navigation.INavigationService DesignNavigationService = new ProjectRover.Services.Navigation.NavigationService(DesignAssemblyTreeModel, new DesignLogger<ProjectRover.Services.Navigation.NavigationService>());
 
     public DesignMainWindowViewModel()
@@ -51,12 +51,12 @@ public class DesignMainWindowViewModel : MainWindowViewModel
     }
 }
 
-file class DesignPlatformService : ICSharpCode.ILSpy.IPlatformService
+file class DesignPlatformService
 {
     public void InvokeOnUI(Action action) => action();
     public Task InvokeOnUIAsync(Func<Task> action) => action();
     public bool TryFindResource(object key, out object? value) { value = null; return false; }
-    public ICSharpCode.ILSpy.IDockWorkspace? DockWorkspace { get; } = null;
+    public AvaloniaDockWorkspace? DockWorkspace { get; } = null;
 }
 
 file class DesignNotificationService : INotificationService

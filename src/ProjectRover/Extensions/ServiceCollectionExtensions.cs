@@ -71,8 +71,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddServices(this IServiceCollection services) =>
         services
             .AddSingleton<IlSpyBackend>()
-            .AddSingleton<ICSharpCode.ILSpy.IDockWorkspace, AvaloniaDockWorkspace>()
-            .AddSingleton<IPlatformService>(sp => new AvaloniaPlatformService(sp.GetRequiredService<ICSharpCode.ILSpy.IDockWorkspace>()))
+            .AddSingleton<AvaloniaDockWorkspace>()
+            .AddSingleton(sp => new AvaloniaPlatformService(sp.GetRequiredService<AvaloniaDockWorkspace>()))
             .AddSingleton<INotificationService, NotificationService>()
             .AddTransient<IProjectGenerationService, ProjectGenerationService>()
             .AddTransient<IAutoUpdateService, AutoUpdateService>()

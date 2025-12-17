@@ -5,13 +5,14 @@ using System.Windows.Input;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ProjectRover;
+using ProjectRover.Services;
 
 namespace ICSharpCode.ILSpy.ViewModels
 {
     // Adapted PaneModel from ILSpy's WPF implementation. In Rover we reuse the project's ObservableObject pattern.
     public abstract class PaneModel : ObservableObject
     {
-        protected static IDockWorkspace DockWorkspace => App.Current.ExportProvider?.GetExportedValue<IDockWorkspace>()!;
+        protected static AvaloniaDockWorkspace DockWorkspace => App.Current.ExportProvider?.GetExportedValue<AvaloniaDockWorkspace>()!;
 
         class CloseCommandImpl : ICommand
         {
@@ -39,7 +40,7 @@ namespace ICSharpCode.ILSpy.ViewModels
             {
                 try
                 {
-                    var dw = App.Current?.ExportProvider?.GetExportedValue<IDockWorkspace>();
+                    var dw = App.Current?.ExportProvider?.GetExportedValue<AvaloniaDockWorkspace>();
                     dw?.Remove(model);
                 }
                 catch { }

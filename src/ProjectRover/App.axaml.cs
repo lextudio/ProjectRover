@@ -75,7 +75,7 @@ public partial class App : Application
             // Exercise docking workspace once at startup (diagnostic)
             try
             {
-                var dockWorkspace = Services.GetService<ICSharpCode.ILSpy.IDockWorkspace>();
+                var dockWorkspace = Services.GetService<AvaloniaDockWorkspace>();
                 if (dockWorkspace != null)
                 {
                     // Add a diagnostic tab and show some text

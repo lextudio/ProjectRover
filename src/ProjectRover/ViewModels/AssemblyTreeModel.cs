@@ -21,14 +21,14 @@ public partial class AssemblyTreeModel : ObservableObject
     private readonly IlSpyBackend ilSpyBackend;
     private readonly INotificationService notificationService;
     private readonly ILogger<AssemblyTreeModel> logger;
-    private readonly IPlatformService platformService;
+    private readonly AvaloniaPlatformService platformService;
     private readonly Dictionary<AssemblyNode, IlSpyAssembly> assemblyLookup;
     private readonly Dictionary<(string AssemblyPath, EntityHandle Handle), Node> handleToNodeMap;
     private readonly Stack<Node> backStack;
     private readonly Stack<Node> forwardStack;
     private bool isBackForwardNavigation;
 
-    public AssemblyTreeModel(IlSpyBackend backend, INotificationService notificationService, ILogger<AssemblyTreeModel> logger, IPlatformService platformService)
+    public AssemblyTreeModel(IlSpyBackend backend, INotificationService notificationService, ILogger<AssemblyTreeModel> logger, AvaloniaPlatformService platformService)
     {
         ilSpyBackend = backend ?? throw new ArgumentNullException(nameof(backend));
         this.notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));

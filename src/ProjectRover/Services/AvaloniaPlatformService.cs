@@ -6,9 +6,9 @@ using ICSharpCode.ILSpy;
 
 namespace ProjectRover.Services
 {
-    public class AvaloniaPlatformService : IPlatformService
+    public class AvaloniaPlatformService
     {
-        public ICSharpCode.ILSpy.IDockWorkspace? DockWorkspace { get; private set; }
+        public AvaloniaDockWorkspace? DockWorkspace { get; private set; }
 
         public AvaloniaDockWorkspace? AvaloniaDock { get; }
 
@@ -16,7 +16,7 @@ namespace ProjectRover.Services
         {
         }
 
-        public AvaloniaPlatformService(ICSharpCode.ILSpy.IDockWorkspace dockWorkspace)
+        public AvaloniaPlatformService(AvaloniaDockWorkspace dockWorkspace)
         {
             DockWorkspace = dockWorkspace;
         }
