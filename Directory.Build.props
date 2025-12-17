@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU1510;CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8618;CS8620;CS8621;CS8622;CS8625;CS8766;CS8767;CS8632</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <EnableNUnitRunner>true</EnableNUnitRunner>
+  </PropertyGroup>
+</Project>

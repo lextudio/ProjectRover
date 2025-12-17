@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:ICSharpCode.ILSpy;assembly=ProjectRover"
+             xmlns:transforms="clr-namespace:ICSharpCode.Decompiler.IL.Transforms;assembly=ICSharpCode.Decompiler"
+             xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
+             x:Class="ICSharpCode.ILSpy.DebugSteps"
+             x:DataType="local:DebugSteps"
+             mc:Ignorable="d"
+             d:DesignWidth="300" d:DesignHeight="300">
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6">
+      <CheckBox Margin="3" Content="{x:Static properties:Resources.UseFieldSugar}" IsChecked="{Binding UseFieldSugar, Source={x:Static local:DebugSteps.Options}}" />
+      <CheckBox Margin="3" Content="{x:Static properties:Resources.UseLogicOperationSugar}" IsChecked="{Binding UseLogicOperationSugar, Source={x:Static local:DebugSteps.Options}}" />
+      <CheckBox Margin="3" Content="{x:Static properties:Resources.ShowILRanges}" IsChecked="{Binding ShowILRanges, Source={x:Static local:DebugSteps.Options}}" />
+      <CheckBox Margin="3" Content="{x:Static properties:Resources.ShowChildIndexInBlock}" IsChecked="{Binding ShowChildIndexInBlock, Source={x:Static local:DebugSteps.Options}}" />
+    </StackPanel>
+
+    <TreeView Name="tree" ItemsSource="{Binding TreeRoot}" KeyDown="tree_KeyDown">
+      <TreeView.DataTemplates>
+        <TreeDataTemplate DataType="transforms:Stepper+Node" ItemsSource="{Binding Children}">
+          <TextBlock Text="{Binding Description}" />
+        </TreeDataTemplate>
+      </TreeView.DataTemplates>
+
+      <TreeView.ContextMenu>
+        <ContextMenu>
+          <MenuItem Header="{x:Static properties:Resources.ShowStateBeforeThisStep}" Click="ShowStateBefore_Click" InputGesture="Shift+Enter" />
+          <MenuItem Header="{x:Static properties:Resources.ShowStateAfterThisStep}" Click="ShowStateAfter_Click" InputGesture="Enter" />
+          <MenuItem Header="{x:Static properties:Resources.DebugThisStep}" Click="DebugStep_Click" />
+        </ContextMenu>
+      </TreeView.ContextMenu>
+    </TreeView>
+  </DockPanel>
+</UserControl>

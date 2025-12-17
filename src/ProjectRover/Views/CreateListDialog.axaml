@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ILSpy.Shims.Views.CreateListDialog"
+             Width="400" Height="160">
+  <Border Padding="12">
+    <StackPanel Spacing="8">
+      <TextBlock Text="Create new list" FontWeight="Bold" FontSize="16" />
+      <TextBlock Text="Name:" />
+      <TextBox Name="NameBox" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button Name="OkButton" Content="OK" IsDefault="True" Width="80" />
+        <Button Name="CancelButton" Content="Cancel" IsCancel="True" Width="80" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

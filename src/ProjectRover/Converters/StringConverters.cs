@@ -19,7 +19,7 @@
 
 using Avalonia.Data.Converters;
 
-namespace ProjectRover.Converters;
+namespace ICSharpCode.ILSpy.Converters;
 
 public static class StringConverters
 {

@@ -1,16 +1,13 @@
 using Avalonia.Controls;
-using ProjectRover.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
+using Avalonia.Interactivity;
 
-namespace ProjectRover.Views;
-
-public partial class UpdatePanel : UserControl
+namespace ICSharpCode.ILSpy.Views
 {
-    public UpdatePanel()
+    public partial class UpdatePanel : UserControl
     {
-        InitializeComponent();
-        
-        if (!Design.IsDesignMode)
-            DataContext = App.Current.Services.GetRequiredService<IUpdatePanelViewModel>();
+        public UpdatePanel()
+        {
+            InitializeComponent();
+        }
     }
 }

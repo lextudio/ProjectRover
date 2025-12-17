@@ -3,20 +3,23 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using Avalonia;
 using ICSharpCode.ILSpy;
+using Avalonia.Input.Platform;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.VisualTree;
+using Avalonia.Controls;
+using Application = Avalonia.Application;
 
 namespace ProjectRover.Services
 {
-    public class AvaloniaPlatformService : IPlatformService
+    public class AvaloniaPlatformService
     {
-        public ICSharpCode.ILSpy.Docking.IDockWorkspace? DockWorkspace { get; private set; }
-
-        public AvaloniaDockWorkspace? AvaloniaDock { get; }
+        public DockWorkspace? DockWorkspace { get; private set; }
 
         public AvaloniaPlatformService()
         {
         }
 
-        public AvaloniaPlatformService(ICSharpCode.ILSpy.Docking.IDockWorkspace dockWorkspace)
+        public AvaloniaPlatformService(ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
         {
             DockWorkspace = dockWorkspace;
         }
@@ -65,6 +68,33 @@ namespace ProjectRover.Services
 
             value = null;
             return false;
+        }
+
+        public async Task SetTextClipboardAsync(string text)
+        {
+            var clipboard = GetClipboard();
+            if (clipboard != null)
+            {
+                await clipboard.SetTextAsync(text);
+            }
+        }
+
+        private static IClipboard? GetClipboard()
+        {
+            var app = Application.Current;
+            if (app == null)
+                return null;
+
+            if (app.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+                return window.Clipboard;
+
+            if (app.ApplicationLifetime is ISingleViewApplicationLifetime { MainView: { } mainView })
+            {
+                var root = mainView.GetVisualRoot() as TopLevel;
+                return root?.Clipboard;
+            }
+
+            return null;
         }
     }
 }

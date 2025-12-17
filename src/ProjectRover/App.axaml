@@ -26,6 +26,14 @@
              RequestedThemeVariant="Light"
              Name="ProjectRover">
 
+    <Application.Resources>
+        <SolidColorBrush x:Key="BracketHighlightBackgroundBrush" Color="#280000FF" />
+        <Pen x:Key="BracketHighlightBorderPen" Brush="#800000FF" Thickness="1" />
+        <SolidColorBrush x:Key="LinkTextForegroundBrush" Color="Blue" />
+        <SolidColorBrush x:Key="CurrentLineBackgroundBrush" Color="#1614DCE0" />
+        <Pen x:Key="CurrentLineBorderPen" Brush="#3400FF6E" Thickness="1" />
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
         <dockThemes:DockFluentTheme />
@@ -95,7 +103,13 @@
                     <x:String x:Key="HeapIcon">/Assets/Heap.svg</x:String>
                     <x:String x:Key="ResourceFileIcon">/Assets/ResourceFile.svg</x:String>
                     <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
+                    <x:String x:Key="EnumInternalIcon">/Assets/EnumerationItemPublic.svg</x:String>
+                    <x:String x:Key="EnumProtectedIcon">/Assets/EnumerationItemPublic.svg</x:String>
+                    <x:String x:Key="EnumPrivateIcon">/Assets/EnumerationItemPublic.svg</x:String>
                     <x:String x:Key="StructIcon">/Assets/StructurePublic.svg</x:String>
+                    <x:String x:Key="StructInternalIcon">/Assets/StructurePublic.svg</x:String>
+                    <x:String x:Key="StructProtectedIcon">/Assets/StructurePublic.svg</x:String>
+                    <x:String x:Key="StructPrivateIcon">/Assets/StructurePublic.svg</x:String>
                     <x:String x:Key="ClassIcon">/Assets/ClassPublic.svg</x:String>
                     <x:String x:Key="ClassInternalIcon">/Assets/ClassInternal.svg</x:String>
                     <x:String x:Key="ClassProtectedIcon">/Assets/ClassProtected.svg</x:String>
@@ -126,6 +140,10 @@
                     <x:String x:Key="MethodStaticIconPrivate">/Assets/MethodPrivate.svg</x:String>
                     <x:String x:Key="MethodIcon">/Assets/MethodPublic.svg</x:String>
                     <x:String x:Key="ConstructorIcon">/Assets/MethodInstance.svg</x:String>
+                    <x:String x:Key="ConstructorIconPublic">/Assets/MethodInstance.svg</x:String>
+                    <x:String x:Key="ConstructorIconProtected">/Assets/MethodInstance.svg</x:String>
+                    <x:String x:Key="ConstructorIconInternal">/Assets/MethodInstance.svg</x:String>
+                    <x:String x:Key="ConstructorIconPrivate">/Assets/MethodInstance.svg</x:String>
                     <x:String x:Key="EventIconPublic">/Assets/EventPublic.svg</x:String>
                     <x:String x:Key="EventIconProtected">/Assets/EventProtected.svg</x:String>
                     <x:String x:Key="EventIconInternal">/Assets/EventInternal.svg</x:String>
@@ -185,13 +203,27 @@
                     <x:String x:Key="HeapIcon">/Assets/Dark/Heap.svg</x:String>
                     <x:String x:Key="ResourceFileIcon">/Assets/Dark/ResourceFile.svg</x:String>
                     <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
+                    <x:String x:Key="EnumInternalIcon">/Assets/EnumerationItemPublic.svg</x:String>
+                    <x:String x:Key="EnumProtectedIcon">/Assets/EnumerationItemPublic.svg</x:String>
+                    <x:String x:Key="EnumPrivateIcon">/Assets/EnumerationItemPublic.svg</x:String>
                     <x:String x:Key="StructIcon">/Assets/StructurePublic.svg</x:String>
+                    <x:String x:Key="StructInternalIcon">/Assets/StructurePublic.svg</x:String>
+                    <x:String x:Key="StructProtectedIcon">/Assets/StructurePublic.svg</x:String>
+                    <x:String x:Key="StructPrivateIcon">/Assets/StructurePublic.svg</x:String>
                     <x:String x:Key="ClassIcon">/Assets/ClassPublic.svg</x:String>
                     <x:String x:Key="ClassInternalIcon">/Assets/ClassInternal.svg</x:String>
                     <x:String x:Key="ClassProtectedIcon">/Assets/ClassProtected.svg</x:String>
                     <x:String x:Key="ClassPrivateIcon">/Assets/ClassPrivate.svg</x:String>
                     <x:String x:Key="ClassSealedIcon">/Assets/ClassSealed.svg</x:String>
                     <x:String x:Key="InterfaceIcon">/Assets/InterfacePublic.svg</x:String>
+                    <x:String x:Key="InterfaceInternalIcon">/Assets/InterfacePublic.svg</x:String>
+                    <x:String x:Key="InterfaceProtectedIcon">/Assets/InterfacePublic.svg</x:String>
+                    <x:String x:Key="InterfacePrivateIcon">/Assets/InterfacePublic.svg</x:String>
+                    <x:String x:Key="DelegateIcon">/Assets/ClassPublic.svg</x:String>
+                    <x:String x:Key="DelegateIconPublic">/Assets/ClassPublic.svg</x:String>
+                    <x:String x:Key="DelegateIconInternal">/Assets/ClassPublic.svg</x:String>
+                    <x:String x:Key="DelegateIconProtected">/Assets/ClassPublic.svg</x:String>
+                    <x:String x:Key="DelegateIconPrivate">/Assets/ClassPublic.svg</x:String>
                     <x:String x:Key="ConstantIconPublic">/Assets/Dark/ConstantPublic.svg</x:String>
                     <x:String x:Key="ConstantIconProtected">/Assets/Dark/ConstantProtected.svg</x:String>
                     <x:String x:Key="ConstantIconInternal">/Assets/Dark/ConstantInternal.svg</x:String>
@@ -216,6 +248,10 @@
                     <x:String x:Key="MethodStaticIconPrivate">/Assets/Dark/MethodPrivate.svg</x:String>
                     <x:String x:Key="MethodIcon">/Assets/Dark/MethodPublic.svg</x:String>
                     <x:String x:Key="ConstructorIcon">/Assets/Dark/MethodInstance.svg</x:String>
+                    <x:String x:Key="ConstructorIconPublic">/Assets/Dark/MethodInstance.svg</x:String>
+                    <x:String x:Key="ConstructorIconProtected">/Assets/Dark/MethodInstance.svg</x:String>
+                    <x:String x:Key="ConstructorIconInternal">/Assets/Dark/MethodInstance.svg</x:String>
+                    <x:String x:Key="ConstructorIconPrivate">/Assets/Dark/MethodInstance.svg</x:String>
                     <x:String x:Key="EventIconPublic">/Assets/Dark/EventPublic.svg</x:String>
                     <x:String x:Key="EventIconProtected">/Assets/Dark/EventProtected.svg</x:String>
                     <x:String x:Key="EventIconInternal">/Assets/Dark/EventInternal.svg</x:String>
@@ -240,11 +276,4 @@
             <converters:IconKeyToPathConverter x:Key="IconKeyToPathConverter" />
         </ResourceDictionary>
     </Application.Resources>
-    
-    <NativeMenu.Menu>
-        <NativeMenu>
-            <NativeMenuItem Header="About Project Rover" Click="About_OnClick" />
-        </NativeMenu>
-    </NativeMenu.Menu>
-
 </Application>

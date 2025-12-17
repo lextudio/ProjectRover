@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ICSharpCode.ILSpy.TextViewControl;assembly=ProjectRover"
+             xmlns:editing="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             x:Class="ICSharpCode.ILSpy.TextViewControl.DecompilerTextView"
+             x:Name="self">
+
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="waitAdornerBackgoundBrush" Color="#FFFFFF" Opacity="0.75" />
+    <local:MultiplyConverter x:Key="MultiplyConverter" />
+  </UserControl.Resources>
+
+  <Grid>
+    <Border BorderThickness="1,1,0,1" BorderBrush="#DDDDDD">
+      <Grid>
+        <!-- Decompiler text editor (Avalonia) -->
+        <!-- <local:DecompilerTextEditor x:Name="textEditor"
+        ShowLineNumbers="True"
+                                    FontFamily="Consolas,Menlo,Courier New,Monospace"
+                                    IsReadOnly="True"
+                                    IsVisible="True"
+ /> -->
+        <editing:TextEditor x:Name="textEditor"
+                             ShowLineNumbers="True"
+                             FontFamily="Consolas,Menlo,Courier New,Monospace"
+                             IsReadOnly="True"
+                             IsVisible="True" />
+
+        <!-- Progress overlay -->
+        <Border Name="waitAdorner" Background="{StaticResource waitAdornerBackgoundBrush}" IsVisible="False">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        MaxWidth="{Binding Bounds.Width, ElementName=self, Converter={StaticResource MultiplyConverter}, ConverterParameter=0.75}">
+              <TextBlock Name="progressTitle" FontSize="14" Text="Decompiling" Margin="3" TextWrapping="Wrap" HorizontalAlignment="Center" />
+              <ProgressBar Name="progressBar" Height="16" Width="{Binding Bounds.Width, ElementName=self, Converter={StaticResource MultiplyConverter}, ConverterParameter=0.75}" />
+              <TextBlock Name="progressText" IsVisible="False" Margin="3" />
+              <Button Click="CancelButton_Click" HorizontalAlignment="Center" Margin="3">Cancel</Button>
+            </StackPanel>
+          </Grid>
+        </Border>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

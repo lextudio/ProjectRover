@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:ICSharpCode.ILSpy.Metadata">
+
+  <!-- Minimal resource dictionary for metadata table views used by the shimmed UI -->
+
+  <!-- Minimal placeholder: ByteWidthConverter is provided by code. -->
+</ResourceDictionary>

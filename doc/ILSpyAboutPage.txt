@@ -1,0 +1,20 @@
+Project Rover is a cross-platform desktop UI for ILSpy, focused on giving macOS and Linux users a first-class experience (Windows too).
+
+Website: https://github.com/lextudio/ProjectRover/
+Found a bug? https://github.com/lextudio/ProjectRover/issues/new/
+
+# Project Rover uses source files from CodeMerxDecompile
+
+Copyright 2024 CodeMerx
+
+CodeMerxDecompile is licensed under the AGPL License.
+
+# Project Rover uses source files from ILSpy
+
+Copyright 2011-2025 AlphaSierraPapa for the ILSpy team
+Current and past contributors: https://github.com/icsharpcode/ILSpy/graphs/contributors
+
+ILSpy is distributed under the MIT License.
+
+Project Rover uses other open-source libraries to make its magic happen, and we want to thank the people working
+on those components! For the respective licenses and copyright information please see third-party notices.

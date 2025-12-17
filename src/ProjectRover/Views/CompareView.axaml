@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ICSharpCode.ILSpy.Views"
+             xmlns:vm="using:ICSharpCode.ILSpy.ViewModels"
+             xmlns:nodes="clr-namespace:ProjectRover.Nodes;assembly=ProjectRover"
+             x:Class="ICSharpCode.ILSpy.Views.CompareView"
+             x:DataType="vm:CompareViewModel">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6">
+      <Button Content="Swap" />
+      <ToggleButton Content="Show identical" />
+      <Button Content="Expand all" />
+      <Button Content="Copy JSON" />
+    </StackPanel>
+
+    <TreeView Grid.Row="1" x:Name="CompareTree" ItemsSource="{Binding RootEntry}">
+      <TreeView.DataTemplates>
+        <TreeDataTemplate DataType="vm:ComparisonEntryTreeNode" ItemsSource="{Binding Children}">
+          <TextBlock Text="{Binding Path=Text}" />
+        </TreeDataTemplate>
+      </TreeView.DataTemplates>
+    </TreeView>
+  </Grid>
+</UserControl>

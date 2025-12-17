@@ -1,0 +1,34 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:res="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
+        x:Class="ICSharpCode.ILSpy.OpenFromGacDialog"
+        Title="{x:Static res:Resources.OpenFrom}"
+        Width="750" Height="350">
+  <Grid Margin="12,8">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <DockPanel Grid.Row="0">
+      <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Text="{x:Static res:Resources._Search}" Margin="0,0,8,0"/>
+      <TextBox Name="filterTextBox" HorizontalAlignment="Stretch" Width="400" />
+    </DockPanel>
+
+    <ListBox Name="listView" Grid.Row="1" Margin="0,8" SelectionMode="Single">
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Text="{Binding}" Margin="2" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+      <Button Name="okButton" IsDefault="True" Margin="2,0" IsEnabled="False" Click="OKButton_Click" Content="{x:Static res:Resources.OpenListDialog__Open}" />
+      <Button IsCancel="True" Margin="2,0" Content="{x:Static res:Resources.Cancel}" />
+    </StackPanel>
+
+    <ProgressBar Grid.Row="1" Height="10" HorizontalAlignment="Stretch" Name="gacReadingProgressBar" VerticalAlignment="Bottom" IsVisible="False" />
+  </Grid>
+</Window>

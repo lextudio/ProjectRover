@@ -1,0 +1,51 @@
+<Window xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="clr-namespace:ICSharpCode.ILSpy.ViewModels"
+  xmlns:ia="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+  xmlns:ic="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
+  xmlns:local="clr-namespace:ICSharpCode.ILSpy;assembly=ProjectRover"
+  xmlns:res="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
+  x:Class="ICSharpCode.ILSpy.ManageAssemblyListsDialog"
+  x:DataType="vm:ManageAssemblyListsViewModel"
+  Title="{x:Static res:Resources.ManageAssemblyLists}"
+  Width="480" Height="350">
+  <Grid Margin="12,8">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="Auto" />
+    </Grid.ColumnDefinitions>
+
+    <ListBox Name="listView"
+             Margin="0 8"
+             Grid.ColumnSpan="4"
+             SelectionMode="Single"
+             SelectedItem="{Binding SelectedAssemblyList, Mode=TwoWay}"
+             ItemsSource="{Binding AssemblyLists}">
+      <ia:Interaction.Behaviors>
+        <ic:EventTriggerBehavior EventName="DoubleTapped">
+          <ic:InvokeCommandAction Command="{Binding SelectAssemblyListCommand}" />
+        </ic:EventTriggerBehavior>
+        <local:KeyTriggerBehavior Key="Enter" Command="{Binding SelectAssemblyListCommand}" />
+        <local:KeyTriggerBehavior Key="Delete" Command="{Binding DeleteCommand}" />
+      </ia:Interaction.Behaviors>
+    </ListBox>
+
+    <StackPanel Grid.Column="5" Grid.RowSpan="2" Margin="4,8">
+      <Button x:Name="NewButton" Margin="2 2 2 10" Command="{Binding NewCommand}" Content="{x:Static res:Resources.NewList}" />
+      <Button x:Name="CloneButton" Margin="2" Command="{Binding CloneCommand}" Content="{x:Static res:Resources.C_lone}" />
+      <Button x:Name="RenameButton" Margin="2" Command="{Binding RenameCommand}" Content="{x:Static res:Resources.R_ename}" />
+      <Button x:Name="DeleteButton" Margin="2" Command="{Binding DeleteCommand}" Content="{x:Static res:Resources.OpenListDialog__Delete}" />
+      <Button x:Name="ResetButton" Margin="2 10 2 2" Command="{Binding ResetCommand}" Content="{x:Static res:Resources._Reset}" />
+    </StackPanel>
+
+    <Button x:Name="CloseButton" IsCancel="True" Grid.Row="2" Margin="2,0" Content="{x:Static res:Resources.Close}" />
+    <Button x:Name="PreconfiguredButton" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="2,0" Click="PreconfiguredAssemblyListsMenuClick" Content="{x:Static res:Resources.AddPreconfiguredList}" />
+  </Grid>
+</Window>

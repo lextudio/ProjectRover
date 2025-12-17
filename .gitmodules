@@ -1,3 +1,7 @@
 [submodule "engine/AvaloniaEdit"]
 	path = src/AvaloniaEdit
 	url = ../AvaloniaEdit.git
+[submodule "src/ILSpy"]
+	path = src/ILSpy
+	url = https://github.com/lextudio/ILSpy
+	branch = wpf-isolation

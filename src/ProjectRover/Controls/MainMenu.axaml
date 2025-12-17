@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:ICSharpCode.ILSpy.Controls"
+             xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties"
+             xmlns:toms="urn:TomsToolbox"
+             x:Class="ICSharpCode.ILSpy.Controls.MainMenu"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="24">
+  <Menu Name="Menu" Height="24" IsVisible="{OnPlatform Windows='true', Linux='true', macOS='false'}">
+    <MenuItem Header="File" Tag="_File" />
+    <MenuItem Header="View" Tag="_View">
+      <!-- static entries can be added here -->
+    </MenuItem>
+    <MenuItem Header="Window" Tag="_Window" />
+  </Menu>
+</UserControl>

@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:treeNodes="clr-namespace:ICSharpCode.ILSpy.TreeNodes;assembly=ProjectRover"
+             xmlns:treeView="clr-namespace:ICSharpCode.ILSpyX.TreeView;assembly=ICSharpCode.ILSpyX"
+             xmlns:converters="clr-namespace:ICSharpCode.ILSpy.Converters;assembly=ProjectRover"
+             xmlns:cv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:vm="clr-namespace:ICSharpCode.ILSpy.AssemblyTree;assembly=ProjectRover"
+             x:Class="ICSharpCode.ILSpy.AssemblyTree.AssemblyListPane"
+             x:DataType="vm:AssemblyTreeModel">
+  <UserControl.Resources>
+    <converters:NodeForegroundConverter x:Key="NodeForegroundConverter" />
+  </UserControl.Resources>
+  
+  <Border Background="Transparent" BorderThickness="0">
+    <TreeView Name="tree" 
+              HorizontalAlignment="Stretch" 
+              VerticalAlignment="Stretch" 
+              SelectionMode="Single"
+              SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+              ItemsSource="{Binding Root.Children}">
+      <TreeView.Styles>
+        <Style Selector="TreeViewItem" x:DataType="treeView:SharpTreeNode">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+        </Style>
+      </TreeView.Styles>
+      <TreeView.ItemTemplate>
+       <TreeDataTemplate DataType="treeNodes:ILSpyTreeNode" ItemsSource="{Binding ViewChildren}">
+       <!-- <TreeDataTemplate DataType="treeNodes:ILSpyTreeNode" ItemsSource="{Binding Children}"> -->
+            <StackPanel Orientation="Horizontal" Background="Transparent">
+              <Panel Width="16" Height="16" Margin="0,0,5,0">
+                  <Svg Path="{Binding Icon, Converter={StaticResource IconKeyToPathConverter}}" 
+                       IsVisible="{Binding Icon, Converter={x:Static cv:ObjectConverters.IsNotNull}}" />
+              </Panel>
+              <TextBlock Text="{Binding Text}"
+                   VerticalAlignment="Center"
+                   Foreground="{Binding ., Converter={StaticResource NodeForegroundConverter}}" />
+            </StackPanel>
+        </TreeDataTemplate>
+      </TreeView.ItemTemplate>
+    </TreeView>
+  </Border>
+</UserControl>

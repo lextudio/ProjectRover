@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:ICSharpCode.ILSpy.Metadata"
+             x:Class="ICSharpCode.ILSpy.Metadata.FlagsTooltip"
+             x:DataType="local:FlagsTooltip">
+  <UserControl.Resources>
+    <local:NullVisibilityConverter x:Key="nullVisConv" />
+  </UserControl.Resources>
+
+  <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+    <ItemsControl Name="ItemsRoot" ItemsSource="{Binding Groups}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="local:FlagGroup">
+          <StackPanel Margin="4">
+            <TextBlock Text="{Binding Header}" IsVisible="{Binding Header, Converter={StaticResource nullVisConv}}" />
+            <ItemsControl ItemsSource="{Binding Flags}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:Flag">
+                  <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </ScrollViewer>
+</UserControl>

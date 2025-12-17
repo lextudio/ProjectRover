@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:ICSharpCode.ILSpy.Metadata"
+             xmlns:dgx="clr-namespace:DataGridExtensions;assembly=DataGridExtensions"
+             x:Class="ICSharpCode.ILSpy.Metadata.FlagsFilterControl">
+  <Grid>
+    <ToggleButton Name="ToggleButton">
+      <ToggleButton.Template>
+        <ControlTemplate>
+          <Border Background="#01010101">
+            <ContentControl Name="FilterSymbol" />
+          </Border>
+        </ControlTemplate>
+      </ToggleButton.Template>
+    </ToggleButton>
+
+    <Popup Name="Popup" IsOpen="{Binding IsChecked, ElementName=ToggleButton}">
+      <ListBox Name="ListBox" />
+    </Popup>
+  </Grid>
+</UserControl>
