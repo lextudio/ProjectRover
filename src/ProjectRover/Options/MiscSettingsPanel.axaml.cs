@@ -9,8 +9,6 @@ namespace ICSharpCode.ILSpy.Options
         public MiscSettingsPanel()
         {
             InitializeComponent();
-            // Wire DataContext to linked MiscSettingsViewModel
-            DataContext = new ICSharpCode.ILSpy.Options.MiscSettingsViewModel();
         }
     }
 }
