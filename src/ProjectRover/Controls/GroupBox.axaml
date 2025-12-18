@@ -1,0 +1,31 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ProjectRover.Controls;assembly=ProjectRover"
+    x:Class="ProjectRover.Controls.GroupBox">
+
+    <UserControl.Styles>
+        <Style Selector="HeaderedContentControl.group-box">
+            <Setter Property="Template">
+                <ControlTemplate TargetType="HeaderedContentControl">
+                    <Border BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="8"
+                            BorderBrush="{DynamicResource ThemeBorderLowBrush}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top"
+                                       Margin="4,0,4,4"
+                                       Background="{DynamicResource ThemeBackgroundBrush}"
+                                       Text="{TemplateBinding Header}" />
+                            <ContentPresenter/>
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+    </UserControl.Styles>
+
+    <HeaderedContentControl x:Name="PART_GroupBox" Classes="group-box" Header="{Binding Header, RelativeSource={RelativeSource AncestorType=controls:GroupBox}}">
+        <ContentPresenter Content="{Binding Content, RelativeSource={RelativeSource AncestorType=controls:GroupBox}}" />
+    </HeaderedContentControl>
+</UserControl>

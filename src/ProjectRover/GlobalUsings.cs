@@ -1,6 +1,5 @@
 global using AvaloniaEdit.Document;
 global using AvaloniaEdit.Folding;
-global using ICSharpCode.ILSpy.Commands;
 global using ICSharpCode.ILSpy.Docking;
 global using ICSharpCode.ILSpy.Util;
 
@@ -13,6 +12,7 @@ global using Brush = Avalonia.Media.Brush;
 global using Button = Avalonia.Controls.Button;
 global using CanExecuteRoutedEventArgs = Avalonia.Labs.Input.CanExecuteRoutedEventArgs;
 global using CheckBox = Avalonia.Controls.CheckBox;
+global using GroupBox = ProjectRover.Controls.GroupBox;
 global using Color = Avalonia.Media.Color;
 global using Colors = Avalonia.Media.Colors;
 global using CommandBinding = Avalonia.Labs.Input.CommandBinding;

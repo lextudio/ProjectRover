@@ -143,3 +143,4 @@ namespace TomsToolbox.Wpf
 
 namespace TomsToolbox.Wpf.Composition
 { }
+ 

@@ -12,6 +12,9 @@
     <UserSecretsId>57fe8775-5a92-48de-8bd9-948dc8880d3d</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\ILSpy\ILSpy\Options\MiscSettingsViewModel.cs">
+      <Link>Options\MiscSettingsViewModel.cs</Link>
+    </Compile>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
@@ -282,6 +285,26 @@
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Commands\ShowPane.cs">
       <Link>Commands\ShowPane.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Options\OptionsDialogViewModel.cs">
+      <Link>Options\OptionsDialogViewModel.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Options\IOptionPage.cs">
+      <Link>Options\IOptionPage.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Options\IOptionsMetadata.cs">
+      <Link>Options\IOptionsMetadata.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Options\ExportOptionPageAttribute.cs">
+      <Link>Options\ExportOptionPageAttribute.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Options\ShowOptionsCommand.cs">
+      <Link>Options\ShowOptionsCommand.cs</Link>
     </Compile>
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Commands\SortAssemblyListCommand.cs">

@@ -53,7 +53,8 @@ namespace ICSharpCode.ILSpy.AssemblyTree
 
 			// TODO: EventManager.RegisterClassHandler(typeof(Window), Hyperlink.RequestNavigateEvent, new RequestNavigateEventHandler((_, e) => NavigateTo(e)));
 
-			// refreshThrottle = new(DispatcherPriority.Background, RefreshInternal);
+			// Initialize the dispatcher throttle that coalesces refresh requests.
+			refreshThrottle = new DispatcherThrottle(RefreshInternal);
 
 			AssemblyList = settingsService.CreateEmptyAssemblyList();
 		}

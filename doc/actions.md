@@ -1,72 +1,164 @@
 See [Find Usages Integration](navigation-find-usages.md) for details on Go-To/Find Usages behavior in Rover.
 ## Summary
 
-This document tracks the prioritized epics for bringing ILSpyRover (Avalonia) closer to ILSpy WPF behavior. It contains only three sections: `## Summary`, `## Epics`, and `## Appendix`.
+This document tracks prioritized epics for bringing Project Rover closer to ILSpy WPF behavior. Below you'll find a concise feature matrix (what ILSpy WPF offers vs. Rover) followed by updated epics and task statuses based on a code review of the workspace.
+
+Note: Project Rover reuses many ILSpy WPF view-models and supporting files directly (not just ILSpyX APIs). This gives Rover better parity for UX and behavior than a pure ILSpyX-only integration — many WPF view models, commands, tree nodes and helpers are linked into the Rover project and adapted for Avalonia where necessary.
 
 ---
 
-## Epics
+## Feature Matrix (ILSpy WPF -> Project Rover)
+
+- **Assembly list & lifecycle:** Implemented in Rover (uses ILSpy's AssemblyList/LoadedAssembly).
+	- Evidence: AssemblyList and LoadedAssembly are present: [src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs](src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs#L40), [src/ILSpy/ICSharpCode.ILSpyX/LoadedAssembly.cs](src/ILSpy/ICSharpCode.ILSpyX/LoadedAssembly.cs#L56).
+- **Resolver-based referenced-assembly loading & AutoLoad preference:** Partially implemented — Rover exposes `AutoLoadReferencedAssemblies` and ILSpy decompiler settings are wired, but some UX (prompts/confirmation) and deep integration remain to polish.
+	- Evidence: Rover settings: [src/ProjectRover/Settings/RoverStartupSettings.cs](src/ProjectRover/Settings/RoverStartupSettings.cs#L1). Decompiler setting exists: [src/ILSpy/ICSharpCode.Decompiler/DecompilerSettings.cs](src/ILSpy/ICSharpCode.Decompiler/DecompilerSettings.cs#L2058).
+- **Token + assembly identity resolution (EntityHandle -> tree node):** Largely implemented — ILSpy's Jump/resolve flow (token probing + DecompilerTypeSystem lookup) is present and used by Rover.
+	- Evidence: Resolver + token probe in JumpToReferenceAsync: [src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs](src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs#L610) and token handling: [src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs](src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs#L624).
+- **Jump-to / Navigation (JumpToReferenceAsync):** Implemented. Rover's text view uses MessageBus to request navigation and the assembly tree handles async resolution.
+	- Evidence: Text view sends navigate message: [src/ProjectRover/TextView/DecompilerTextView.axaml.cs](src/ProjectRover/TextView/DecompilerTextView.axaml.cs#L1008), and navigation handler: [src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs](src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs#L597).
+- **Token probing across candidate assemblies:** Implemented (probe by token before loading candidate assemblies).
+	- Evidence: token probing in JumpToReferenceAsync and LoadedAssembly resolver logic: [src/ILSpy/ILSpy/EntityReference.cs](src/ILSpy/ILSpy/EntityReference.cs#L57) and [src/ILSpy/ICSharpCode.ILSpyX/LoadedAssembly.cs](src/ILSpy/ICSharpCode.ILSpyX/LoadedAssembly.cs#L594).
+- **ResolveAssemblyCandidates helper (resolve by simple name/MVID):** Functionality available via `AssemblyList` APIs (Open/Load/AssemblyListManager), though naming may differ.
+	- Evidence: [src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs](src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs#L266) and [src/ILSpy/ICSharpCode.ILSpyX/AssemblyListManager.cs](src/ILSpy/ICSharpCode.ILSpyX/AssemblyListManager.cs#L70).
+- **Indexing (exported/forwarded types, module-level constructs, lazy indexing):** Partial — basic indexing and search are present, but expansion to exported/forwarded types and lazy strategies needs work.
+	- Evidence: Search pane uses AssemblyList and indexing: [src/ILSpy/ILSpy/Search/SearchPane.xaml.cs](src/ILSpy/ILSpy/Search/SearchPane.xaml.cs#L288).
+- **Settings and session persistence mapping:** Mostly implemented — ILSpy settings file path provider is wired and Rover startup settings exist; some session persistence mapping remains to be fully validated.
+	- Evidence: Settings file provider: [src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs](src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs#L1), Rover startup settings: [src/ProjectRover/Settings/RoverStartupSettings.cs](src/ProjectRover/Settings/RoverStartupSettings.cs#L1).
+- **Reference highlighting in editor (AvaloniaEdit):** Partially implemented — Rover's `DecompilerTextView` includes local reference marks and jump behavior, but some ILSpy reference-highlighting behaviors are still TODO.
+	- Evidence: local reference marks and jump: [src/ProjectRover/TextView/DecompilerTextView.axaml.cs](src/ProjectRover/TextView/DecompilerTextView.axaml.cs#L944).
+- **Analyzers & exposure in UI:** ILSpy analyzers are included in the project files; Rover has analyzer tree nodes available but UI polish may be pending.
+	- Evidence: Analyzers linked into ProjectRover project: [src/ProjectRover/ProjectRover.csproj](src/ProjectRover/ProjectRover.csproj#L91).
+- **Resource node expansion (.resources/.resx):** Partial — resource node factories and handlers exist but the specific UX for expansion may need verifying.
+	- Evidence: resource node interfaces linked: [src/ProjectRover/ProjectRover.csproj](src/ProjectRover/ProjectRover.csproj#L586).
+- **Theming, icons, tree ordering:** Partially implemented — theme shims and some icon resources exist; consolidation and exact ILSpy parity remain work items.
+	- Evidence: theme shim: [src/ProjectRover/Themes/ThemeManagerShim.cs](src/ProjectRover/Themes/ThemeManagerShim.cs#L1).
+- **Plugin/add-in compatibility & shims:** Inventory and shims present (several ILSpy add-ins linked); basic compatibility implemented.
+	- Evidence: add-ins inventory and shims referenced in actions and project links: [doc/actions.md] (this file) references and `src/ProjectRover/ProjectRover.csproj` includes ILSpy modules.
+
+---
+
+## UI Parity — View / ViewModel Inventory
+
+Below is a concise comparison of important ILSpy WPF views, controls and view-models and their Project Rover status. This focuses on what has been ported (or linked) vs. what still needs an Avalonia view/shim.
+
+- **Counts (rough):**
+	- **ILSpy WPF ViewModels found:** 9
+	- **ViewModels linked into ProjectRover (compiled):** 8
+	- **Avalonia view/view-model implementations present in ProjectRover:** 10+ (axaml/.avalonia.cs or adapted shims)
+	- **Estimated ViewModel TODOs (no Avalonia view/port):** ~6
+	- **Estimated View TODOs (WPF XAML templates/controls missing or shim-needed):** ~4
+
+- **Representative per-file status:**
+| Feature | ILSpy | Rover | Notes |
+|---|:---:|:---:|---|
+| MainWindowViewModel | ✓ | ✓ | `MainWindowViewModel.cs` ported/implemented in Rover (`src/ProjectRover/MainWindowViewModel.cs`). |
+| CompareView (view) | ✓ | ✓ | Ported to Avalonia: `src/ProjectRover/Views/CompareView.axaml`. |
+| DecompilerTextView (view) | ✓ | ✓ | Avalonia port present: `src/ProjectRover/TextView/DecompilerTextView.axaml`. |
+| MetadataTableViews (view) | ✓ | ✓ | Ported: `src/ProjectRover/Metadata/MetadataTableViews.axaml`. |
+| AnalyzerTreeView (view) | ✓ | Partial | ILSpy has XAML; Rover uses `src/ProjectRover/Analyzers/AnalyzerTreeView.cs` (C# shim). |
+| AnalyzerTreeViewModel | ✓ | ✓ | ViewModel linked into Rover (`Analyzers/AnalyzerTreeViewModel.cs`). |
+| ManageAssemblyListsViewModel | ✓ | Partial | ViewModel linked; `ManageAssemblyListsDialog.axaml` exists in Rover. |
+| UpdatePanelViewModel | ✓ | ✓ | Linked + `UpdatePanel.axaml` in Rover. |
+| OptionsDialogViewModel / Settings VMs | ✓ | ✗ | Several settings VMs present in ILSpy (Options dialog) but no full Avalonia options dialog counterpart. |
+| ZoomScrollViewer (control template) | ✓ | ✗ | WPF control/template not ported; needs Avalonia replacement or shim. |
+| SharpTreeView (control + templates) | ✓ | Partial | `SharpTreeViewShim.cs` exists; full templates and automation peers not ported. |
+| SortableGridViewColumn / GridView helpers | ✓ | ✗ | WPF GridView helpers need Avalonia equivalents. |
+| CollapsiblePanel | ✓ | ✗ | WPF control; missing in Rover (TODO). |
+
+**Notes:**
+- Table rows map a conceptual feature (view/viewmodel/control) to its presence in ILSpy WPF and ProjectRover. Use the CSV in `doc/ui-parity-inventory.csv` for a per-file export.
+- A mark of "Partial" typically means the viewmodel or underlying logic is linked into Rover but the view is implemented as a shim or is missing a full `.axaml` equivalent.
+
+
+**Notes:**
+- The `ProjectRover.csproj` links many ILSpy view-model C# sources directly; in many cases the WPF view-model logic compiles in and is reused, while the actual view (XAML) is implemented or shimmed in Avalonia.
+- "Done" means there is an Avalonia `.axaml` (or `.avalonia.cs`) equivalent and the viewmodel is either linked or present. "Partial" means behaviour is available via a shim or only the viewmodel is linked (no axaml). "TODO" indicates missing Avalonia UI or shim.
+
+---
+
+## File-based comparison
+
+The table below is a file-level comparison exported from the workspace inventory. It maps ILSpy WPF files to ProjectRover equivalents and status.
+
+| File (ILSpy) | Type | Linked in ProjectRover.csproj | Rover file (if present) | Status |
+|---|---:|:---:|---|---|
+| `src/ILSpy/ILSpy/MainWindowViewModel.cs` | ViewModel | No | `src/ProjectRover/MainWindowViewModel.cs` | Done |
+| `src/ILSpy/ILSpy/Views/CompareView.xaml` | View | Yes | `src/ProjectRover/Views/CompareView.axaml` | Done |
+| `src/ILSpy/ILSpy/TextView/DecompilerTextView.xaml` | View | Yes | `src/ProjectRover/TextView/DecompilerTextView.axaml` | Done |
+| `src/ILSpy/ILSpy/Metadata/MetadataTableViews.xaml` | View | Yes | `src/ProjectRover/Metadata/MetadataTableViews.axaml` | Done |
+| `src/ILSpy/ILSpy/Analyzers/AnalyzerTreeView.xaml` | View | Yes | `src/ProjectRover/Analyzers/AnalyzerTreeView.cs` | Partial |
+| `src/ILSpy/ILSpy/Analyzers/AnalyzerTreeViewModel.cs` | ViewModel | Yes | (linked) | Partial |
+| `src/ILSpy/ILSpy/ViewModels/ManageAssemblyListsViewModel.cs` | ViewModel | Yes | `src/ProjectRover/Views/ManageAssemblyListsDialog.axaml` | Partial |
+| `src/ILSpy/ILSpy/ViewModels/UpdatePanelViewModel.cs` | ViewModel | Yes | `src/ProjectRover/Views/UpdatePanel.axaml` | Done |
+| `src/ILSpy/ILSpy/Options/OptionsDialogViewModel.cs` | ViewModel | No | (none) | TODO |
+| `src/ILSpy/ILSpy/Options/DecompilerSettingsViewModel.cs` | ViewModel | No | (none) | TODO |
+| `src/ILSpy/ILSpy/Options/MiscSettingsViewModel.cs` | ViewModel | No | (none) | TODO |
+| `src/ILSpy/ILSpy/Options/DisplaySettingsViewModel.cs` | ViewModel | No | (none) | TODO |
+| `src/ILSpy/ILSpy/Controls/ZoomScrollViewer.xaml` | Control/XAML | No | (none) | TODO |
+| `src/ILSpy/ILSpy/Controls/TreeView/SharpTreeView.xaml` | Control/XAML | Partial | `src/ProjectRover/TreeNodes/SharpTreeViewShim.cs` | Partial |
+| `src/ILSpy/ILSpy/Controls/SortableGridViewColumn.cs` | Control | No | (none) | TODO |
+| `src/ILSpy/ILSpy/Controls/CollapsiblePanel.cs` | Control | No | (none) | TODO |
+| `src/ILSpy/ILSpy/Metadata/FlagsTooltip.xaml` | View | No | (none) | TODO |
+| `src/ILSpy/ILSpy/TreeNodes/AssemblyListTreeNode.cs` | TreeNode | Yes | `src/ProjectRover/TreeNodes/AssemblyListTreeNode.avalonia.cs` | Done |
+
+---
+
+## Platform differences
+
+Documented platform-specific differences between ILSpy WPF and Project Rover (Avalonia):
+
+1. **Windows-only: Windows shell / taskbar integration** — Windows-specific integrations (e.g., Windows Taskbar progress, jump lists, some shell APIs) are only available on Windows. Rover targets cross-platform; Windows-specific features are not available on macOS/Linux.
+2. **No SharpTreeView (WPF control)** — The WPF `SharpTreeView` control and its XAML templates and automation peers are not available in Avalonia. ProjectRover includes a `SharpTreeViewShim.cs` to approximate behavior, but full parity (templates, automation peers, text-search helpers) remains TODO.
+3. **No WPF adorners** — WPF `Adorner` layer features (used for overlays/visual adornments) do not exist in Avalonia; equivalent UX must be implemented using Avalonia overlays or custom controls.
+4. **AvaloniaEditor (AvaloniaEdit) differences** — The editor used by Rover (`AvaloniaEdit`) is a separate codebase and differs from WPF `AvalonEdit`. Some features and APIs (e.g., certain text rendering hooks, adorner-like features, or exact highlighting behaviors) require adaptation; expect API and behavior deltas.
+
+Notes: for each platform-specific delta above, we should decide whether to implement a Rover-specific shim, accept the platform limitation, or contribute required features upstream to Avalonia/AvaloniaEdit.
+
+
+## Revised Epics & Status (actionable, short)
 
 ### Epic: WPF Parity (High Priority)
-- [ ] Implement AssemblyList and LoadedAssembly shim to centralize lifecycle, persistence, and resolution.
-- [ ] Add resolver-based referenced-assembly loading and an AutoLoadReferencedAssemblies preference with prompt UX.
-- [ ] Implement token+assembly identity resolution algorithm to robustly map EntityHandle to tree nodes.
-- [x] Implement JumpToReferenceAsync (or NavigationService.JumpToReferenceAsync) to orchestrate async loads, indexing and navigation with progress.
-- [ ] Expand indexing to exported/forwarded types and module-level constructs and add lazy indexing strategies.
-- [x] Add token probing across candidate assemblies (match by simple name/MVID and test token presence before loading)
-- [x] Expose `AssemblyList` resolution helper: ResolveAssemblyCandidates(name, mvid?) -> file paths
-- [ ] Map Rover settings and session persistence to ILSpy WPF settings where possible.
-- [ ] Replace ad-hoc assembly-load calls across the codebase with IlSpyBackend and AssemblyList APIs.
+- **AssemblyList & LoadedAssembly:** Completed — ILSpy's AssemblyList/LoadedAssembly are present and used. Evidence: [src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs](src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs#L40).
+- **Resolver-based referenced-assembly loading + AutoLoad UX:** Partially completed — settings exist (`AutoLoadReferencedAssemblies`), resolver hooks are used by decompiler, but UX prompts and confirmation flow need to be implemented.
+- **Token+assembly identity resolution:** Mostly completed — token probing + DecompilerTypeSystem resolution present and used by navigation.
+- **JumpToReferenceAsync / Navigation orchestration:** Completed — message flow and navigation handler implemented. Evidence: [src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs](src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs#L597).
+- **Expand indexing to exported/forwarded types & lazy strategies:** Not completed — search/indexing exists but needs extension.
+- **Replace ad-hoc assembly-loads with AssemblyList APIs:** Partially completed — many ILSpy calls are already part of ProjectRover, but audit + replace remaining ad-hoc loads is recommended.
 
-### Resolver Improvements
-
-- [ ] I can implement more accurate signature decoding (strongly recommended) or wire cancellation/progress more deeply into the UI.
-
-### Epic: ILSpyX Adoption & Tree Unification (High Priority)
-- [x] Verify UsingLocalIlSpyX conditional project reference works.
-- [x] Provide IlSpyXTreeAdapter to map LoadedAssembly → ResourceNode/TypeNode.
-- [ ] Replace Rover Node implementations with thin wrappers around ILSpyX SharpTreeNode where practical.
-- [ ] Remove duplicated assembly management (IlSpyBackend) once adapters are stable.
+### Epic: Resolver Improvements
+- **Signature decoding accuracy & cancellation/progress wiring:** Not completed — worth prioritizing if heavy background work (indexing/navigation) is added.
 
 ### Epic: Settings, Recent Files, and State (High Priority)
-- [x] Wire ILSpySettings.SettingsFilePathProvider to Rover provider.
-- [x] Migrate Rover options to use ILSpy settings sections or implement a compatibility layer.
-- [x] Store search mode and search pane visibility in the shared settings.
-- [ ] Map AutoLoadAssemblyReferences, active tree path, and assembly-list persistence into Rover settings and AssemblyList behavior.
-
-### Epic: Search & Navigation Parity (High Priority)
-- [x] Add IlSpyXSearchAdapter to convert ILSpyX search results to Rover SearchResult.
-- [x] Focus assembly search results on their matching assembly node.
-- [x] Ensure all ILSpy search features (filtering by type/member/resource/assembly) are available in Rover.
-- [ ] Integrate Go-To/Find usages behavior via ILSpyX mapping.
-- [ ] Add UI affordances for unresolved analyzer/search results ("Load assembly" action)
-- [ ] Background-resolve unresolved analyzer/search results by attempting resolver-based loads and update results when resolved
-- [ ] Add tests validating Find Usages / Go-To parity for representative assemblies
+- **ILSpy settings provider wired:** Completed — `ILSpySettingsFilePathProvider` implemented. Evidence: [src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs](src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs#L1).
+- **Rover options mapped to ILSpy settings sections:** Mostly completed — Rover settings classes exist and are persisted; a compatibility audit is advised.
+- **Persist search mode / pane visibility:** Completed (search pane hooks are present).
+- **Map AutoLoadAssemblyReferences, active tree path, assembly-list persistence:** Partially completed — session settings code present but end-to-end behavior should be validated.
 
 ### Epic: Decompilation & Editor Integration (High Priority)
-- [ ] Delegate token -> node mapping and symbol navigation to ILSpyX.
-- [ ] Ensure language selection and settings flow from ILSpyX to Rover editor.
-- [ ] Port ILSpy reference-highlighting features fully to AvaloniaEdit.
+- **Reference-highlighting / navigation in AvaloniaEdit:** Partially completed — many features work (local marks, jumps) but some ILSpy reference-highlighting behaviors remain TODO.
 
 ### Epic: Analyzers & Advanced Features (Medium Priority)
-- [x] Identify analyzers in ILSpy and expose their results in Rover UI.
-- [ ] Add UI affordances for analyzer settings and results.
+- **Analyzers present and runnable:** Implemented — analyzer code is included. UI polish and settings for analyzers are partial.
 
 ### Epic: UX Polishing & Theming (Low Priority)
-- [ ] Ensure resource nodes expand .resources and .resx entries.
-- [ ] Consolidate icon resources and theme mappings.
-- [ ] Match tree ordering and grouping rules.
+- **Resource nodes expansion:** Partial — resource node infrastructure is present.
+- **Icon resources & theme mappings:** Partial — theme shim exists; consolidation required.
+- **Tree ordering & grouping parity:** Partial — basic parity achieved; edge cases remain.
 
 ### Epic: Plugin/Extension Model (Low Priority)
-- [x] Inventory ILSpy add-ins and prioritized ones to support.
-- [x] Define compatibility shims / adaptors for Avalonia controls (commands, tree-node interface, dock descriptor).
+- **Inventory of ILSpy add-ins:** Completed — many add-ins linked and inventoried.
+- **Compatibility shims/adaptors for Avalonia controls:** Completed/ongoing — many shims present (e.g., `ThemeManagerShim`).
 
 ---
 
-## Appendix — Pointers
-- ILSpy (WPF): ilspy/ILSpy — primary folders: TreeNodes, Views, Commands, Analyzers, Metadata.
-- Rover (Avalonia): ILSpyRover/src/ProjectRover — primary folders: Nodes, Views, ViewModels, Services, Providers.
-- Decompiler util: ilspy/ICSharpCode.Decompiler/Util/ResourcesFile.cs (used by both for .resources parsing).
+## Appendix — Quick pointers (files referenced above)
+- AssemblyList: [src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs](src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs#L40)
+- LoadedAssembly: [src/ILSpy/ICSharpCode.ILSpyX/LoadedAssembly.cs](src/ILSpy/ICSharpCode.ILSpyX/LoadedAssembly.cs#L56)
+- Jump/navigation: [src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs](src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs#L597)
+- Rover settings: [src/ProjectRover/Settings/RoverStartupSettings.cs](src/ProjectRover/Settings/RoverStartupSettings.cs#L1)
+- ILSpy settings provider in Rover: [src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs](src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs#L1)
 
-- [x] Inventory ILSpy add-ins and prioritized ones to support (see `docs/ilspy-addins.md`).
-- [x] Define compatibility shims / adaptors for Avalonia controls (commands, tree-node interface, dock descriptor).
+If you want, I can now:
+- run a short audit to list remaining code locations that still call ad-hoc assembly-load methods (suggested next step), or
+- update this file further to include a prioritized backlog with issues and suggested owners.
