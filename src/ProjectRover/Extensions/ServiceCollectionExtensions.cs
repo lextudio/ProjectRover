@@ -17,17 +17,11 @@
     along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
 */
 
-using System;
 using ProjectRover.Options;
-using ProjectRover.Providers;
 using ProjectRover.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Polly;
-using Polly.Contrib.WaitAndRetry;
-using Polly.Extensions.Http;
 using ICSharpCode.ILSpy.ViewModels;
 
 namespace ProjectRover.Extensions;
@@ -77,31 +71,6 @@ public static class ServiceCollectionExtensions
                 ProjectRover.App.ExportProvider
             ))
             .AddSingleton<IDockLayoutDescriptorProvider, DefaultDockLayoutDescriptorProvider>();
-
-    public static IServiceCollection AddProviders(this IServiceCollection services) =>
-        services
-            .AddSingleton<ISystemInformationProvider, SystemInformationProvider>()
-            .AddSingleton<IDeviceIdentifierProvider, DeviceIdentifierProvider>()
-            .AddSingleton<IAppInformationProvider, AppInformationProvider>();
-
-    public static IServiceCollection AddHttpClients(this IServiceCollection services)
-    {
-        var policy = HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .WaitAndRetryAsync(
-                Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 5));
-
-        services
-            .AddHttpClient(nameof(AppInformationProvider), (services, httpClient) =>
-            {
-                var options = services.GetRequiredService<IOptions<AppInformationProviderOptions>>();
-            
-                httpClient.BaseAddress = new Uri(options.Value.ServerUrl);
-            })
-            .AddPolicyHandler(policy);
-
-        return services;
-    }
 
     private static IConfigurationRoot GetConfiguration() =>
         new ConfigurationBuilder()

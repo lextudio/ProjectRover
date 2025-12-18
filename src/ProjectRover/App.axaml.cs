@@ -218,9 +218,7 @@ public partial class App : Application
             .ConfigureLogging()
             .AddViews()
             .AddViewModels()
-            .AddServices()
-            .AddProviders()
-            .AddHttpClients();
+            .AddServices();
 
     // Small adapter so existing ILSpy code can call GetExportedValue<T>() against a provider.
     class CompositionHostExportProvider : IExportProvider

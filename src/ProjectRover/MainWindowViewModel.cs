@@ -20,10 +20,7 @@ using System.Collections.ObjectModel;
 using System.Composition;
 using System.Windows.Input;
 using Avalonia.Styling;
-using CommunityToolkit.Mvvm.Input;
-using ICSharpCode.Decompiler;
 using ICSharpCode.ILSpy.AssemblyTree;
-using ICSharpCode.ILSpy.Docking;
 using ICSharpCode.ILSpy.Search;
 using ICSharpCode.ILSpyX;
 
@@ -58,9 +55,6 @@ namespace ICSharpCode.ILSpy
             this.assemblyTreeModel = assemblyTreeModel;
             this.searchPaneModel = searchPaneModel;
             this.ManageAssemblyListsCommand = manageAssemblyListsCommand;
-
-            OpenFileCommand = new RelayCommand(OpenFile);
-            ExitCommand = new RelayCommand(Exit);
 
             Themes = new ObservableCollection<ThemeOption>
             {
@@ -99,20 +93,7 @@ namespace ICSharpCode.ILSpy
             get => selectedTheme;
             set => SetProperty(ref selectedTheme, value);
         }
-
-        public IRelayCommand OpenFileCommand { get; }
-        public IRelayCommand ExitCommand { get; }
         public ICommand ManageAssemblyListsCommand { get; }
-
-        private void OpenFile()
-        {
-            // TODO: Implement OpenFile
-        }
-
-        private void Exit()
-        {
-            // TODO: Implement Exit
-        }
 
         // Search Properties
         private string searchText;
