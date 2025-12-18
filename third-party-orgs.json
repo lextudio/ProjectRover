@@ -1,0 +1,37 @@
+{
+  "version": "2.0",
+  "description": "Org mapping with multiple GitHub URL prefixes.\nEach org entry can list one or more GitHub URL prefixes (owner-level or repo-level).\nThe updater will extract the owner segment from prefixes to match repository URLs.",
+  "orgs": [
+    {
+      "id": "avalonia",
+      "name": "Avalonia UI",
+      "github_prefixes": [
+        "https://github.com/avalonia",
+        "https://github.com/AvaloniaUI"
+      ],
+      "license_aliases": [
+        "the mit license (mit) permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"software\"), to deal in the software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software, and to permit persons to whom the software is furnished to do so, subject to the following conditions: the above copyright notice and this permission notice shall be included in all copies or substantial portions of the software. the software is provided \"as is\", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. in no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.",
+        "the mit license (mit) copyright (c) avaloniaui oü all rights reserved permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"software\"), to deal in the software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software, and to permit persons to whom the software is furnished to do so, subject to the following conditions: the above copyright notice and this permission notice shall be included in all copies or substantial portions of the software. the software is provided \"as is\", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. in no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.",
+        "mit license copyright (c) 2023 avaloniaui permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"software\"), to deal in the software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software, and to permit persons to whom the software is furnished to do so, subject to the following conditions: the above copyright notice and this permission notice shall be included in all copies or substantial portions of the software. the software is provided \"as is\", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. in no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software."
+      ],
+      "note": "Packages hosted under Avalonia-related GitHub orgs"
+    },
+    {
+      "id": "icsharpcode",
+      "name": "ILSpy team",
+      "github_prefixes": [
+        "https://github.com/icsharpcode"
+      ],
+      "note": "ICSharpCode / ILSpy family"
+    },
+    {
+      "id": "microsoft",
+      "name": "Microsoft",
+      "github_prefixes": [
+        "https://github.com/microsoft",
+        "https://github.com/dotnet"
+      ],
+      "note": "Microsoft / .NET organization clusters"
+    }
+  ]
+}

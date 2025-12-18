@@ -1,0 +1,132 @@
+{
+  "version": "1.0",
+  "families": [
+    {
+      "name": "Avalonia",
+      "retain": true,
+      "packages": [
+        "Avalonia",
+        "Avalonia.Desktop",
+        "Avalonia.Diagnostics",
+        "Avalonia.Fonts.Inter",
+        "Avalonia.Labs.CommandManager",
+        "Avalonia.Svg.Skia",
+        "Avalonia.Themes.Fluent",
+        "Avalonia.Xaml.Behaviors"
+      ]
+    },
+    {
+      "name": "AvaloniaEdit",
+      "retain": true,
+      "packages": [
+        "Avalonia.AvaloniaEdit",
+        "AvaloniaEdit.TextMate"
+      ]
+    },
+    {
+      "name": "Dock.Avalonia",
+      "retain": true,
+      "packages": [
+        "Dock.Avalonia",
+        "Dock.Avalonia.Themes.Fluent",
+        "Dock.Model.Avalonia"
+      ]
+    },
+    {
+      "name": "ILSpy",
+      "retain": true,
+      "packages": [
+        "ICSharpCode.Decompiler",
+        "ICSharpCode.ILSpyX"
+      ]
+    },
+    {
+      "name": "McMaster.Extensions.CommandLineUtils",
+      "retain": true,
+      "packages": [
+        "McMaster.Extensions.CommandLineUtils"
+      ]
+    },
+    {
+      "name": "Microsoft.DiaSymReader",
+      "retain": true,
+      "packages": [
+        "Microsoft.DiaSymReader"
+      ]
+    },
+    {
+      "name": "Microsoft.DiaSymReader.Converter.Xml",
+      "retain": true,
+      "packages": [
+        "Microsoft.DiaSymReader.Converter.Xml"
+      ]
+    },
+    {
+      "name": "Microsoft.DiaSymReader.Native",
+      "retain": true,
+      "packages": [
+        "Microsoft.DiaSymReader.Native"
+      ]
+    },
+    {
+      "name": "Microsoft.Extensions",
+      "retain": true,
+      "packages": [
+        "Microsoft.Extensions.Configuration",
+        "Microsoft.Extensions.Configuration.Json",
+        "Microsoft.Extensions.DependencyInjection",
+        "Microsoft.Extensions.Http",
+        "Microsoft.Extensions.Logging.Console",
+        "Microsoft.Extensions.Options.ConfigurationExtensions"
+      ]
+    },
+    {
+      "name": "ResXResourceReader.NetStandard",
+      "retain": true,
+      "packages": [
+        "ResXResourceReader.NetStandard"
+      ]
+    },
+    {
+      "name": "Serilog",
+      "retain": true,
+      "packages": [
+        "Serilog",
+        "Serilog.Extensions.Logging",
+        "Serilog.Settings.Configuration",
+        "Serilog.Sinks.Console",
+        "Serilog.Sinks.File"
+      ]
+    },
+    {
+      "name": "SkiaSharp",
+      "retain": true,
+      "packages": [
+        "SkiaSharp"
+      ]
+    },
+    {
+      "name": "System.Composition",
+      "retain": true,
+      "packages": [
+        "System.Composition"
+      ]
+    },
+    {
+      "name": "TextMateSharp",
+      "retain": true,
+      "packages": [
+        "TextMateSharp.Grammars"
+      ]
+    },
+    {
+      "name": "TomsToolbox",
+      "retain": true,
+      "packages": [
+        "TomsToolbox.Composition",
+        "TomsToolbox.Composition.MicrosoftExtensions",
+        "TomsToolbox.Essentials"
+      ]
+    }
+  ]
+}
