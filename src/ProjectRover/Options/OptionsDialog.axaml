@@ -15,6 +15,9 @@
     <DataTemplate DataType="options:DisplaySettingsViewModel">
       <options:DisplaySettingsPanel />
     </DataTemplate>
+    <DataTemplate DataType="options:DecompilerSettingsViewModel">
+      <options:DecompilerSettingsPanel />
+    </DataTemplate>
   </Window.DataTemplates>
   <DockPanel>
     <ListBox DockPanel.Dock="Left" Width="220" ItemsSource="{Binding OptionPages}"
@@ -27,6 +30,8 @@
       </ListBox.ItemTemplate>
     </ListBox>
 
-    <ContentControl Content="{Binding SelectedPage}" />
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <ContentControl Content="{Binding SelectedPage}" />
+    </ScrollViewer>
   </DockPanel>
 </Window>

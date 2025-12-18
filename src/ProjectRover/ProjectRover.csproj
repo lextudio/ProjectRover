@@ -18,6 +18,9 @@
     <Compile Include="..\ILSpy\ILSpy\Options\DisplaySettingsViewModel.cs">
       <Link>Options\DisplaySettingsViewModel.cs</Link>
     </Compile>
+    <Compile Include="..\ILSpy\ILSpy\Options\DecompilerSettingsViewModel.cs">
+      <Link>Options\DecompilerSettingsViewModel.cs</Link>
+    </Compile>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 

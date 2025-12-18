@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:options="clr-namespace:ICSharpCode.ILSpy.Options"
+             xmlns:controls="clr-namespace:ProjectRover.Controls;assembly=ProjectRover"
+             x:Class="ICSharpCode.ILSpy.Options.DecompilerSettingsPanel"
+             x:DataType="options:DecompilerSettingsViewModel">
+  <StackPanel Orientation="Vertical">
+    <ItemsControl ItemsSource="{Binding Settings}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate DataType="options:DecompilerSettingsGroupViewModel">
+          <controls:GroupBox Header="{Binding Category}">
+            <ItemsControl ItemsSource="{Binding Settings}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="options:DecompilerSettingsItemViewModel">
+                  <CheckBox IsChecked="{Binding IsEnabled}" Content="{Binding Description}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </controls:GroupBox>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>
