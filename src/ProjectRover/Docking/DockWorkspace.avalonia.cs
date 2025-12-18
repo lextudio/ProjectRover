@@ -106,11 +106,12 @@ namespace ICSharpCode.ILSpy.Docking
             toolDock.VisibleDockables.Add(tool);
         }
 
-        // Assign factory and layout to dock host
+        // Assign factory and ensure factory/layout initialization flags are enabled
         dockHost.Factory = factory;
-        dockHost.Layout = rootDock;
         dockHost.InitializeFactory = true;
         dockHost.InitializeLayout = true;
+        // Now assign the layout so DockControl.Initialize sees the flags and can run InitLayout
+        dockHost.Layout = rootDock;
 
         AttachToDockHost(dockHost, factory, docDock);
         HookUpToolListeners(dockHost);

@@ -166,7 +166,11 @@ namespace ICSharpCode.ILSpy
             var dockHost = this.FindControl<DockControl>("DockHost");
             if (dockHost != null)
             {
+                // Ensure factory initialization flags are set before assigning the layout
                 dockHost.Factory = dockFactory;
+                dockHost.InitializeFactory = true;
+                dockHost.InitializeLayout = true;
+                // Assign layout after flags so DockControl can initialize owners/factory correctly
                 dockHost.Layout = rootDock;
                 workspace?.AttachToDockHost(dockHost, dockFactory, documentDock);
             }
