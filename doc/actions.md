@@ -36,6 +36,26 @@ Note: Project Rover reuses many ILSpy WPF view-models and supporting files direc
 - **Plugin/add-in compatibility & shims:** Inventory and shims present (several ILSpy add-ins linked); basic compatibility implemented.
 	- Evidence: add-ins inventory and shims referenced in actions and project links: [doc/actions.md] (this file) references and `src/ProjectRover/ProjectRover.csproj` includes ILSpy modules.
 
+## Verified Status (checked against this workspace)
+
+The following checklist is a concise, actionable verification of the feature-matrix items based on the current repository contents.
+
+- [x] **Assembly list & lifecycle** — confirmed: `ICSharpCode.ILSpyX/AssemblyList.cs`, `LoadedAssembly.cs` present and linked.
+- [x] **Resolver-based referenced-assembly loading & AutoLoad preference** — partially confirmed: settings and resolver hooks exist; UX prompts still pending.
+- [x] **Token + assembly identity resolution (EntityHandle -> tree node)** — confirmed: `AssemblyTree/AssemblyTreeModel.cs` contains Jump/resolve flow.
+- [x] **Jump-to / Navigation (JumpToReferenceAsync)** — confirmed: navigation messages and handlers present (`DecompilerTextView.axaml.cs`, `AssemblyTreeModel.cs`).
+- [x] **Token probing across candidate assemblies** — confirmed: `EntityReference.cs` and `LoadedAssembly.cs` contain probing logic.
+- [x] **ResolveAssemblyCandidates helper** — confirmed: `AssemblyList` APIs provide candidate resolution helpers.
+- [ ] **Indexing (exported/forwarded types, lazy strategies)** — partial: search/indexing exists (`SearchPane.xaml.cs`) but advanced indexing features remain TODO.
+- [x] **Settings and session persistence mapping** — mostly confirmed: `ILSpySettingsFilePathProvider` and `RoverStartupSettings` are implemented; full audit pending.
+- [ ] **Reference highlighting in editor (AvaloniaEdit)** — partial: local marks and jump behavior exist, more ILSpy parity needed.
+- [x] **Analyzers & exposure in UI** — confirmed: analyzer code is linked into the project; UI polish remains.
+- [ ] **Resource node expansion (.resources/.resx)** — partial: handlers exist but UX verification needed.
+- [ ] **Theming, icons, tree ordering** — partial: theme shims exist (`ThemeManagerShim.cs`), but consolidation and parity work remain.
+- [x] **Plugin/add-in compatibility & shims** — confirmed: many add-ins and shims are present and inventoried in `ProjectRover.csproj`.
+
+Notes: "confirmed" means the repository contains the linked source and evidence for the feature; "partial" means some implementation exists but further work or verification is required before marking fully complete.
+
 ---
 
 ## UI Parity — View / ViewModel Inventory
@@ -60,7 +80,7 @@ Below is a concise comparison of important ILSpy WPF views, controls and view-mo
 | AnalyzerTreeViewModel | ✓ | ✓ | ViewModel linked into Rover (`Analyzers/AnalyzerTreeViewModel.cs`). |
 | ManageAssemblyListsViewModel | ✓ | Partial | ViewModel linked; `ManageAssemblyListsDialog.axaml` exists in Rover. |
 | UpdatePanelViewModel | ✓ | ✓ | Linked + `UpdatePanel.axaml` in Rover. |
-| OptionsDialogViewModel / Settings VMs | ✓ | ✗ | Several settings VMs present in ILSpy (Options dialog) but no full Avalonia options dialog counterpart. |
+| OptionsDialogViewModel / Settings VMs | ✓ | ✓ | Settings VMs and Avalonia options panels are present and wired via DataTemplates (OptionsDialog.axaml / OptionsDialog.axaml.cs). |
 | ZoomScrollViewer (control template) | ✓ | ✗ | WPF control/template not ported; needs Avalonia replacement or shim. |
 | SharpTreeView (control + templates) | ✓ | Partial | `SharpTreeViewShim.cs` exists; full templates and automation peers not ported. |
 | SortableGridViewColumn / GridView helpers | ✓ | ✗ | WPF GridView helpers need Avalonia equivalents. |
@@ -91,10 +111,10 @@ The table below is a file-level comparison exported from the workspace inventory
 | `src/ILSpy/ILSpy/Analyzers/AnalyzerTreeViewModel.cs` | ViewModel | Yes | (linked) | Partial |
 | `src/ILSpy/ILSpy/ViewModels/ManageAssemblyListsViewModel.cs` | ViewModel | Yes | `src/ProjectRover/Views/ManageAssemblyListsDialog.axaml` | Partial |
 | `src/ILSpy/ILSpy/ViewModels/UpdatePanelViewModel.cs` | ViewModel | Yes | `src/ProjectRover/Views/UpdatePanel.axaml` | Done |
-| `src/ILSpy/ILSpy/Options/OptionsDialogViewModel.cs` | ViewModel | No | (none) | TODO |
-| `src/ILSpy/ILSpy/Options/DecompilerSettingsViewModel.cs` | ViewModel | No | (none) | TODO |
-| `src/ILSpy/ILSpy/Options/MiscSettingsViewModel.cs` | ViewModel | No | (none) | TODO |
-| `src/ILSpy/ILSpy/Options/DisplaySettingsViewModel.cs` | ViewModel | No | (none) | TODO |
+| `src/ILSpy/ILSpy/Options/OptionsDialogViewModel.cs` | ViewModel | No | `src/ProjectRover/Options/OptionsDialog.axaml.cs` | Done |
+| `src/ILSpy/ILSpy/Options/DecompilerSettingsViewModel.cs` | ViewModel | No | `src/ProjectRover/Options/DecompilerSettingsPanel.axaml` | Done |
+| `src/ILSpy/ILSpy/Options/MiscSettingsViewModel.cs` | ViewModel | No | `src/ProjectRover/Options/MiscSettingsPanel.axaml` | Done |
+| `src/ILSpy/ILSpy/Options/DisplaySettingsViewModel.cs` | ViewModel | No | `src/ProjectRover/Options/DisplaySettingsPanel.axaml` | Done |
 | `src/ILSpy/ILSpy/Controls/ZoomScrollViewer.xaml` | Control/XAML | No | (none) | TODO |
 | `src/ILSpy/ILSpy/Controls/TreeView/SharpTreeView.xaml` | Control/XAML | Partial | `src/ProjectRover/TreeNodes/SharpTreeViewShim.cs` | Partial |
 | `src/ILSpy/ILSpy/Controls/SortableGridViewColumn.cs` | Control | No | (none) | TODO |
