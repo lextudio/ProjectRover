@@ -19,7 +19,7 @@
             <controls:MainMenu DockPanel.Dock="Top" />
             <controls:MainToolBar DockPanel.Dock="Top" />
 
-            <dock:DockControl x:Name="DockHost" />
+            <dock:DockControl x:Name="DockHost" IsVisible="False" />
         </DockPanel>
     </Grid>
 </Window>

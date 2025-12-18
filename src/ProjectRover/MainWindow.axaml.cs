@@ -173,6 +173,10 @@ namespace ICSharpCode.ILSpy
                 // Assign layout after flags so DockControl can initialize owners/factory correctly
                 dockHost.Layout = rootDock;
                 workspace?.AttachToDockHost(dockHost, dockFactory, documentDock);
+                // Make the dock host visible after layout and factory initialization
+                try {
+                    dockHost.IsVisible = true;
+                } catch { }
             }
         }
     }
