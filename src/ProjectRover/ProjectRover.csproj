@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DefineConstants>TRACE;CROSS_PLATFORM</DefineConstants>
+    <DefineConstants>CROSS_PLATFORM</DefineConstants>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -9,8 +9,6 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>ICSharpCode.ILSpy</RootNamespace>
     <AssemblyName>ProjectRover</AssemblyName>
-    <!-- <GenerateResxSource>true</GenerateResxSource>
-    <ResxClassAccessibility>public</ResxClassAccessibility> -->
     <UserSecretsId>57fe8775-5a92-48de-8bd9-948dc8880d3d</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>

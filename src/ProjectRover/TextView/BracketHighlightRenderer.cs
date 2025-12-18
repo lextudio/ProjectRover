@@ -48,13 +48,11 @@ namespace ICSharpCode.ILSpy.TextView
 			if (textView == null)
 				throw new ArgumentNullException("textView");
 
-			var borderPenResource = textView.FindResource(Themes.ResourceKeys.BracketHighlightBorderPen);
-			if (borderPenResource is Pen p)
-				this.borderPen = p;
-
-			var backgroundBrushResource = textView.FindResource(Themes.ResourceKeys.BracketHighlightBackgroundBrush);
-			if (backgroundBrushResource is SolidColorBrush b)
-				this.backgroundBrush = b;
+			// IMPORTANT: safe guard - resources may not be defined yet
+			if (textView.FindResource(Themes.ResourceKeys.BracketHighlightBorderPen) is Pen pen)
+				this.borderPen = pen;
+			if (textView.FindResource(Themes.ResourceKeys.BracketHighlightBackgroundBrush) is SolidColorBrush brush)
+				this.backgroundBrush = brush;
 
 			this.textView = textView;
 

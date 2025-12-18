@@ -142,3 +142,8 @@ namespace ICSharpCode.AvalonEdit.Rendering
 {
     
 }
+
+namespace TomsToolbox.Wpf.Composition
+{
+
+}
