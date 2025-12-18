@@ -12,6 +12,9 @@
     <DataTemplate DataType="options:MiscSettingsViewModel">
       <options:MiscSettingsPanel />
     </DataTemplate>
+    <DataTemplate DataType="options:DisplaySettingsViewModel">
+      <options:DisplaySettingsPanel />
+    </DataTemplate>
   </Window.DataTemplates>
   <DockPanel>
     <ListBox DockPanel.Dock="Left" Width="220" ItemsSource="{Binding OptionPages}"

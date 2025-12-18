@@ -15,6 +15,9 @@
     <Compile Include="..\ILSpy\ILSpy\Options\MiscSettingsViewModel.cs">
       <Link>Options\MiscSettingsViewModel.cs</Link>
     </Compile>
+    <Compile Include="..\ILSpy\ILSpy\Options\DisplaySettingsViewModel.cs">
+      <Link>Options\DisplaySettingsViewModel.cs</Link>
+    </Compile>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 

@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:options="clr-namespace:ICSharpCode.ILSpy.Options"
+             xmlns:controls="clr-namespace:ProjectRover.Controls;assembly=ProjectRover"
+             x:Class="ICSharpCode.ILSpy.Options.DisplaySettingsPanel"
+             x:DataType="options:DisplaySettingsViewModel">
+  <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+    <StackPanel Orientation="Vertical" Margin="6">
+      <controls:GroupBox Header="Font" Margin="0,6,0,0">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Margin="3,0" Text="Font" />
+          <ComboBox Grid.Column="1" ItemsSource="{Binding FontFamilies}" SelectedItem="{Binding Settings.SelectedFont}" />
+          <TextBlock Grid.Column="2" Margin="3,0" Text="Size" />
+          <ComboBox Grid.Column="3" ItemsSource="{Binding FontSizes}" SelectedItem="{Binding Settings.SelectedFontSize}" Margin="3,0" />
+        </Grid>
+      </controls:GroupBox>
+
+      <controls:GroupBox Header="Decompilation View" Margin="0,6,0,0">
+        <StackPanel Margin="3">
+          <CheckBox IsChecked="{Binding Settings.ShowLineNumbers}" Content="Show line numbers" />
+          <CheckBox IsChecked="{Binding Settings.EnableWordWrap}" Content="Enable word wrap" />
+        </StackPanel>
+      </controls:GroupBox>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

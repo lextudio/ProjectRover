@@ -20,7 +20,6 @@ global using CommandManager = Avalonia.Labs.Input.CommandManager;
 global using DocumentHighlighter = AvaloniaEdit.Highlighting.DocumentHighlighter;
 global using DrawingContext = Avalonia.Media.DrawingContext;
 global using ExecutedRoutedEventArgs = Avalonia.Labs.Input.ExecutedRoutedEventArgs;
-global using FontFamily = Avalonia.Media.FontFamily;
 global using FontWeight = Avalonia.Media.FontWeight;
 global using FrameworkElement = Avalonia.Controls.Control;
 global using Geometry = Avalonia.Media.Geometry;
