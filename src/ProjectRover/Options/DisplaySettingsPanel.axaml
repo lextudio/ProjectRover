@@ -3,7 +3,11 @@
              xmlns:options="clr-namespace:ICSharpCode.ILSpy.Options"
              xmlns:controls="clr-namespace:ProjectRover.Controls;assembly=ProjectRover"
              x:Class="ICSharpCode.ILSpy.Options.DisplaySettingsPanel"
-             x:DataType="options:DisplaySettingsViewModel">
+             x:DataType="options:DisplaySettingsViewModel"
+             xmlns:prsettings="clr-namespace:ProjectRover.Settings;assembly=ProjectRover">
+  <UserControl.Resources>
+    <prsettings:DisplayMacSettingsViewModel x:Key="DisplayMacSettings" />
+  </UserControl.Resources>
   <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
     <StackPanel Orientation="Vertical" Margin="6">
       <controls:GroupBox Header="Font" Margin="0,6,0,0">
@@ -25,6 +29,14 @@
         <StackPanel Margin="3">
           <CheckBox IsChecked="{Binding Settings.ShowLineNumbers}" Content="Show line numbers" />
           <CheckBox IsChecked="{Binding Settings.EnableWordWrap}" Content="Enable word wrap" />
+        </StackPanel>
+      </controls:GroupBox>
+
+      <!-- macOS specific options -->
+      <controls:GroupBox Header="macOS" Margin="0,6,0,0" IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}">
+        <StackPanel Margin="3">
+          <CheckBox IsChecked="{Binding Source={StaticResource DisplayMacSettings}, Path=ShowAvaloniaMainMenuOnMac, Mode=TwoWay}"
+                    Content="Keep main menu visible on macOS (takes effect after restart)" />
         </StackPanel>
       </controls:GroupBox>
     </StackPanel>

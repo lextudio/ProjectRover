@@ -4,6 +4,8 @@ using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Avalonia;
 using TomsToolbox.Composition;
+using ProjectRover.Settings;
+using ICSharpCode.ILSpy.Util;
 using System.Collections.Generic;
 using ICSharpCode.ILSpy.Commands;
 using System.Windows.Input;
@@ -75,13 +77,20 @@ namespace ICSharpCode.ILSpy.Controls
                     mainMenu.Items.Add(item);
             }
 
-            // On macOS, mirror the dynamically-built Avalonia Menu to a native menu bar
+            // On macOS, default behavior is to hide the Avalonia menu and mirror it to the native menu bar.
+            // Respect the Rover-level preference if present: when the user opted to "Keep main menu visible on macOS",
+            // do not perform the native mirroring and ensure the Avalonia menu stays visible.
             if (OperatingSystem.IsMacOS())
             {
                 try
                 {
+                    var roverSettings = new ProjectRoverSettingsService().Load();
+                    var keepAvaloniaMenu = roverSettings.ShowAvaloniaMainMenuOnMac;
+
                     var visualRoot = TopLevel.GetTopLevel(mainMenu) ?? mainMenu.GetVisualRoot();
                     var rootObj = visualRoot as AvaloniaObject;
+
+                    mainMenu.IsVisible = keepAvaloniaMenu;
                     
                     var nativeRoot = new NativeMenu();
 
@@ -129,8 +138,7 @@ namespace ICSharpCode.ILSpy.Controls
                     }
 
                     // If a NativeMenu already exists on the Window or Application (from XAML),
-                    // merge our items into it rather than replacing it. Some XAML files
-                    // declare a static NativeMenu and we should augment it.
+                    // do not attempt to mutate or merge into it — leave the platform menu alone and keep Avalonia menu visible.
                     NativeMenu? existing = null;
                     if (rootObj != null)
                     {
