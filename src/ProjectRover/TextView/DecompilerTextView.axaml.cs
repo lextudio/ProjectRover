@@ -241,6 +241,22 @@ namespace ICSharpCode.ILSpy.TextView
 				Console.WriteLine("[DecompilerTextView] Installed TextMate for editor.");
 
 				ApplyTextMateTheme(textMateInstallation, registryOptions, textMateTheme, textEditor);
+				// ensure GUI brushes are also applied whenever the installation signals it applied a theme
+				try
+				{
+					textMateInstallation.AppliedTheme += (_, _) =>
+					{
+						try
+						{
+							ApplyThemeColorsToEditor(textMateInstallation, textEditor);
+						}
+						catch (Exception ex)
+						{
+							Console.WriteLine("[DecompilerTextView] AppliedTheme handler failed: " + ex.Message);
+						}
+					};
+				}
+				catch { }
 
 				MessageBus<ThemeChangedEventArgs>.Subscribers += (s, e) =>
 				{
