@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -26,6 +27,12 @@ namespace ICSharpCode.ILSpy
             if (icon is string s)
             {
                 if (s.StartsWith("avares://") || s.StartsWith("/")) return s;
+				// Support legacy toolbar metadata like "Images/Open"
+				if (s.StartsWith("Images/"))
+				{
+					var name = Path.GetFileName(s);
+					return $"/Assets/{name}.svg";
+				}
                 if (App.Current.TryGetResource(s, App.Current.ActualThemeVariant, out var res) && res is string p)
                 {
                     return p;

@@ -9,6 +9,7 @@
              x:DataType="vm:AssemblyTreeModel">
   <UserControl.Resources>
     <converters:NodeForegroundConverter x:Key="NodeForegroundConverter" />
+    <converters:IconKeyThemeToImageConverter x:Key="IconKeyThemeToImageConverter" />
   </UserControl.Resources>
   
   <Border Background="Transparent" BorderThickness="0">
@@ -28,8 +29,17 @@
         <TreeDataTemplate DataType="treeNodes:ILSpyTreeNode" ItemsSource="{Binding ViewChildren}">
             <StackPanel Orientation="Horizontal" Background="Transparent">
               <Panel Width="16" Height="16" Margin="0,0,5,0">
-                  <Svg Path="{Binding Icon, Converter={StaticResource IconKeyToPathConverter}}" 
-                       IsVisible="{Binding Icon, Converter={x:Static cv:ObjectConverters.IsNotNull}}" />
+                  <Image Width="16" Height="16" VerticalAlignment="Center">
+                    <Image.Source>
+                      <MultiBinding Converter="{StaticResource IconKeyThemeToImageConverter}">
+                        <Binding Path="Icon" />
+                        <Binding Path="ActualThemeVariant" Source="{x:Static Application.Current}" />
+                      </MultiBinding>
+                    </Image.Source>
+                    <Image.IsVisible>
+                      <Binding Path="Icon" Converter="{x:Static cv:ObjectConverters.IsNotNull}" />
+                    </Image.IsVisible>
+                  </Image>
               </Panel>
               <TextBlock Text="{Binding Text}"
                    VerticalAlignment="Center"

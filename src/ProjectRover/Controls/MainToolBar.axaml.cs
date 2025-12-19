@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Svg.Skia;
+using Avalonia.Styling;
 using TomsToolbox.Composition;
 using ICSharpCode.ILSpy.Commands;
 using System.Windows.Input;
@@ -99,7 +100,7 @@ namespace ICSharpCode.ILSpy.Controls
             var button = new Button
             {
                 Command = command,
-                Tag = commandExport.Metadata?.Tag,
+                Tag = commandExport.Metadata?.ToolbarIcon ?? commandExport.Metadata?.Tag,
                 Padding = new Thickness(4),
                 Margin = new Thickness(2),
                 Background = Brushes.Transparent,
@@ -107,43 +108,33 @@ namespace ICSharpCode.ILSpy.Controls
             };
             ToolTip.SetTip(button, ICSharpCode.ILSpy.Util.ResourceHelper.GetString(commandExport.Metadata?.ToolTip));
 
-            IImage? image = null;
             if (!string.IsNullOrEmpty(iconPath))
             {
-                 image = LoadImage(iconPath);
-            }
-            
-            if (image != null)
-            {
-                button.Content = new Image { Source = image, Width = 16, Height = 16 };
+                // Create an Image control and bind its Source using IconKeyThemeToImageConverter
+                var img = new Image { Width = 16, Height = 16 };
+
+                var multi = new Avalonia.Data.MultiBinding
+                {
+                    Converter = new ICSharpCode.ILSpy.Converters.IconKeyThemeToImageConverter(),
+                    Bindings = new System.Collections.Generic.List<Avalonia.Data.IBinding>
+                    {
+                        new Avalonia.Data.Binding("Tag") { Source = button },
+                        new Avalonia.Data.Binding("ActualThemeVariant") { Source = Application.Current }
+                    }
+                };
+
+                img.Bind(Image.SourceProperty, multi);
+                button.Content = img;
             }
             else
             {
                 // Fallback text if no icon
-                button.Content = commandExport.Metadata?.ToolTip ?? "Cmd"; 
+                button.Content = commandExport.Metadata?.ToolTip ?? "Cmd";
             }
 
             return button;
         }
 
-        static IImage? LoadImage(string iconPath)
-        {
-            // iconPath is like "Images/Open"
-            // We want to map it to "Assets/Open.svg"
-            
-            var name = System.IO.Path.GetFileName(iconPath); // "Open"
-            
-            // Handle known mismatches
-            if (name == "Sort") name = "SortAssemblies";
-            
-            // Try loading SVG from Assets
-            var uri = new Uri($"avares://ProjectRover/Assets/{name}.svg");
-            if (AssetLoader.Exists(uri))
-            {
-                return new SvgImage { Source = SvgSource.Load(uri.ToString(), uri) };
-            }
-            
-            return null;
-        }
+        // Note: image loading is delegated to Images.LoadImage to keep behavior consistent
     }
 }

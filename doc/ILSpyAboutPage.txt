@@ -7,11 +7,11 @@ Copyright 2025 LeXtudio Inc.
 
 Project Rover is licensed under the AGPL License.
 
-## Project Rover uses source files from CodeMerxDecompile
+## Project Rover uses source files from CodemerxDecompile
 
 Copyright 2024 CodeMerx
 
-CodeMerxDecompile is licensed under the AGPL License.
+CodemerxDecompile is licensed under the AGPL License.
 
 ## Project Rover uses source files from ILSpy
 
