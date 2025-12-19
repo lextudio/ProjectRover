@@ -7,6 +7,7 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ApplicationIcon>Assets\projectrover-logo.ico</ApplicationIcon>
     <RootNamespace>ICSharpCode.ILSpy</RootNamespace>
     <AssemblyName>ProjectRover</AssemblyName>
     <UserSecretsId>57fe8775-5a92-48de-8bd9-948dc8880d3d</UserSecretsId>
