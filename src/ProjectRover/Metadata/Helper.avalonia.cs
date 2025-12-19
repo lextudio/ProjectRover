@@ -29,6 +29,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Controls.Documents;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
@@ -45,27 +48,48 @@ namespace ICSharpCode.ILSpy.Metadata
 {
 	static class Helpers
 	{
-		public static ListBox PrepareDataGrid(TabPageModel tabPage, ILSpyTreeNode selectedNode)
+		public static DataGrid PrepareDataGrid(TabPageModel tabPage, ILSpyTreeNode selectedNode)
 		{
-			if (!(tabPage.Content is ListBox view && view.Name == "MetadataView"))
+			if (!(tabPage.Content is DataGrid view && view.Name == "MetadataView"))
 			{
 				view = new MetaDataGrid() {
 					Name = "MetadataView",
-					//GridLinesVisibility = DataGridGridLinesVisibility.None,
-					//CanUserAddRows = false,
-					//CanUserDeleteRows = false,
-					//CanUserReorderColumns = false,
-					//HeadersVisibility = DataGridHeadersVisibility.Column,
-					//EnableColumnVirtualization = true,
-					//EnableRowVirtualization = true,
-					//RowHeight = 20,
-					//IsReadOnly = true,
-					//SelectionMode = DataGridSelectionMode.Single,
-					//SelectionUnit = DataGridSelectionUnit.FullRow,
-					//SelectedTreeNode = selectedNode,
-					//CellStyle = (Style)MetadataTableViews.Instance["DataGridCellStyle"],
+					GridLinesVisibility = DataGridGridLinesVisibility.None,
+					// CanUserAddRows = false,
+					// CanUserDeleteRows = false,
+					CanUserReorderColumns = false,
+					HeadersVisibility = DataGridHeadersVisibility.Column,
+					// EnableColumnVirtualization = true,
+					// EnableRowVirtualization = true,
+					RowHeight = 20,
+					IsReadOnly = true,
+					SelectionMode = DataGridSelectionMode.Single,					
+					// SelectionUnit = DataGridSelectionUnit.FullRow,
+					// SelectedTreeNode = selectedNode,
+					// TODO: CellStyle = (Style)MetadataTableViews.Instance["DataGridCellStyle"],
 				};
-				//ContextMenuProvider.Add(view);
+
+				// Provide a simple item template for metadata Entry objects so
+				// nodes like DOS Header (which populate a list of Entry) render sensibly.
+				// if (view.ItemTemplate == null)
+				// {
+				// 	view.ItemTemplate = new FuncDataTemplate<Entry>((entry, _) => {
+				// 		var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4) };
+				// 		panel.Children.Add(new TextBlock { Text = entry.Member, Width = 220 });
+				// 		panel.Children.Add(new TextBlock { Text = entry.Offset.ToString("X8"), Width = 90 });
+				// 		panel.Children.Add(new TextBlock { Text = entry.Size.ToString(), Width = 60 });
+				// 		string valueText;
+				// 		try {
+				// 			valueText = entry.Value is IFormattable f ? f.ToString("X" + (2 * entry.Size), null) : entry.Value?.ToString();
+				// 		} catch {
+				// 			valueText = entry.Value?.ToString();
+				// 		}
+				// 		panel.Children.Add(new TextBlock { Text = valueText, Width = 140 });
+				// 		panel.Children.Add(new TextBlock { Text = entry.Meaning, TextWrapping = TextWrapping.Wrap, Width = 380 });
+				// 		return panel;
+				// 	}, true);
+				// }
+				ContextMenuProvider.Add(view);
 				//DataGridFilter.SetIsAutoFilterEnabled(view, true);
 				//DataGridFilter.SetContentFilterFactory(view, new RegexContentFilterFactory());
 				//AdvancedScrollWheelBehavior.SetAttach(view, AdvancedScrollWheelMode.WithoutAnimation);

@@ -70,22 +70,6 @@ Below is a concise comparison of important ILSpy WPF views, controls and view-mo
 	- **Estimated ViewModel TODOs (no Avalonia view/port):** ~6
 	- **Estimated View TODOs (WPF XAML templates/controls missing or shim-needed):** ~4
 
-- **Representative per-file status:**
-| Feature | ILSpy | Rover | Notes |
-|---|:---:|:---:|---|
-| MainWindowViewModel | ✓ | ✓ | `MainWindowViewModel.cs` ported/implemented in Rover (`src/ProjectRover/MainWindowViewModel.cs`). |
-| CompareView (view) | ✓ | ✓ | Ported to Avalonia: `src/ProjectRover/Views/CompareView.axaml`. |
-| DecompilerTextView (view) | ✓ | ✓ | Avalonia port present: `src/ProjectRover/TextView/DecompilerTextView.axaml`. |
-| MetadataTableViews (view) | ✓ | ✓ | Ported: `src/ProjectRover/Metadata/MetadataTableViews.axaml`. |
-| AnalyzerTreeView (view) | ✓ | Partial | ILSpy has XAML; Rover uses `src/ProjectRover/Analyzers/AnalyzerTreeView.cs` (C# shim). |
-| AnalyzerTreeViewModel | ✓ | ✓ | ViewModel linked into Rover (`Analyzers/AnalyzerTreeViewModel.cs`). |
-| ManageAssemblyListsViewModel | ✓ | Partial | ViewModel linked; `ManageAssemblyListsDialog.axaml` exists in Rover. |
-| UpdatePanelViewModel | ✓ | ✓ | Linked + `UpdatePanel.axaml` in Rover. |
-| OptionsDialogViewModel / Settings VMs | ✓ | ✓ | Settings VMs and Avalonia options panels are present and wired via DataTemplates (OptionsDialog.axaml / OptionsDialog.axaml.cs). |
-| ZoomScrollViewer (control template) | ✓ | ✗ | WPF control/template not ported; needs Avalonia replacement or shim. |
-| SharpTreeView (control + templates) | ✓ | Partial | `SharpTreeViewShim.cs` exists; full templates and automation peers not ported. |
-| SortableGridViewColumn / GridView helpers | ✓ | ✗ | WPF GridView helpers need Avalonia equivalents. |
-| CollapsiblePanel | ✓ | ✗ | WPF control; missing in Rover (TODO). |
 
 **Notes:**
 - Table rows map a conceptual feature (view/viewmodel/control) to its presence in ILSpy WPF and ProjectRover. Use the CSV in `doc/ui-parity-inventory.csv` for a per-file export.
@@ -97,6 +81,21 @@ Below is a concise comparison of important ILSpy WPF views, controls and view-mo
 - "Done" means there is an Avalonia `.axaml` (or `.avalonia.cs`) equivalent and the viewmodel is either linked or present. "Partial" means behaviour is available via a shim or only the viewmodel is linked (no axaml). "TODO" indicates missing Avalonia UI or shim.
 
 ---
+
+## Metadata Views TODO
+
+The metadata tree nodes are largely implemented in the linked ILSpy sources, but a few PE/metadata-specific nodes either lack dedicated Avalonia counterparts or rely on shared generic views. The table below tracks node -> ILSpy source -> Rover counterpart -> current status.
+
+| Node | ILSpy source | Rover counterpart | Status |
+|---|---|---|---|
+| DOS Header | src/ILSpy/ILSpy/Metadata/DosHeaderTreeNode.cs | (none in src/ProjectRover/Metadata) | TODO — add Avalonia view |
+| Optional Header | src/ILSpy/ILSpy/Metadata/OptionalHeaderTreeNode.cs | src/ProjectRover/Metadata/OptionalHeaderTreeNode.avalonia.cs | Verify parity |
+| COFF Header | src/ILSpy/ILSpy/Metadata/CoffHeaderTreeNode.cs | src/ProjectRover/Metadata/CoffHeaderTreeNode.avalonia.cs | Verify parity |
+| Debug Directory / Data Directories | src/ILSpy/ILSpy/Metadata/DebugDirectoryTreeNode.cs; src/ILSpy/ILSpy/Metadata/DataDirectoriesTreeNode.cs | (rendered via shared metadata views) | Verify child-node rendering |
+| Heaps (String/Blob/Guid/UserString) | src/ILSpy/ILSpy/Metadata/Heaps/* | src/ProjectRover/Metadata/MetadataHeapTreeNode.avalonia.cs | Verify rendering |
+| Metadata Tables (CorTables) | src/ILSpy/ILSpy/Metadata/CorTables/* | src/ProjectRover/Metadata/CorTables/* and MetadataTableViews.axaml | Verify UI coverage |
+
+If you want, I can: create minimal `DosHeaderTreeNode.avalonia.cs` + view, or open issues/PR stubs for each checked item.
 
 ## File-based comparison
 

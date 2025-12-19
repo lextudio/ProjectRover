@@ -47,10 +47,10 @@ namespace ICSharpCode.ILSpy.Metadata
 			return list;
 		}
 
-		protected override void ConfigureDataGrid(ListBox view)
+		protected override void ConfigureDataGrid(DataGrid view)
 		{
-			// TODO: view.RowDetailsVisibilityMode = DataGridRowDetailsVisibilityMode.VisibleWhenSelected;
-			//view.RowDetailsTemplateSelector = new CustomDebugInformationDetailsTemplateSelector();
+			view.RowDetailsVisibilityMode = DataGridRowDetailsVisibilityMode.VisibleWhenSelected;
+			// TODO: view.RowDetailsTemplateSelector = new CustomDebugInformationDetailsTemplateSelector();
 		}
 
 		//class CustomDebugInformationDetailsTemplateSelector : DataTemplateSelector

@@ -58,7 +58,7 @@ namespace ICSharpCode.ILSpy.Metadata
 			this.scrollTarget = metadataFile.Metadata.GetRowNumber((EntityHandle)handle);
 		}
 
-		protected void ScrollRowIntoView(ListBox view, int row)
+		protected void ScrollRowIntoView(DataGrid view, int row)
 		{
 			if (!view.IsLoaded)
 			{
@@ -68,22 +68,22 @@ namespace ICSharpCode.ILSpy.Metadata
 			{
 				View_Loaded(view, new RoutedEventArgs());
 			}
-			if (row < 0 || row >= view.ItemCount) // ItemCount is the Avalonia way
+			// TODO: if (row < 0 || row >= view.ItemCount) // ItemCount is the Avalonia way
 				return;
 
-			var index = row;
+			// var index = row;
 
-			Dispatcher.UIThread.Post(() =>
-			{
-				if (index < 0 || index >= view.ItemCount)
-					return;
+			// Dispatcher.UIThread.Post(() =>
+			// {
+			// 	if (index < 0 || index >= view.ItemCount)
+			// 		return;
 
-				var item = view.Items[index];
+			// 	var item = view.Items[index];
 
-				// equivalent of SelectItem + ensure visibility
-				view.SelectedItem = item;
-				view.ScrollIntoView(item);
-			}, DispatcherPriority.Background);
+			// 	// equivalent of SelectItem + ensure visibility
+			// 	view.SelectedItem = item;
+			// 	view.ScrollIntoView(item);
+			// }, DispatcherPriority.Background);
 		}
 
 		private void View_Loaded(object sender, RoutedEventArgs e)
@@ -186,7 +186,7 @@ namespace ICSharpCode.ILSpy.Metadata
 
 		protected abstract IReadOnlyList<TEntry> LoadTable();
 
-		protected virtual void ConfigureDataGrid(ListBox view)
+		protected virtual void ConfigureDataGrid(DataGrid view)
 		{
 		}
 

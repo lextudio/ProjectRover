@@ -73,7 +73,7 @@ namespace ICSharpCode.ILSpy
 		/// Returns the data grid the context menu is assigned to.
 		/// Returns null, if context menu is not assigned to a data grid.
 		/// </summary>
-		public ListBox DataGrid { get; private set; }
+		public DataGrid DataGrid { get; private set; }
 
 		/// <summary>
 		/// Returns the reference the mouse cursor is currently hovering above.
@@ -92,7 +92,7 @@ namespace ICSharpCode.ILSpy
 		/// </summary>
 		public AvaloniaObject OriginalSource { get; private set; }
 
-		public static TextViewContext Create(ContextRequestedEventArgs eventArgs, TreeView treeView = null, DecompilerTextView textView = null, ListBox listBox = null, ListBox dataGrid = null)
+		public static TextViewContext Create(ContextRequestedEventArgs eventArgs, TreeView treeView = null, DecompilerTextView textView = null, ListBox listBox = null, DataGrid dataGrid = null)
 		{
 			ReferenceSegment reference;
 
@@ -201,19 +201,25 @@ namespace ICSharpCode.ILSpy
 			textView.ContextMenu = new ContextMenu();
 		}
 
-		public static void Add(ListBox listBox, bool isDataGrid)
+		public static void Add(ListBox listBox)
 		{
-			var provider = new ContextMenuProvider(listBox, isDataGrid);
+			var provider = new ContextMenuProvider(listBox);
 			//listBox.ContextMenuOpening += provider.listBox_ContextMenuOpening;
 			listBox.ContextMenu = new ContextMenu();
 		}
 
+		public static void Add(DataGrid dataGrid)
+		{
+			var provider = new ContextMenuProvider(dataGrid);
+			//dataGrid.ContextMenuOpening += provider.dataGrid_ContextMenuOpening;
+			dataGrid.ContextMenu = new ContextMenu();
+		}
 
 		readonly Control control;
 		readonly TreeView treeView;
 		readonly DecompilerTextView textView;
 		readonly ListBox listBox;
-		readonly ListBox dataGrid;
+		readonly DataGrid dataGrid;
 		readonly IExport<IContextMenuEntry, IContextMenuEntryMetadata>[] entries;
 
 		private ContextMenuProvider(Control control)
@@ -235,13 +241,16 @@ namespace ICSharpCode.ILSpy
 			this.treeView = treeView ?? throw new ArgumentNullException(nameof(treeView));
 		}
 
-		ContextMenuProvider(ListBox listBox, bool isDataGrid)
+		ContextMenuProvider(ListBox listBox)
 			: this((Control)listBox)
 		{
-			if (isDataGrid)
-				this.dataGrid = listBox ?? throw new ArgumentNullException(nameof(listBox));
-			else
-				this.listBox = listBox ?? throw new ArgumentNullException(nameof(listBox));
+    		this.listBox = listBox ?? throw new ArgumentNullException(nameof(listBox));
+		}
+
+		ContextMenuProvider(DataGrid dataGrid)
+			: this((Control)dataGrid)
+		{
+			this.dataGrid = dataGrid ?? throw new ArgumentNullException(nameof(dataGrid));
 		}
 
 		void treeView_ContextMenuOpening(object sender, ContextRequestedEventArgs e)
