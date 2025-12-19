@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
   <defs>
-    <style>.canvas{fill: none; opacity: 0;}.light-purple-10{fill: #c3a5ff; opacity: 0.1;}.light-purple{fill: #c3a5ff; opacity: 1;}.cls-1{opacity:0.75;}</style>
+    <style>.canvas{fill: none; opacity: 0.35;}.light-purple-10{fill: #c3a5ff; opacity: 0.35;}.light-purple{fill: #c3a5ff; opacity: 1;}.cls-1{opacity:0.75;}</style>
   </defs>
   <title>IconLightMethodPublic</title>
   <g id="canvas" class="canvas">

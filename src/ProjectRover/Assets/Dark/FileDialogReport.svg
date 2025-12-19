@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
   <defs>
-    <style>.canvas{fill: none; opacity: 0;}.dark-yellow-10{fill: #ffba01; opacity: 0.1;}.dark-defaultgrey-10{fill: #f1f1f1; opacity: 0.1;}.dark-defaultgrey{fill: #f1f1f1; opacity: 1;}.dark-yellow{fill: #ffba01; opacity: 1;}</style>
+    <style>.canvas{fill: none; opacity: 0.35;}.dark-yellow-10{fill: #ffba01; opacity: 0.35;}.dark-defaultgrey-10{fill: #f1f1f1; opacity: 0.35;}.dark-defaultgrey{fill: #f1f1f1; opacity: 1;}.dark-yellow{fill: #ffba01; opacity: 1;}</style>
   </defs>
   <title>IconDarkFileDialogReport</title>
   <g id="canvas">

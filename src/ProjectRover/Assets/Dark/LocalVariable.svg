@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
   <defs>
-    <style>.canvas{fill: none; opacity: 0;}.light-blue-10{fill: #8ab4f8; opacity: 0.1;}.light-blue{fill: #8ab4f8; opacity: 1;}.light-defaultgrey{fill: #dcdcdc; opacity: 1;}.cls-1{opacity:0.75;}</style>
+    <style>.canvas{fill: none; opacity: 0.35;}.light-blue-10{fill: #8ab4f8; opacity: 0.35;}.light-blue{fill: #8ab4f8; opacity: 1;}.light-defaultgrey{fill: #dcdcdc; opacity: 1;}.cls-1{opacity:0.75;}</style>
   </defs>
   <title>IconLightLocalVariable</title>
   <g id="canvas">

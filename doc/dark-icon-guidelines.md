@@ -47,6 +47,7 @@ Inconsistencies & issues found
   - Purple and blue accents are lightened, but some hues are changed more aggressively than others. Define a measured luminance target (e.g., remap to same perceived luminance value) to make the transformation predictable.
 
 - Title and metadata labels sometimes still say "IconLight..." inside `Assets/Dark` files (minor but confusing). Update titles to reflect dark variants.
+- Some icon families (class/enum/interface) still carry light-palette strokes (e.g., `#212121` or the original `#005dba`) and low-opacity overlays (~0.1) in Dark files, so they look heavier than fields/properties. Normalize these to the canonical dark greys (`#dcdcdc`) and lightened accents (`#8ab4f8`/`#c3a5ff`), and raise muted strokes to ~0.35 opacity for parity.
 
 Recommended conversion rules (light → dark)
 1. Neutral greys

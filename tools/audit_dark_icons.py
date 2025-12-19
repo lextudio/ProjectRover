@@ -32,6 +32,9 @@ NORMALIZE_DARK = {
     "#005dba": "#8ab4f8",  # encourage lightened blue
 }
 
+LOW_OPACITY_THRESHOLD = 0.2
+STANDARD_MUTED_ALPHA = 0.35
+OPACITY_RE = re.compile(r'(opacity\s*[:=]\s*["\']?)(0?\.\d+|\d+)(["\']?)', re.IGNORECASE)
 HEX_RE = re.compile(r"#(?:[0-9a-fA-F]{3}){1,2}")
 
 
@@ -56,6 +59,9 @@ def audit_file(path: str):
     for legacy, canonical in NORMALIZE_DARK.items():
         if legacy in colors and legacy != canonical:
             issues.append(f"uses legacy dark {legacy} (canonical {canonical})")
+    low_opacities = sorted({m.group(2) for m in OPACITY_RE.finditer(text) if float(m.group(2)) < LOW_OPACITY_THRESHOLD})
+    if low_opacities:
+        issues.append(f"opacity too low ({', '.join(low_opacities)}) use ~{STANDARD_MUTED_ALPHA}")
     return issues, colors
 
 
@@ -67,6 +73,14 @@ def fix_file(path: str):
     # Normalize legacy dark colors
     for legacy, canonical in NORMALIZE_DARK.items():
         content = re.sub(legacy, canonical, content, flags=re.IGNORECASE)
+    # Bump very low opacities to the standard muted alpha
+    def bump_opacity(match: re.Match) -> str:
+        value = float(match.group(2))
+        if value < LOW_OPACITY_THRESHOLD:
+            return f"{match.group(1)}{STANDARD_MUTED_ALPHA}{match.group(3)}"
+        return match.group(0)
+
+    content = OPACITY_RE.sub(bump_opacity, content)
     write_text(path, content)
 
 

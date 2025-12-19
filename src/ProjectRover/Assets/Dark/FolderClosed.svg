@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
   <defs>
-    <style>.canvas{fill: none; opacity: 0;}.light-yellow-10{fill: #e0b44c; opacity: 0.35;}.light-yellow{fill: #e0b44c; opacity: 1;}</style>
+    <style>.canvas{fill: none; opacity: 0.35;}.light-yellow-10{fill: #e0b44c; opacity: 0.35;}.light-yellow{fill: #e0b44c; opacity: 1;}</style>
   </defs>
   <title>IconDarkFolderClosed</title>
   <g id="canvas" class="canvas">
