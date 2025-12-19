@@ -61,10 +61,10 @@ namespace ICSharpCode.ILSpy.Metadata
 			[ColumnInfo("X8", Kind = ColumnKind.Other)]
 			public GenericParameterAttributes Attributes => genericParam.Attributes;
 
-			// TODO: public object AttributesTooltip => new FlagsTooltip {
-			//	FlagGroup.CreateSingleChoiceGroup(typeof(GenericParameterAttributes), "Variance: ", (int)GenericParameterAttributes.VarianceMask, (int)(genericParam.Attributes & GenericParameterAttributes.VarianceMask), new Flag("None (0000)", 0, false), includeAny: false),
-			//	FlagGroup.CreateMultipleChoiceGroup(typeof(GenericParameterAttributes), "Special Constraint: ", (int)GenericParameterAttributes.SpecialConstraintMask, (int)(genericParam.Attributes & GenericParameterAttributes.SpecialConstraintMask), includeAll: false),
-			//};
+			public object AttributesTooltip => new FlagsTooltip {
+				FlagGroup.CreateSingleChoiceGroup(typeof(GenericParameterAttributes), "Variance: ", (int)GenericParameterAttributes.VarianceMask, (int)(genericParam.Attributes & GenericParameterAttributes.VarianceMask), new Flag("None (0000)", 0, false), includeAny: false),
+				FlagGroup.CreateMultipleChoiceGroup(typeof(GenericParameterAttributes), "Special Constraint: ", (int)GenericParameterAttributes.SpecialConstraintMask, (int)(genericParam.Attributes & GenericParameterAttributes.SpecialConstraintMask), includeAll: false),
+			};
 
 			[ColumnInfo("X8", Kind = ColumnKind.Token)]
 			public int Owner => MetadataTokens.GetToken(genericParam.Parent);

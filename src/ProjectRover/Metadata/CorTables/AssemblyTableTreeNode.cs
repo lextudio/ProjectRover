@@ -62,16 +62,16 @@ namespace ICSharpCode.ILSpy.Metadata
 			[ColumnInfo("X4", Kind = ColumnKind.Other)]
 			public AssemblyHashAlgorithm HashAlgorithm => assembly.HashAlgorithm;
 
-			// TODO: public object HashAlgorithmTooltip => new FlagsTooltip() {
-			//	FlagGroup.CreateSingleChoiceGroup(typeof(AssemblyHashAlgorithm), selectedValue: (int)assembly.HashAlgorithm, defaultFlag: new Flag("None (0000)", 0, false), includeAny: false)
-			//};
+			public object HashAlgorithmTooltip => new FlagsTooltip() {
+				FlagGroup.CreateSingleChoiceGroup(typeof(AssemblyHashAlgorithm), selectedValue: (int)assembly.HashAlgorithm, defaultFlag: new Flag("None (0000)", 0, false), includeAny: false)
+			};
 
 			[ColumnInfo("X4", Kind = ColumnKind.Other)]
 			public AssemblyFlags Flags => assembly.Flags;
 
-			//public object FlagsTooltip => new FlagsTooltip() {
-			//	FlagGroup.CreateMultipleChoiceGroup(typeof(AssemblyFlags), selectedValue: (int)assembly.Flags, includeAll: false)
-			//};
+			public object FlagsTooltip => new FlagsTooltip() {
+				FlagGroup.CreateMultipleChoiceGroup(typeof(AssemblyFlags), selectedValue: (int)assembly.Flags, includeAll: false)
+			};
 
 			public Version Version => assembly.Version;
 

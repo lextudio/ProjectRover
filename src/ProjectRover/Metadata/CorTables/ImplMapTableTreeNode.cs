@@ -81,11 +81,11 @@ namespace ICSharpCode.ILSpy.Metadata
 
 			const PInvokeAttributes otherFlagsMask = ~(PInvokeAttributes.CallConvMask | PInvokeAttributes.CharSetMask);
 
-			// TODO: public object MappingFlagsTooltip => new FlagsTooltip {
-			//	FlagGroup.CreateSingleChoiceGroup(typeof(PInvokeAttributes), "Character set: ", (int)PInvokeAttributes.CharSetMask, (int)(implMap.MappingFlags & PInvokeAttributes.CharSetMask), new Flag("CharSetNotSpec (0000)", 0, false), includeAny: false),
-			//	FlagGroup.CreateSingleChoiceGroup(typeof(PInvokeAttributes), "Calling convention: ", (int)PInvokeAttributes.CallConvMask, (int)(implMap.MappingFlags & PInvokeAttributes.CallConvMask), new Flag("Invalid (0000)", 0, false), includeAny: false),
-			//	FlagGroup.CreateMultipleChoiceGroup(typeof(PInvokeAttributes), "Flags:", (int)otherFlagsMask, (int)(implMap.MappingFlags & otherFlagsMask), includeAll: false),
-			//};
+			public object MappingFlagsTooltip => new FlagsTooltip {
+				FlagGroup.CreateSingleChoiceGroup(typeof(PInvokeAttributes), "Character set: ", (int)PInvokeAttributes.CharSetMask, (int)(implMap.MappingFlags & PInvokeAttributes.CharSetMask), new Flag("CharSetNotSpec (0000)", 0, false), includeAny: false),
+				FlagGroup.CreateSingleChoiceGroup(typeof(PInvokeAttributes), "Calling convention: ", (int)PInvokeAttributes.CallConvMask, (int)(implMap.MappingFlags & PInvokeAttributes.CallConvMask), new Flag("Invalid (0000)", 0, false), includeAny: false),
+				FlagGroup.CreateMultipleChoiceGroup(typeof(PInvokeAttributes), "Flags:", (int)otherFlagsMask, (int)(implMap.MappingFlags & otherFlagsMask), includeAll: false),
+			};
 
 			[ColumnInfo("X8", Kind = ColumnKind.Token)]
 			public int MemberForwarded => MetadataTokens.GetToken(implMap.MemberForwarded);

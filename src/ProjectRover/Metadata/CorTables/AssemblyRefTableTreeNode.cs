@@ -62,9 +62,9 @@ namespace ICSharpCode.ILSpy.Metadata
 			[ColumnInfo("X8", Kind = ColumnKind.Other)]
 			public AssemblyFlags Flags => assemblyRef.Flags;
 
-			// TODO: public object FlagsTooltip => new FlagsTooltip((int)assemblyRef.Flags, null) {
-			//	FlagGroup.CreateMultipleChoiceGroup(typeof(AssemblyFlags), selectedValue: (int)assemblyRef.Flags, includeAll: false)
-			//};
+			public object FlagsTooltip => new FlagsTooltip((int)assemblyRef.Flags, null) {
+				FlagGroup.CreateMultipleChoiceGroup(typeof(AssemblyFlags), selectedValue: (int)assemblyRef.Flags, includeAll: false)
+			};
 
 			[ColumnInfo("X8", Kind = ColumnKind.HeapOffset)]
 			public int PublicKeyOrToken => MetadataTokens.GetHeapOffset(assemblyRef.PublicKeyOrToken);

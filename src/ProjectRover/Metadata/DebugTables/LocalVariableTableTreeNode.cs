@@ -59,9 +59,9 @@ namespace ICSharpCode.ILSpy.Metadata
 			[ColumnInfo("X8", Kind = ColumnKind.Other)]
 			public LocalVariableAttributes Attributes => localVar.Attributes;
 
-			// TODO: public object AttributesTooltip => new FlagsTooltip() {
-			//	FlagGroup.CreateMultipleChoiceGroup(typeof(LocalVariableAttributes)),
-			//};
+			public object AttributesTooltip => new FlagsTooltip() {
+				FlagGroup.CreateMultipleChoiceGroup(typeof(LocalVariableAttributes)),
+			};
 
 			public int Index => localVar.Index;
 

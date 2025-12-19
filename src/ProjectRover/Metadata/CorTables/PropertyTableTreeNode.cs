@@ -62,9 +62,9 @@ namespace ICSharpCode.ILSpy.Metadata
 			[ColumnInfo("X8", Kind = ColumnKind.Other)]
 			public PropertyAttributes Attributes => propertyDef.Attributes;
 
-			// TODO: public object AttributesTooltip => new FlagsTooltip {
-			//	FlagGroup.CreateMultipleChoiceGroup(typeof(PropertyAttributes), selectedValue: (int)propertyDef.Attributes, includeAll: false),
-			//};
+			public object AttributesTooltip => new FlagsTooltip {
+				FlagGroup.CreateMultipleChoiceGroup(typeof(PropertyAttributes), selectedValue: (int)propertyDef.Attributes, includeAll: false),
+			};
 
 			public string Name => metadataFile.Metadata.GetString(propertyDef.Name);
 

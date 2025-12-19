@@ -9,22 +9,32 @@
     <local:NullVisibilityConverter x:Key="nullVisConv" />
   </UserControl.Resources>
 
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="local:MultipleChoiceGroup">
+      <StackPanel Orientation="Vertical" Margin="3">
+        <TextBlock Text="{Binding Header}" FontWeight="Bold" Margin="0 0 0 3" IsVisible="{Binding Header, Converter={StaticResource nullVisConv}}" />
+        <ListBox ItemsSource="{Binding Flags}" BorderThickness="0" Background="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="local:Flag">
+              <CheckBox Margin="3,2" Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=OneWay}" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="local:SingleChoiceGroup">
+      <StackPanel Orientation="Horizontal" Margin="3">
+        <TextBlock Text="{Binding Header}" FontWeight="Bold" IsVisible="{Binding Header, Converter={StaticResource nullVisConv}}" />
+        <TextBlock Text="{Binding SelectedFlag.Name}" />
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
   <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
     <ItemsControl Name="ItemsRoot" ItemsSource="{Binding Groups}">
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="local:FlagGroup">
-          <StackPanel Margin="4">
-            <TextBlock Text="{Binding Header}" IsVisible="{Binding Header, Converter={StaticResource nullVisConv}}" />
-            <ItemsControl ItemsSource="{Binding Flags}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="local:Flag">
-                  <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
+      <!-- DataTemplates for concrete group types are declared in Resources above; ItemsControl will pick the
+           appropriate DataTemplate based on the runtime type of each item in `Groups`. -->
     </ItemsControl>
   </ScrollViewer>
 </UserControl>

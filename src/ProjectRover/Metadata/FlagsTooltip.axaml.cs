@@ -18,6 +18,16 @@ namespace ICSharpCode.ILSpy.Metadata
             InitializeComponent();
         }
 
+        // WPF-compatible constructor: allow calls like `new FlagsTooltip(value, type)`
+        public FlagsTooltip(int value = 0, Type flagsType = null)
+        {
+            InitializeComponent();
+            if (flagsType != null)
+            {
+                PopulateFromType(flagsType, value);
+            }
+        }
+
         public void PopulateFromType(Type flagsType, int selectedValue = 0, string header = null)
         {
             if (flagsType == null)

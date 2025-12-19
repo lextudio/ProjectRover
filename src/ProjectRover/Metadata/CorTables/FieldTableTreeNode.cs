@@ -63,10 +63,10 @@ namespace ICSharpCode.ILSpy.Metadata
 
 			const FieldAttributes otherFlagsMask = ~(FieldAttributes.FieldAccessMask);
 
-			// TODO: public object AttributesTooltip => new FlagsTooltip() {
-			//	FlagGroup.CreateSingleChoiceGroup(typeof(FieldAttributes), "Field access: ", (int)FieldAttributes.FieldAccessMask, (int)(fieldDef.Attributes & FieldAttributes.FieldAccessMask), new Flag("CompilerControlled (0000)", 0, false), includeAny: false),
-			//	FlagGroup.CreateMultipleChoiceGroup(typeof(FieldAttributes), "Flags:", (int)otherFlagsMask, (int)(fieldDef.Attributes & otherFlagsMask), includeAll: false),
-			//};
+			public object AttributesTooltip => new FlagsTooltip() {
+				FlagGroup.CreateSingleChoiceGroup(typeof(FieldAttributes), "Field access: ", (int)FieldAttributes.FieldAccessMask, (int)(fieldDef.Attributes & FieldAttributes.FieldAccessMask), new Flag("CompilerControlled (0000)", 0, false), includeAny: false),
+				FlagGroup.CreateMultipleChoiceGroup(typeof(FieldAttributes), "Flags:", (int)otherFlagsMask, (int)(fieldDef.Attributes & otherFlagsMask), includeAll: false),
+			};
 
 			public string Name => metadataFile.Metadata.GetString(fieldDef.Name);
 
