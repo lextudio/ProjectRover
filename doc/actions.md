@@ -179,16 +179,3 @@ Notes: for each platform-specific delta above, we should decide whether to imple
 ### Epic: Plugin/Extension Model (Low Priority)
 - **Inventory of ILSpy add-ins:** Completed — many add-ins linked and inventoried.
 - **Compatibility shims/adaptors for Avalonia controls:** Completed/ongoing — many shims present (e.g., `ThemeManagerShim`).
-
----
-
-## Appendix — Quick pointers (files referenced above)
-- AssemblyList: [src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs](src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs#L40)
-- LoadedAssembly: [src/ILSpy/ICSharpCode.ILSpyX/LoadedAssembly.cs](src/ILSpy/ICSharpCode.ILSpyX/LoadedAssembly.cs#L56)
-- Jump/navigation: [src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs](src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs#L597)
-- Rover settings: [src/ProjectRover/Settings/RoverStartupSettings.cs](src/ProjectRover/Settings/RoverStartupSettings.cs#L1)
-- ILSpy settings provider in Rover: [src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs](src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs#L1)
-
-If you want, I can now:
-- run a short audit to list remaining code locations that still call ad-hoc assembly-load methods (suggested next step), or
-- update this file further to include a prioritized backlog with issues and suggested owners.
