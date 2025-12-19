@@ -27,6 +27,7 @@ public partial class AssemblyTreeModel : ObservableObject
     private readonly Stack<Node> backStack;
     private readonly Stack<Node> forwardStack;
     private bool isBackForwardNavigation;
+    private Node? previousSelectedNode;
 
     public AssemblyTreeModel(IlSpyBackend backend, INotificationService notificationService, ILogger<AssemblyTreeModel> logger, AvaloniaPlatformService platformService)
     {
@@ -39,6 +40,8 @@ public partial class AssemblyTreeModel : ObservableObject
         handleToNodeMap = new Dictionary<(string AssemblyPath, EntityHandle Handle), Node>();
         backStack = new Stack<Node>();
         forwardStack = new Stack<Node>();
+        previousSelectedNode = null;
+        PropertyChanged += AssemblyTreeModel_PropertyChanged;
     }
 
     public ObservableCollection<AssemblyNode> AssemblyNodes { get; }
@@ -52,8 +55,14 @@ public partial class AssemblyTreeModel : ObservableObject
 
     public bool CanGoForward => forwardStack.Any();
 
-    partial void OnSelectedNodeChanged(Node? oldValue, Node? newValue)
+    private void AssemblyTreeModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName != nameof(SelectedNode))
+            return;
+
+        var oldValue = previousSelectedNode;
+        var newValue = SelectedNode;
+
         if (!isBackForwardNavigation && oldValue != null)
         {
             backStack.Push(oldValue);
@@ -63,6 +72,8 @@ public partial class AssemblyTreeModel : ObservableObject
         isBackForwardNavigation = false;
         OnPropertyChanged(nameof(CanGoBack));
         OnPropertyChanged(nameof(CanGoForward));
+
+        previousSelectedNode = newValue;
     }
 
     public void GoBack()
