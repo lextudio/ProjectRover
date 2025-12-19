@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
   <defs>
-    <style>.canvas{fill: none; opacity: 0;}.light-lightblue-10{fill: #50e6ff; opacity: 0.35;}.light-lightblue{fill: #50e6ff; opacity: 1;}.light-defaultgrey-10{fill: #c0c0c0; opacity: 0.35;}.light-defaultgrey{fill: #c0c0c0; opacity: 1;}.cls-1{opacity:0.75;}</style>
+    <style>.canvas{fill: none; opacity: 0;}.light-lightblue-10{fill: #50e6ff; opacity: 0.35;}.light-lightblue{fill: #50e6ff; opacity: 1;}.light-defaultgrey-10{fill: #dcdcdc; opacity: 0.35;}.light-defaultgrey{fill: #dcdcdc; opacity: 1;}.cls-1{opacity:0.75;}</style>
   </defs>
   <title>IconDarkDatabaseTableGroup</title>
   <g id="canvas" class="canvas">
