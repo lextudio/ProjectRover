@@ -168,6 +168,14 @@ Notes: for each platform-specific delta above, we should decide whether to imple
 - **Icon resources & theme mappings:** Partial — theme shim exists; consolidation required.
 - **Tree ordering & grouping parity:** Partial — basic parity achieved; edge cases remain.
 
+##### Theming checklist
+
+- [x] Per-editor `TextMate.Installation` created and wired in `DecompilerTextView` (SetTheme + AppliedTheme) — applies syntax theme and GUI brushes.
+- [x] GUI brushes applied from TextMate themes (`editor.background`, `editor.foreground`, `editor.selectionBackground`, `editor.lineHighlightBackground`, `editorLineNumber.foreground`) with resource fallbacks.
+- [x] Demo `MainWindow` updated as canonical example for wiring `RegistryOptions`, `InstallTextMate`, and applying theme-derived brushes.
+- [ ] Propagate the same `InstallTextMate` + `ApplyThemeColorsToEditor` pattern to other `TextEditor` owners in the codebase.
+- [ ] Verify runtime behavior across platforms by running the app and toggling Light/Dark themes; capture logs and visual confirmation.
+
 ### Epic: Plugin/Extension Model (Low Priority)
 - **Inventory of ILSpy add-ins:** Completed — many add-ins linked and inventoried.
 - **Compatibility shims/adaptors for Avalonia controls:** Completed/ongoing — many shims present (e.g., `ThemeManagerShim`).
