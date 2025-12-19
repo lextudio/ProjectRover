@@ -34,34 +34,73 @@ namespace ICSharpCode.ILSpy
             return null;
         }
 
-        public static IImage? LoadImage(object? icon)
-        {
-            string? path = ResolveIcon(icon);
-            if (path == null) return null;
-            
-            if (path.StartsWith("/"))
-            {
-                path = $"avares://ProjectRover{path}";
-            }
+		public static IImage? LoadImage(object? icon)
+		{
+			string? path = ResolveIcon(icon);
+			if (path == null) return null;
 
-            if (path.EndsWith(".svg"))
-            {
-                try
-                {
-                    // Ensure we have a valid URI
-                    if (!path.Contains("://"))
-                    {
-                         path = $"avares://ProjectRover/Assets/{path}";
-                    }
-                    return new SvgImage { Source = SvgSource.Load(path, null) };
-                }
-                catch
-                {
-                    return null;
-                }
-            }
-            return null;
-        }
+			if (path.StartsWith("/"))
+			{
+				path = $"avares://ProjectRover{path}";
+			}
+
+			// If the application theme is dark, first try the Assets/Dark/ variant
+			// and fall back to the regular asset when it's not available.
+			if (path.EndsWith(".svg"))
+			{
+				// Build candidate paths: themed first (if dark), then the original
+				var candidates = new System.Collections.Generic.List<string>();
+				bool triedTheme = false;
+				try
+				{
+					if (App.Current != null && App.Current.ActualThemeVariant.ToString().Equals("Dark", StringComparison.OrdinalIgnoreCase))
+					{
+						// Insert /Dark/ into the Assets path if not already present
+						if (path.Contains("/Assets/") && !path.Contains("/Assets/Dark/"))
+						{
+							var darkPath = path.Replace("/Assets/", "/Assets/Dark/");
+							candidates.Add(darkPath);
+							triedTheme = true;
+						}
+						else if (path.Contains("/ProjectRover/Assets/") && !path.Contains("/ProjectRover/Assets/Dark/"))
+						{
+							var darkPath = path.Replace("/ProjectRover/Assets/", "/ProjectRover/Assets/Dark/");
+							candidates.Add(darkPath);
+							triedTheme = true;
+						}
+					}
+				}
+				catch
+				{
+					// If anything goes wrong querying the theme, ignore and continue with default path
+				}
+
+				// Ensure original path is tried after themed path
+				candidates.Add(path);
+
+				foreach (var candidate in candidates)
+				{
+					try
+					{
+						var p = candidate;
+						// Ensure we have a valid URI
+						if (!p.Contains("://"))
+						{
+							p = $"avares://ProjectRover/Assets/{p}";
+						}
+						var svg = SvgSource.Load(p, null);
+						if (svg != null)
+							return new SvgImage { Source = svg };
+					}
+					catch
+					{
+						// try next candidate
+					}
+				}
+				return null;
+			}
+			return null;
+		}
 
 		internal static object GetIcon(object icon, object overlay, bool isStatic)
 		{

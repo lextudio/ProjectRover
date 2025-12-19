@@ -64,10 +64,10 @@ public partial class App : Application
             ProjectRover.Settings.RectTypeConverterRegistration.Ensure();
             var services = CreateServiceCollection();
 
-            // Initialize SettingsService
-            var settingsService = new ICSharpCode.ILSpy.Util.SettingsService();
-            ThemeManager.Current.ApplyTheme(settingsService.SessionSettings.Theme);
-            services.AddSingleton(settingsService);
+			// Initialize SettingsService
+			var settingsService = new ICSharpCode.ILSpy.Util.SettingsService();
+			var desiredTheme = settingsService.SessionSettings.Theme;
+			services.AddSingleton(settingsService);
 
             // Bind exports from assemblies
             // ILSpyX
@@ -96,9 +96,13 @@ public partial class App : Application
 
             Console.WriteLine($"ExportProvider initialized: {ExportProvider != null}");
 
-            Console.WriteLine("Creating MainWindow...");
-            desktop.MainWindow = Services.GetRequiredService<ICSharpCode.ILSpy.MainWindow>();
-            Console.WriteLine("MainWindow created.");
+			Console.WriteLine("Creating MainWindow...");
+			desktop.MainWindow = Services.GetRequiredService<ICSharpCode.ILSpy.MainWindow>();
+			Console.WriteLine("MainWindow created.");
+
+			desktop.MainWindow.Opened += (_, _) => {
+				ThemeManager.Current.ApplyTheme(desiredTheme);
+			};
 
             // Register command bindings
             ICSharpCode.ILSpy.CommandWrapper.RegisterBindings(desktop.MainWindow);
