@@ -61,6 +61,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            ProjectRover.Settings.RectTypeConverterRegistration.Ensure();
             var services = CreateServiceCollection();
 
             // Initialize SettingsService
