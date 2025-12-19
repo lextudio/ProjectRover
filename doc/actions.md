@@ -118,8 +118,8 @@ The table below is a file-level comparison exported from the workspace inventory
 | `src/ILSpy/ILSpy/Options/DisplaySettingsViewModel.cs` | ViewModel | No | `src/ProjectRover/Options/DisplaySettingsPanel.axaml` | Done |
 | `src/ILSpy/ILSpy/Controls/ZoomScrollViewer.xaml` | Control/XAML | No | `src/ProjectRover/Controls/ZoomScrollViewer.axaml` | Done |
 | `src/ILSpy/ILSpy/Controls/TreeView/SharpTreeView.xaml` | Control/XAML | Partial | `src/ProjectRover/TreeNodes/SharpTreeViewShim.cs` | Skip |
-| `src/ILSpy/ILSpy/Controls/SortableGridViewColumn.cs` | Control | No | (none) | TODO |
-| `src/ILSpy/ILSpy/Controls/CollapsiblePanel.cs` | Control | No | (none) | TODO |
+| `src/ILSpy/ILSpy/Controls/SortableGridViewColumn.cs` | Control | No | (none) | Skip |
+| `src/ILSpy/ILSpy/Controls/CollapsiblePanel.cs` | Control | No | (none) | Done (use Avalonia `Expander`) |
 | `src/ILSpy/ILSpy/Metadata/FlagsTooltip.xaml` | View | No | (none) | TODO |
 | `src/ILSpy/ILSpy/TreeNodes/AssemblyListTreeNode.cs` | TreeNode | Yes | `src/ProjectRover/TreeNodes/AssemblyListTreeNode.avalonia.cs` | Done |
 

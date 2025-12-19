@@ -27,7 +27,6 @@ using AvaloniaEdit;
 
 using ICSharpCode.ILSpy.TextView;
 using ICSharpCode.ILSpyX.Search;
-using ICSharpCode.ILSpy.Controls.TreeView;
 using ICSharpCode.ILSpyX.TreeView;
 
 using TomsToolbox.Composition;
@@ -56,7 +55,7 @@ namespace ICSharpCode.ILSpy
 		/// Returns the tree view the context menu is assigned to.
 		/// Returns null, if context menu is not assigned to a tree view.
 		/// </summary>
-		public SharpTreeView TreeView { get; private set; }
+		public TreeView TreeView { get; private set; }
 
 		/// <summary>
 		/// Returns the text view the context menu is assigned to.
@@ -93,7 +92,7 @@ namespace ICSharpCode.ILSpy
 		/// </summary>
 		public AvaloniaObject OriginalSource { get; private set; }
 
-		public static TextViewContext Create(ContextRequestedEventArgs eventArgs, SharpTreeView treeView = null, DecompilerTextView textView = null, ListBox listBox = null, ListBox dataGrid = null)
+		public static TextViewContext Create(ContextRequestedEventArgs eventArgs, TreeView treeView = null, DecompilerTextView textView = null, ListBox listBox = null, ListBox dataGrid = null)
 		{
 			ReferenceSegment reference;
 
@@ -184,7 +183,7 @@ namespace ICSharpCode.ILSpy
 		/// <summary>
 		/// Enables extensible context menu support for the specified tree view.
 		/// </summary>
-		public static void Add(SharpTreeView treeView)
+		public static void Add(TreeView treeView)
 		{
 			var provider = new ContextMenuProvider(treeView);
 			// TODO: treeView.ContextMenuOpening += provider.treeView_ContextMenuOpening;
@@ -211,7 +210,7 @@ namespace ICSharpCode.ILSpy
 
 
 		readonly Control control;
-		readonly SharpTreeView treeView;
+		readonly TreeView treeView;
 		readonly DecompilerTextView textView;
 		readonly ListBox listBox;
 		readonly ListBox dataGrid;
@@ -230,7 +229,7 @@ namespace ICSharpCode.ILSpy
 			this.textView = textView ?? throw new ArgumentNullException(nameof(textView));
 		}
 
-		ContextMenuProvider(SharpTreeView treeView)
+		ContextMenuProvider(TreeView treeView)
 			: this((Control)treeView)
 		{
 			this.treeView = treeView ?? throw new ArgumentNullException(nameof(treeView));
