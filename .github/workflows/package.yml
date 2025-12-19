@@ -34,6 +34,10 @@ jobs:
       with:
         dotnet-version: 10.0.x
 
+    - name : Restore dependencies
+      run: dotnet restore -r win-x64 --force-evaluate
+      working-directory: ./src/ProjectRover
+
     - name: Publish (x64)
       run: dotnet publish -r win-x64 -c Release
       working-directory: ./src/ProjectRover
@@ -66,6 +70,10 @@ jobs:
       with:
         dotnet-version: 10.0.x
 
+    - name : Restore dependencies
+      run: dotnet restore -r linux-x64 --force-evaluate
+      working-directory: ./src/ProjectRover
+
     - name: Publish
       run: dotnet publish -r linux-x64 -c Release
       working-directory: ./src/ProjectRover
@@ -86,6 +94,10 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+
+    - name: Restore dependencies
+      run: dotnet restore -r osx-arm64 --force-evaluate
+      working-directory: ./src/ProjectRover
 
     - name: Publish
       run: dotnet publish -r osx-arm64 -c Release
@@ -110,6 +122,10 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+
+    - name: Restore dependencies
+      run: dotnet restore -r osx-x64 --force-evaluate
+      working-directory: ./src/ProjectRover
 
     - name: Publish
       run: dotnet publish -r osx-x64 -c Release
