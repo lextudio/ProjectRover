@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ProjectRover.Controls"
+             x:Class="ProjectRover.Controls.ZoomScrollViewer"
+             x:Name="root">
+  <ScrollViewer x:Name="PART_ScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+    <!-- TODO: Consider exposing MinZoom/MaxZoom and Fit-to-Width/Height commands -->
+    <!-- TODO: Improve pointer-centered zoom so the content point under the cursor stays fixed while zooming -->
+    <!-- TODO: Add touch/pinch support for zooming -->
+    <LayoutTransformControl x:Name="PART_Content">
+      <LayoutTransformControl.LayoutTransform>
+        <ScaleTransform ScaleX="{Binding Zoom, ElementName=root}"
+                        ScaleY="{Binding Zoom, ElementName=root}" />
+      </LayoutTransformControl.LayoutTransform>
+
+      <ContentPresenter Content="{Binding Content, ElementName=root}" />
+    </LayoutTransformControl>
+  </ScrollViewer>
+</UserControl>
