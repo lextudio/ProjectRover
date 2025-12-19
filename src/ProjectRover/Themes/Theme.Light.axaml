@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <SolidColorBrush x:Key="BracketHighlightBackgroundBrush" Color="#280000FF" />
+  <Pen x:Key="BracketHighlightBorderPen" Brush="#800000FF" Thickness="1" />
+  <SolidColorBrush x:Key="LinkTextForegroundBrush" Color="#0060C0" />
+  <SolidColorBrush x:Key="CurrentLineBackgroundBrush" Color="#1614DCE0" />
+  <Pen x:Key="CurrentLineBorderPen" Brush="#3400FF6E" Thickness="1" />
+
+  <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#000000" />
+  <SolidColorBrush x:Key="ThemeForegroundLowBrush" Color="#DFDFDF" />
+  <SolidColorBrush x:Key="GrayTextBrush" Color="#717171" />
+  <SolidColorBrush x:Key="TextBackgroundBrush" Color="#FFFFFFFF" />
+  <SolidColorBrush x:Key="TextForegroundBrush" Color="#FF000000" />
+</ResourceDictionary>

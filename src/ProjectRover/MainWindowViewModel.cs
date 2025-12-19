@@ -16,13 +16,16 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+using System;
 using System.Collections.ObjectModel;
 using System.Composition;
 using System.Windows.Input;
+using System.Linq;
 using Avalonia.Styling;
 using ICSharpCode.ILSpy.AssemblyTree;
 using ICSharpCode.ILSpy.Search;
 using ICSharpCode.ILSpyX;
+using ICSharpCode.ILSpy.Themes;
 
 using TomsToolbox.Wpf;
 
@@ -61,7 +64,8 @@ namespace ICSharpCode.ILSpy
                 new("Light", ThemeVariant.Light),
                 new("Dark", ThemeVariant.Dark)
             };
-            SelectedTheme = Themes[0];
+            var savedTheme = settingsService.SessionSettings.Theme;
+            SelectedTheme = Themes.FirstOrDefault(t => t.Name.Equals(savedTheme, StringComparison.OrdinalIgnoreCase)) ?? Themes[0];
 
             SearchModes = new ObservableCollection<SearchModeOption>
             {
@@ -91,7 +95,14 @@ namespace ICSharpCode.ILSpy
         public ThemeOption SelectedTheme
         {
             get => selectedTheme;
-            set => SetProperty(ref selectedTheme, value);
+            set
+            {
+                if (SetProperty(ref selectedTheme, value))
+                {
+                    ThemeManager.Current.ApplyTheme(value.Name);
+                    SessionSettings.Theme = value.Name;
+                }
+            }
         }
         public ICommand ManageAssemblyListsCommand { get; }
 

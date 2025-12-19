@@ -9,6 +9,8 @@ using ICSharpCode.ILSpy.Util;
 using System.Collections.Generic;
 using ICSharpCode.ILSpy.Commands;
 using System.Windows.Input;
+using ICSharpCode.ILSpy.Themes;
+using System.ComponentModel;
 
 namespace ICSharpCode.ILSpy.Controls
 {
@@ -34,9 +36,12 @@ namespace ICSharpCode.ILSpy.Controls
         {
             // Get all main menu commands exported with contract "MainMenuCommand"
             var mainMenuCommands = exportProvider.GetExports<ICommand, IMainMenuCommandMetadata>("MainMenuCommand").ToArray();
+            var settingsService = exportProvider.GetExportedValue<SettingsService>();
 
             var parentMenuItems = new Dictionary<string, MenuItem>();
             var menuGroups = mainMenuCommands.OrderBy(c => c.Metadata?.MenuOrder).GroupBy(c => c.Metadata?.ParentMenuID).ToArray();
+            var themeMenuItems = new List<MenuItem>();
+            var nativeThemeItems = new List<NativeMenuItem>();
 
             foreach (var menu in menuGroups)
             {
@@ -65,6 +70,13 @@ namespace ICSharpCode.ILSpy.Controls
                                 Tag = entry.Metadata?.MenuID,
                                 Header = headerText ?? entry.Metadata?.Header
                             };
+                            if (string.Equals(entry.Metadata?.ParentMenuID, "_Theme", StringComparison.OrdinalIgnoreCase))
+                            {
+                                menuItem.ToggleType = MenuItemToggleType.Radio;
+                                menuItem.IsChecked = string.Equals(ThemeManager.Current.Theme, headerText ?? entry.Metadata?.Header, StringComparison.OrdinalIgnoreCase);
+                                menuItem.Click += (_, _) => MainMenuThemeHelpers.ApplyThemeFromHeader(menuItem.Header?.ToString(), settingsService);
+                                themeMenuItems.Add(menuItem);
+                            }
                             parentMenuItem.Items.Add(menuItem);
                         }
                     }
@@ -75,6 +87,24 @@ namespace ICSharpCode.ILSpy.Controls
             {
                 if (!mainMenu.Items.Contains(item))
                     mainMenu.Items.Add(item);
+            }
+
+            if (themeMenuItems.Count > 0)
+            {
+                MainMenuThemeHelpers.UpdateThemeChecks(themeMenuItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
+                MainMenuThemeHelpers.UpdateNativeThemeChecks(nativeThemeItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
+
+                var sessionSettings = settingsService?.SessionSettings;
+                if (sessionSettings != null)
+                {
+                    sessionSettings.PropertyChanged += (_, e) => {
+                        if (e.PropertyName == nameof(sessionSettings.Theme))
+                        {
+                            MainMenuThemeHelpers.UpdateThemeChecks(themeMenuItems, sessionSettings.Theme);
+                            MainMenuThemeHelpers.UpdateNativeThemeChecks(nativeThemeItems, sessionSettings.Theme);
+                        }
+                    };
+                }
             }
 
             // On macOS, default behavior is to hide the Avalonia menu and mirror it to the native menu bar.
@@ -99,8 +129,28 @@ namespace ICSharpCode.ILSpy.Controls
                         var header = m.Header?.ToString() ?? (m.Tag as string) ?? string.Empty;
                         var native = new NativeMenuItem { Header = header };
 
-                        if (m.Command != null)
-                            native.Command = m.Command;
+                    if (m.Command != null)
+                    {
+                        native.Command = m.Command;
+                        native.CommandParameter = m.CommandParameter;
+                    }
+
+                        if (m.ToggleType != MenuItemToggleType.None)
+                        {
+                            native.ToggleType = (NativeMenuItemToggleType)m.ToggleType;
+                            native.IsChecked = m.IsChecked == true;
+                        }
+
+                        if (string.Equals(header, "Light", StringComparison.OrdinalIgnoreCase) || string.Equals(header, "Dark", StringComparison.OrdinalIgnoreCase))
+                        {
+                            nativeThemeItems.Add(native);
+                        }
+
+                        native.Click += (_, _) => {
+                            MainMenuThemeHelpers.ApplyThemeFromHeader(header, settingsService);
+                            MainMenuThemeHelpers.UpdateThemeChecks(themeMenuItems, ThemeManager.Current.Theme);
+                            MainMenuThemeHelpers.UpdateNativeThemeChecks(nativeThemeItems, ThemeManager.Current.Theme);
+                        };
 
                         if (m.Items != null && m.Items.Count > 0)
                         {
@@ -137,41 +187,12 @@ namespace ICSharpCode.ILSpy.Controls
                         }
                     }
 
-                    // If a NativeMenu already exists on the Window or Application (from XAML),
-                    // do not attempt to mutate or merge into it — leave the platform menu alone and keep Avalonia menu visible.
-                    NativeMenu? existing = null;
+                    // Always set a fresh native menu; avoid reusing existing items to prevent parent conflicts.
                     if (rootObj != null)
-                    {
-                        existing = NativeMenu.GetMenu(rootObj);
-                    }
-
-                    if (existing == null && Application.Current != null)
-                    {
-                        existing = NativeMenu.GetMenu(Application.Current);
-                    }
-
-                    if (existing != null)
-                    {
-                        // Append our generated items to the existing menu
-                        foreach (var it in nativeRoot.Items)
-                            existing.Items.Add(it);
-                        
-                        // Ensure application/visual root see the merged menu
-                        if (rootObj != null)
-                            NativeMenu.SetMenu(rootObj, existing);
-                        
-                        if (Application.Current != null)
-                            NativeMenu.SetMenu(Application.Current, existing);
-                    }
-                    else
-                    {
-                        // No existing menu found — set ours on both visual root and Application
-                        if (rootObj != null)
-                            NativeMenu.SetMenu(rootObj, nativeRoot);
-                        
-                        if (Application.Current != null)
-                            NativeMenu.SetMenu(Application.Current, nativeRoot);
-                    }
+                        NativeMenu.SetMenu(rootObj, nativeRoot);
+                    
+                    if (Application.Current != null)
+                        NativeMenu.SetMenu(Application.Current, nativeRoot);
                 }
                 catch (Exception ex)
                 {
@@ -198,6 +219,46 @@ namespace ICSharpCode.ILSpy.Controls
                 }
             }
             return parentMenuItem;
+        }
+    }
+
+    static class MainMenuThemeHelpers
+    {
+        public static void UpdateThemeChecks(IEnumerable<MenuItem> themeMenuItems, string? currentTheme)
+        {
+            if (string.IsNullOrEmpty(currentTheme))
+                return;
+
+            foreach (var mi in themeMenuItems)
+            {
+                mi.IsChecked = string.Equals(mi.Header?.ToString(), currentTheme, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static void UpdateNativeThemeChecks(IEnumerable<NativeMenuItem> nativeThemeItems, string? currentTheme)
+        {
+            if (string.IsNullOrEmpty(currentTheme))
+                return;
+
+            foreach (var mi in nativeThemeItems)
+            {
+                mi.IsChecked = string.Equals(mi.Header, currentTheme, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static void ApplyThemeFromHeader(string? header, SettingsService? settingsService)
+        {
+            if (string.IsNullOrWhiteSpace(header))
+                return;
+
+            Console.WriteLine($"[MainMenu] Theme menu click: {header}");
+            ThemeManager.Current.ApplyTheme(header);
+            Console.WriteLine($"[MainMenu] Application.ActualThemeVariant now {Application.Current?.ActualThemeVariant}");
+            if (settingsService != null)
+            {
+                settingsService.SessionSettings.Theme = header;
+                Console.WriteLine($"[MainMenu] SessionSettings.Theme set to {header}");
+            }
         }
     }
 }

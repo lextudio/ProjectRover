@@ -22,6 +22,7 @@
       <Link>Options\DecompilerSettingsViewModel.cs</Link>
     </Compile>
     <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Include="Themes\**\*.axaml" />
   </ItemGroup>
 
   <ItemGroup>

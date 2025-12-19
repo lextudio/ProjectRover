@@ -37,6 +37,7 @@ using System.Diagnostics.CodeAnalysis;
 using ICSharpCode.ILSpy.Views;
 using ICSharpCode.ILSpy.AppEnv;
 using ICSharpCode.ILSpyX.TreeView;
+using ICSharpCode.ILSpy.Themes;
 
 namespace ProjectRover;
 
@@ -64,6 +65,7 @@ public partial class App : Application
 
             // Initialize SettingsService
             var settingsService = new ICSharpCode.ILSpy.Util.SettingsService();
+            ThemeManager.Current.ApplyTheme(settingsService.SessionSettings.Theme);
             services.AddSingleton(settingsService);
 
             // Bind exports from assemblies

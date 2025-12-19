@@ -26,14 +26,6 @@
              RequestedThemeVariant="Light"
              Name="ProjectRover">
 
-    <Application.Resources>
-        <SolidColorBrush x:Key="BracketHighlightBackgroundBrush" Color="#280000FF" />
-        <Pen x:Key="BracketHighlightBorderPen" Brush="#800000FF" Thickness="1" />
-        <SolidColorBrush x:Key="LinkTextForegroundBrush" Color="Blue" />
-        <SolidColorBrush x:Key="CurrentLineBackgroundBrush" Color="#1614DCE0" />
-        <Pen x:Key="CurrentLineBorderPen" Brush="#3400FF6E" Thickness="1" />
-    </Application.Resources>
-
     <Application.Styles>
         <FluentTheme />
         <dockThemes:DockFluentTheme />
@@ -62,6 +54,13 @@
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="BracketHighlightBackgroundBrush" Color="#280000FF" />
+                    <Pen x:Key="BracketHighlightBorderPen" Brush="#800000FF" Thickness="1" />
+                    <SolidColorBrush x:Key="LinkTextForegroundBrush" Color="Blue" />
+                    <SolidColorBrush x:Key="CurrentLineBackgroundBrush" Color="#1614DCE0" />
+                    <Pen x:Key="CurrentLineBorderPen" Brush="#3400FF6E" Thickness="1" />
+                    <SolidColorBrush x:Key="TextBackgroundBrush" Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="TextForegroundBrush" Color="#FF000000" />
                     <SolidColorBrush x:Key="ToolbarBackgroundBrush" Color="#F6F6F6" />
                     <SolidColorBrush x:Key="ToolbarBorderBrush" Color="#DFDFDF" />
                     <SolidColorBrush x:Key="ToolbarSeparatorBrush" Color="#DFDFDF" />
@@ -162,6 +161,13 @@
                     <x:String x:Key="StringIcon">/Assets/String.svg</x:String>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="BracketHighlightBackgroundBrush" Color="#33278BC1" />
+                    <Pen x:Key="BracketHighlightBorderPen" Brush="#66278BC1" Thickness="1" />
+                    <SolidColorBrush x:Key="LinkTextForegroundBrush" Color="#8AB4F8" />
+                    <SolidColorBrush x:Key="CurrentLineBackgroundBrush" Color="#222C3A" />
+                    <Pen x:Key="CurrentLineBorderPen" Brush="#445B78" Thickness="1" />
+                    <SolidColorBrush x:Key="TextBackgroundBrush" Color="#FF1E1E1E" />
+                    <SolidColorBrush x:Key="TextForegroundBrush" Color="#FFF2F2F2" />
                     <SolidColorBrush x:Key="ToolbarBackgroundBrush" Color="#1F1F1F" />
                     <SolidColorBrush x:Key="ToolbarBorderBrush" Color="#3A3A3A" />
                     <SolidColorBrush x:Key="ToolbarSeparatorBrush" Color="#3A3A3A" />

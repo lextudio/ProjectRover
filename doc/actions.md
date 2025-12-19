@@ -22,6 +22,7 @@ Note: Project Rover reuses many ILSpy WPF view-models and supporting files direc
 - **ResolveAssemblyCandidates helper (resolve by simple name/MVID):** Functionality available via `AssemblyList` APIs (Open/Load/AssemblyListManager), though naming may differ.
 	- Evidence: [src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs](src/ILSpy/ICSharpCode.ILSpyX/AssemblyList.cs#L266) and [src/ILSpy/ICSharpCode.ILSpyX/AssemblyListManager.cs](src/ILSpy/ICSharpCode.ILSpyX/AssemblyListManager.cs#L70).
 - **Indexing (exported/forwarded types, module-level constructs, lazy indexing):** Partial — basic indexing and search are present, but expansion to exported/forwarded types and lazy strategies needs work.
+ - **Indexing (exported/forwarded types, module-level constructs, lazy indexing):** Future (deferred) — basic indexing and search are present; expansion to exported/forwarded types and lazy strategies is deferred. (Deferred until ILSpy WPF is retired and Rover becomes the official UI.)
 	- Evidence: Search pane uses AssemblyList and indexing: [src/ILSpy/ILSpy/Search/SearchPane.xaml.cs](src/ILSpy/ILSpy/Search/SearchPane.xaml.cs#L288).
 - **Settings and session persistence mapping:** Mostly implemented — ILSpy settings file path provider is wired and Rover startup settings exist; some session persistence mapping remains to be fully validated.
 	- Evidence: Settings file provider: [src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs](src/ProjectRover/Services/ILSpySettingsFilePathProvider.cs#L1), Rover startup settings: [src/ProjectRover/Settings/RoverStartupSettings.cs](src/ProjectRover/Settings/RoverStartupSettings.cs#L1).
@@ -144,6 +145,7 @@ Notes: for each platform-specific delta above, we should decide whether to imple
 - **Token+assembly identity resolution:** Mostly completed — token probing + DecompilerTypeSystem resolution present and used by navigation.
 - **JumpToReferenceAsync / Navigation orchestration:** Completed — message flow and navigation handler implemented. Evidence: [src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs](src/ILSpy/ILSpy/AssemblyTree/AssemblyTreeModel.cs#L597).
 - **Expand indexing to exported/forwarded types & lazy strategies:** Not completed — search/indexing exists but needs extension.
+ - **Expand indexing to exported/forwarded types & lazy strategies:** Future (deferred) — not completed; work deferred until ILSpy WPF is retired and Rover becomes the official UI.
 - **Replace ad-hoc assembly-loads with AssemblyList APIs:** Partially completed — many ILSpy calls are already part of ProjectRover, but audit + replace remaining ad-hoc loads is recommended.
 
 ### Epic: Resolver Improvements
