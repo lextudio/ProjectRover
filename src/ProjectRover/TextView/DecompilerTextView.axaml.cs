@@ -72,12 +72,19 @@ using ICSharpCode.ILSpy.Views;
 
 using TomsToolbox.Composition;
 using TomsToolbox.Wpf;
+using AvaloniaEdit.TextMate;
+using TextMateSharp.Themes;
+using TextMateSharp.Registry;
 
 using ResourceKeys = ICSharpCode.ILSpy.Themes.ResourceKeys;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Styling;
 using System.Windows.Threading;
+using TextMateSharp.Grammars;
+using RegistryOptions = TextMateSharp.Grammars.RegistryOptions;
 
 namespace ICSharpCode.ILSpy.TextView
 {
@@ -95,6 +102,7 @@ namespace ICSharpCode.ILSpy.TextView
 		readonly UIElementGenerator uiElementGenerator;
 		readonly List<VisualLineElementGenerator?> activeCustomElementGenerators = new List<VisualLineElementGenerator?>();
 		readonly BracketHighlightRenderer bracketHighlightRenderer;
+
 		RichTextColorizer? activeRichTextColorizer;
 		RichTextModel? activeRichTextModel;
 		FoldingManager? foldingManager;
@@ -109,6 +117,80 @@ namespace ICSharpCode.ILSpy.TextView
 
 		readonly TextMarkerService textMarkerService;
 		readonly List<ITextMarker> localReferenceMarks = new List<ITextMarker>();
+		
+		static ThemeName ResolveTextMateTheme(string? appThemeName)
+		{
+			if (!string.IsNullOrEmpty(appThemeName)
+				&& appThemeName.Equals("dark", StringComparison.OrdinalIgnoreCase))
+			{
+				return ThemeName.AtomOneDark;
+			}
+
+			var variant = Application.Current?.ActualThemeVariant;
+			return variant == ThemeVariant.Dark ? ThemeName.AtomOneDark : ThemeName.AtomOneLight;
+		}
+
+		static void ApplyTextMateTheme(TextMate.Installation installation, RegistryOptions registryOptions, ThemeName themeName, TextEditor textEditor)
+		{
+			try
+			{
+				installation.SetTheme(registryOptions.LoadTheme(themeName));
+				// after applying the theme to the transformer/model, also apply GUI colors to the editor
+				try
+				{
+					ApplyThemeColorsToEditor(installation, textEditor);
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine("[DecompilerTextView] ApplyThemeColorsToEditor failed: " + ex.Message);
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("[DecompilerTextView] Failed to apply TextMate theme: " + ex.Message);
+			}
+		}
+
+		static void ApplyThemeColorsToEditor(TextMate.Installation e, TextEditor editor)
+		{
+			if (editor == null || e == null)
+				return;
+
+			bool TryApplyBrush(string key, Action<IBrush> apply)
+			{
+				if (!e.TryGetThemeColor(key, out var colorString))
+					return false;
+				if (!Color.TryParse(colorString, out var color))
+					return false;
+				apply(new SolidColorBrush(color));
+				return true;
+			}
+
+			TryApplyBrush("editor.background", brush => editor.Background = brush);
+			TryApplyBrush("editor.foreground", brush => editor.Foreground = brush);
+
+			if (!TryApplyBrush("editor.selectionBackground", brush => editor.TextArea.SelectionBrush = brush))
+			{
+				if (Application.Current!.TryGetResource("TextAreaSelectionBrush", out var resourceObject))
+				{
+					if (resourceObject is IBrush brush)
+						editor.TextArea.SelectionBrush = brush;
+				}
+			}
+
+			if (!TryApplyBrush("editor.lineHighlightBackground", brush => {
+				editor.TextArea.TextView.CurrentLineBackground = brush;
+				editor.TextArea.TextView.CurrentLineBorder = new Pen(brush);
+			}))
+			{
+				editor.TextArea.TextView.SetDefaultHighlightLineColors();
+			}
+
+			if (!TryApplyBrush("editorLineNumber.foreground", brush => editor.LineNumbersForeground = brush))
+			{
+				editor.LineNumbersForeground = editor.Foreground;
+			}
+		}
 
 		#region Constructor
 		public DecompilerTextView() : this(ProjectRover.App.ExportProvider!)
@@ -124,6 +206,7 @@ namespace ICSharpCode.ILSpy.TextView
 			languageService = exportProvider.GetExportedValue<LanguageService>();
 
 			RegisterHighlighting();
+			// TextMate installation is optional and may be initialized elsewhere.
 
 			InitializeComponent();
 
@@ -138,6 +221,38 @@ namespace ICSharpCode.ILSpy.TextView
             }
 
 			this.referenceElementGenerator = new ReferenceElementGenerator(this.IsLink);
+
+			// For diagnostics: subscribe to ThemeChanged messages and log them
+			try
+			{
+				MessageBus<ThemeChangedEventArgs>.Subscribers += (s, e) =>
+				{
+					Console.WriteLine($"[DecompilerTextView] Received ThemeChanged message: {e.ThemeName}");
+				};
+			}
+			catch { }
+
+			// Create a per-editor TextMate installation using compile-time RegistryOptions.
+			try
+			{
+				var textMateTheme = ResolveTextMateTheme(null);
+				var registryOptions = new RegistryOptions(textMateTheme);
+				var textMateInstallation = textEditor.InstallTextMate(registryOptions);
+				Console.WriteLine("[DecompilerTextView] Installed TextMate for editor.");
+
+				ApplyTextMateTheme(textMateInstallation, registryOptions, textMateTheme, textEditor);
+
+				MessageBus<ThemeChangedEventArgs>.Subscribers += (s, e) =>
+				{
+					var nextTheme = ResolveTextMateTheme(e.ThemeName);
+					ApplyTextMateTheme(textMateInstallation, registryOptions, nextTheme, textEditor);
+					Console.WriteLine("[DecompilerTextView] Applied TextMate theme on ThemeChanged: " + e.ThemeName);
+				};
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("[DecompilerTextView] TextMate wiring skipped: " + ex.Message);
+			}
 			textEditor.TextArea.TextView.ElementGenerators.Add(referenceElementGenerator);
 			this.uiElementGenerator = new UIElementGenerator();
 			this.bracketHighlightRenderer = new BracketHighlightRenderer(textEditor.TextArea.TextView);
@@ -248,6 +363,8 @@ namespace ICSharpCode.ILSpy.TextView
 				}
 			}
 		}
+
+
 
 		void SetHighlightCurrentLine()
 		{
@@ -1331,6 +1448,28 @@ namespace ICSharpCode.ILSpy.TextView
 			HighlightingManager.Instance.RegisterHighlighting("C#", new[] { ".cs" }, "CSharp-Mode");
 			HighlightingManager.Instance.RegisterHighlighting("Asm", new[] { ".s", ".asm" }, "Asm-Mode");
 			HighlightingManager.Instance.RegisterHighlighting("xml", new[] { ".xml", ".baml" }, "XML-Mode");
+		}
+
+		public static void RefreshHighlightingForAllOpenEditors()
+		{
+			if (Application.Current == null)
+				return;
+			if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+			{
+				foreach (var w in desktop.Windows)
+				{
+					foreach (var desc in w.GetVisualDescendants())
+					{
+						if (desc is DecompilerTextView view)
+						{
+							// Force re-registration of highlighting by re-invoking RegisterHighlighting and
+							// forcing the text editor to re-evaluate its colorizer.
+							DecompilerTextView.RegisterHighlighting();
+							view.textEditor.TextArea.TextView.Redraw();
+						}
+					}
+				}
+			}
 		}
 
 		#region Unfold
