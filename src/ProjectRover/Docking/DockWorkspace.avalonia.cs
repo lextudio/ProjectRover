@@ -10,6 +10,7 @@ using Dock.Model.Core.Events;
 using ICSharpCode.ILSpy.TextView;
 using ICSharpCode.ILSpy.ViewModels;
 using ICSharpCode.ILSpy.Search;
+using ICSharpCode.ILSpy.AssemblyTree;
 using Dock.Model.Controls;
 using Dock.Avalonia.Controls;
 using Dock.Model.TomsToolbox.Controls;
@@ -33,7 +34,7 @@ namespace ICSharpCode.ILSpy.Docking
       {
         var app = Avalonia.Application.Current;
         var mainWindow = (app?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow
-                         ?? Avalonia.Controls.TopLevel.GetTopLevel(null);
+                         ?? Avalonia.Controls.TopLevel.GetTopLevel(null) as Avalonia.Controls.Window;
         if (mainWindow == null)
           return;
 
@@ -41,7 +42,7 @@ namespace ICSharpCode.ILSpy.Docking
         if (dockHost == null)
           return;
 
-        // If layout is already initialized (by MainWindow.ConfigureDockLayout), reuse it but hook listeners
+        // If layout is already initialized, reuse it but hook listeners
         if (dockHost.Layout != null && dockHost.Factory != null)
         {
           Console.WriteLine("DockWorkspace.InitializeLayout: Layout already initialized, hooking listeners");
@@ -51,65 +52,125 @@ namespace ICSharpCode.ILSpy.Docking
           return;
         }
 
-        // Fallback: create a basic layout structure if not already done
-        Console.WriteLine("DockWorkspace.InitializeLayout: Creating layout structure");
-        var factory = new Factory();
-        var docDock = CreateDocumentDock();
-
-        // Create tool dock (for side panels like Search, etc.)
-        var toolDock = new ToolDock
+        var viewModel = mainWindow.DataContext as MainWindowViewModel;
+        if (viewModel == null)
         {
-          Id = "ToolDock",
-          Title = "Tools",
-          Alignment = Alignment.Right,
-          VisibleDockables = new ObservableCollection<IDockable>(),
-          ActiveDockable = null
-        };
-
-        toolDock.Proportion = 0.25;
-        docDock.Proportion = 0.75;
-
-        // Create main horizontal layout
-        var mainLayout = new ProportionalDock
-        {
-          Id = "MainLayout",
-          Title = "MainLayout",
-          Orientation = Dock.Model.Core.Orientation.Horizontal,
-          VisibleDockables = new ObservableCollection<IDockable>
-          {
-            docDock,
-            new ProportionalDockSplitter { CanResize = true },
-            toolDock
-          },
-          ActiveDockable = docDock
-        };
-
-        // Create root dock
-        var rootDock = new RootDock
-        {
-          Id = "Root",
-          Title = "Root",
-          VisibleDockables = new ObservableCollection<IDockable> { mainLayout },
-          ActiveDockable = mainLayout
-        };
-
-        // Populate tools
-        foreach (var toolModel in this.ToolPanes)
-        {
-            toolDock.VisibleDockables.Add(toolModel);
+             Console.WriteLine("DockWorkspace.InitializeLayout: ViewModel is null, cannot initialize specific layout.");
+             return;
         }
 
-        // Assign factory and ensure factory/layout initialization flags are enabled
+        Console.WriteLine("DockWorkspace.InitializeLayout: Creating specific layout structure");
+
+        // Create Views
+        var leftDockView = new AssemblyListPane { DataContext = viewModel.AssemblyTreeModel };
+        try {
+            viewModel.AssemblyTreeModel?.SetActiveView(leftDockView);
+            Console.WriteLine($"[Log][DockWorkspace] Explicitly called SetActiveView on AssemblyTreeModel instance={viewModel.AssemblyTreeModel?.GetHashCode()}");
+        } catch { }
+
+        var searchDockView = new SearchPane { DataContext = viewModel.SearchPaneModel };
+
+        // Create Dock Structure
+        var documentDock = this.CreateDocumentDock() ?? new DocumentDock
+        {
+            Id = "DocumentDock",
+            Title = "DocumentDock",
+            VisibleDockables = new ObservableCollection<IDockable>()
+        };
+
+        var tool = new Tool
+        {
+            Id = "Explorer",
+            Title = "Explorer",
+            Content = leftDockView,
+            Context = viewModel,
+            CanClose = false,
+            CanFloat = false,
+            CanPin = false
+        };
+        this.RegisterTool(tool);
+
+        var toolDock = new ToolDock
+        {
+            Id = "LeftDock",
+            Title = "LeftDock",
+            Alignment = Alignment.Left,
+            VisibleDockables = new ObservableCollection<IDockable> { tool },
+            ActiveDockable = tool,
+            Proportion = 0.3
+        };
+
+        var searchTool = new Tool
+        {
+            Id = ICSharpCode.ILSpy.Search.SearchPaneModel.PaneContentId,
+            Title = "Search",
+            Content = searchDockView,
+            Context = viewModel,
+            CanClose = true,
+            CanFloat = false,
+            CanPin = false
+        };
+        this.RegisterTool(searchTool);
+
+        var searchDock = new ToolDock
+        {
+            Id = "SearchDock",
+            Title = "Search",
+            Alignment = Alignment.Top,
+            VisibleDockables = new ObservableCollection<IDockable>(),
+            ActiveDockable = null,
+            CanCloseLastDockable = true,
+            Proportion = 0.5
+        };
+        this.RegisterDockable(searchDock);
+
+        var searchSplitter = new ProportionalDockSplitter { Id = "SearchSplitter", CanResize = true };
+        this.RegisterDockable(searchSplitter);
+
+        var rightDock = new ProportionalDock
+        {
+            Id = "RightDock",
+            Orientation = Dock.Model.Core.Orientation.Vertical,
+            VisibleDockables = new ObservableCollection<IDockable>
+            {
+                documentDock
+            },
+            ActiveDockable = documentDock
+        };
+
+        var mainLayout = new ProportionalDock
+        {
+            Id = "MainLayout",
+            Orientation = Dock.Model.Core.Orientation.Horizontal,
+            VisibleDockables = new ObservableCollection<IDockable>
+            {
+                toolDock,
+                new ProportionalDockSplitter { CanResize = true },
+                rightDock
+            },
+            ActiveDockable = rightDock
+        };
+
+        var rootDock = new RootDock
+        {
+            Id = "Root",
+            Title = "Root",
+            VisibleDockables = new ObservableCollection<IDockable> { mainLayout },
+            ActiveDockable = mainLayout
+        };
+
+        var factory = new Factory();
         dockHost.Factory = factory;
         dockHost.InitializeFactory = true;
         dockHost.InitializeLayout = true;
-        // Now assign the layout so DockControl.Initialize sees the flags and can run InitLayout
         dockHost.Layout = rootDock;
 
-        AttachToDockHost(dockHost, factory, docDock);
+        AttachToDockHost(dockHost, factory, documentDock);
         HookUpToolListeners(dockHost);
 
-        Console.WriteLine("DockWorkspace.InitializeLayout: Dock layout initialized successfully");
+        try { dockHost.IsVisible = true; } catch { }
+
+        Console.WriteLine("DockWorkspace.InitializeLayout: Specific layout initialized successfully");
       }
       catch (Exception ex)
       {
