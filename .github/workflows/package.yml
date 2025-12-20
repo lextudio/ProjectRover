@@ -21,128 +21,96 @@ on:
   workflow_dispatch:
 
 jobs:
-  package-windows:
-    runs-on: windows-2022
+  package-all:
+    runs-on: macos-14
 
     steps:
     - uses: actions/checkout@v4
       with:
+        fetch-depth: 0
         submodules: recursive
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 10.0.x
-
-    - name : Restore dependencies (x64)
+    - name : Restore dependencies (Windows x64)
       run: dotnet restore -p:Configuration=Release -r win-x64 --force-evaluate
       working-directory: ./src/ProjectRover
 
-    - name: Publish (x64)
+    - name: Publish (Windows x64)
       run: dotnet publish -r win-x64 -c Release
       working-directory: ./src/ProjectRover
 
-    - name : Restore dependencies (ARM)
-      run: dotnet restore -p:Configuration=Release -r win-arm64 --force-evaluate
-      working-directory: ./src/ProjectRover
-
-    - name: Publish (ARM)
-      run: dotnet publish -r win-arm64 -c Release
-      working-directory: ./src/ProjectRover
-    - name: Archive artifacts (x64)
+    - name: Archive artifacts (Windows x64)
       uses: actions/upload-artifact@v4
       with:
         name: ProjectRover-windows-x64
         path: src/ProjectRover/bin/Release/net10.0/win-x64/publish
 
-    - name: Archive artifacts (ARM)
+    - name : Restore dependencies (ARM)
+      run: dotnet restore -p:Configuration=Release -r win-arm64 --force-evaluate
+      working-directory: ./src/ProjectRover
+
+    - name: Publish (Windows ARM64)
+      run: dotnet publish -r win-arm64 -c Release
+      working-directory: ./src/ProjectRover
+
+    - name: Archive artifacts (Windows ARM64)
       uses: actions/upload-artifact@v4
       with:
         name: ProjectRover-windows-arm64
         path: src/ProjectRover/bin/Release/net10.0/win-arm64/publish
 
-  package-linux:
-    runs-on: ubuntu-22.04
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 10.0.x
-
-    - name : Restore dependencies
-      run: dotnet restore -r linux-x64 --force-evaluate
+    - name: Restore dependencies (macOS x64)
+      run: dotnet restore -r osx-x64 --force-evaluate
       working-directory: ./src/ProjectRover
 
-    - name: Publish
-      run: dotnet publish -r linux-x64 -c Release
+    - name: Publish (macOS x64)
+      run: dotnet publish -r osx-x64 -c Release
       working-directory: ./src/ProjectRover
 
-    - name: Archive artifacts
-      run: tar -czpf ProjectRover-linux-x64.tar.gz -C ./src/ProjectRover/bin/Release/net10.0/linux-x64/publish .
+    - name: Build .app bundle (macOS x64)
+      run: build/macos/build-application-bundle.sh osx-x64
 
-    - name: Upload artifacts
+    - name: Archive artifacts (macOS x64)
+      run: tar -czpf ProjectRover-macos-x64.tar.gz ProjectRover.app
+
+    - name: Upload artifacts (macOS x64)
       uses: actions/upload-artifact@v4
       with:
-        name: ProjectRover-linux-x64
-        path: ProjectRover-linux-x64.tar.gz
+        name: ProjectRover-macos-x64
+        path: ProjectRover-macos-x64.tar.gz
 
-  package-macos-arm64:
-    runs-on: macos-14
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Restore dependencies
+    - name: Restore dependencies (macOS ARM64)
       run: dotnet restore -r osx-arm64 --force-evaluate
       working-directory: ./src/ProjectRover
 
-    - name: Publish
+    - name: Publish (macOS ARM64)
       run: dotnet publish -r osx-arm64 -c Release
       working-directory: ./src/ProjectRover
 
-    - name: Build .app bundle
+    - name: Build .app bundle (macOS ARM64)
       run: build/macos/build-application-bundle.sh osx-arm64
 
-    - name: Archive artifacts
+    - name: Archive artifacts (macOS ARM64)
       run: tar -czpf ProjectRover-macos-arm64.tar.gz ProjectRover.app
 
-    - name: Upload artifacts
+    - name: Upload artifacts (macOS ARM64)
       uses: actions/upload-artifact@v4
       with:
         name: ProjectRover-macos-arm64
         path: ProjectRover-macos-arm64.tar.gz
 
-  package-macos-x64:
-    runs-on: macos-14
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Restore dependencies
-      run: dotnet restore -r osx-x64 --force-evaluate
+    - name : Restore dependencies (Linux x64)
+      run: dotnet restore -r linux-x64 --force-evaluate
       working-directory: ./src/ProjectRover
 
-    - name: Publish
-      run: dotnet publish -r osx-x64 -c Release
+    - name: Publish (Linux x64)
+      run: dotnet publish -r linux-x64 -c Release
       working-directory: ./src/ProjectRover
 
-    - name: Build .app bundle
-      run: build/macos/build-application-bundle.sh osx-x64
+    - name: Archive artifacts (Linux x64)
+      run: tar -czpf ProjectRover-linux-x64.tar.gz -C ./src/ProjectRover/bin/Release/net10.0/linux-x64/publish .
 
-    - name: Archive artifacts
-      run: tar -czpf ProjectRover-macos-x64.tar.gz ProjectRover.app
-
-    - name: Upload artifacts
+    - name: Upload artifacts (Linux x64)
       uses: actions/upload-artifact@v4
       with:
-        name: ProjectRover-macos-x64
-        path: ProjectRover-macos-x64.tar.gz
+        name: ProjectRover-linux-x64
+        path: ProjectRover-linux-x64.tar.gz
