@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
+using System.Threading;
 using Avalonia.Threading;
 
 namespace TomsToolbox.Wpf
@@ -22,6 +23,39 @@ namespace TomsToolbox.Wpf
 			field = value;
 			OnPropertyChanged(propertyName);
 			return true;
+		}
+
+		protected bool SetProperty<T>(Func<object?, T> getter, T value, [CallerMemberName] string? propertyName = null)
+		{
+			try
+			{
+				object? ctx = null;
+				var ctxProp = this.GetType().GetProperty("Context", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+				if (ctxProp != null)
+					ctx = ctxProp.GetValue(this);
+
+				var current = getter(ctx);
+				if (EqualityComparer<T>.Default.Equals(current, value))
+					return false;
+
+				if (ctx != null && propertyName != null)
+				{
+					var targetProp = ctx.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+					if (targetProp != null && targetProp.CanWrite)
+					{
+						targetProp.SetValue(ctx, value);
+						OnPropertyChanged(propertyName);
+						return true;
+					}
+				}
+				// fallback: just raise property changed
+				OnPropertyChanged(propertyName);
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
 		}
 
 		protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -93,8 +127,8 @@ namespace TomsToolbox.Wpf
 		public string[] PropertyNames { get; }
 	}
 
-	// <summary>
-	/// Implements a simple timed throttle.<para/>
+	/// <summary>
+	/// Implements a simple timed throttle.
 	/// Calling <see cref="Tick()"/> multiple times will restart the timer; there will be one single 
 	/// call to the action when the delay time has elapsed after the last tick.
 	/// </summary>

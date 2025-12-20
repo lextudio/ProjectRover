@@ -74,26 +74,32 @@ namespace ICSharpCode.ILSpy.Metadata
 					view.Styles.Add(rowStyle);
 				}
 
-				// Provide a simple item template for metadata Entry objects so
-				// nodes like DOS Header (which populate a list of Entry) render sensibly.
-				if (view.RowDetailsTemplate == null)
+				// Explicitly define columns for Entry objects to ensure they render correctly
+				// in Avalonia, avoiding issues with AutoGenerateColumns on internal types.
+				if (view.Columns.Count == 0)
 				{
-					view.RowDetailsTemplate = new FuncDataTemplate<Entry>((entry, _) => {
-						var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4) };
-						panel.Children.Add(new TextBlock { Text = entry.Member, Width = 220 });
-						panel.Children.Add(new TextBlock { Text = entry.Offset.ToString("X8"), Width = 90 });
-						panel.Children.Add(new TextBlock { Text = entry.Size.ToString(), Width = 60 });
-						string valueText;
-						try {
-							valueText = entry.Value is IFormattable f ? f.ToString("X" + (2 * entry.Size), null) : entry.Value?.ToString();
-						} catch {
-							valueText = entry.Value?.ToString();
+					view.Columns.Add(new DataGridTextColumn { Header = "Member", Binding = new Binding("Member"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+					view.Columns.Add(new DataGridTextColumn { Header = "Offset", Binding = new Binding("Offset") { StringFormat = "X8" } });
+					view.Columns.Add(new DataGridTextColumn { Header = "Size", Binding = new Binding("Size") });
+
+					var valueCol = new DataGridTemplateColumn { Header = "Value" };
+					valueCol.CellTemplate = new FuncDataTemplate<Entry>((entry, _) => {
+						string text = "";
+						if (entry != null)
+						{
+							try
+							{
+								text = entry.Value is IFormattable f ? f.ToString("X" + (2 * entry.Size), null) : entry.Value?.ToString();
+							}
+							catch { text = entry.Value?.ToString(); }
 						}
-						panel.Children.Add(new TextBlock { Text = valueText, Width = 140 });
-						panel.Children.Add(new TextBlock { Text = entry.Meaning, TextWrapping = TextWrapping.Wrap, Width = 380 });
-						return panel;
+						return new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center };
 					}, true);
+					view.Columns.Add(valueCol);
+
+					view.Columns.Add(new DataGridTextColumn { Header = "Meaning", Binding = new Binding("Meaning"), Width = new DataGridLength(2, DataGridLengthUnitType.Star) });
 				}
+
 				ContextMenuProvider.Add(view);
 				//DataGridFilter.SetIsAutoFilterEnabled(view, true);
 				//DataGridFilter.SetContentFilterFactory(view, new RegexContentFilterFactory());

@@ -5,11 +5,14 @@ using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Dock.Avalonia.Controls;
 using Dock.Model.Avalonia;
-using Dock.Model.Avalonia.Controls;
-using Dock.Model.Core;
 using ICSharpCode.ILSpy.Search;
 using ICSharpCode.ILSpy.AssemblyTree;
 using System.Windows.Threading;
+using Avalonia.Controls.Templates;
+using Avalonia.Controls.Presenters;
+using ICSharpCode.ILSpy.ViewModels;
+using Dock.Model.TomsToolbox.Controls;
+using Dock.Model.Core;
 
 namespace ICSharpCode.ILSpy
 {
@@ -25,6 +28,19 @@ namespace ICSharpCode.ILSpy
         public MainWindow()
         {
             InitializeComponent();
+            var dockHost = this.FindControl<DockControl>("DockHost");
+            var documentTemplate = new FuncDataTemplate<TabPageModel>(
+                (data, scope) => {
+                    var contentPresenter = new ContentPresenter { DataContext = data };
+                    contentPresenter.Bind(ContentPresenter.ContentProperty, new Binding("Content"));
+                    return contentPresenter;
+                }
+            );
+            dockHost.DataTemplates.Add(documentTemplate);
+            var toolTemplate = new FuncDataTemplate<Tool>(
+                (data, scope) => new ContentPresenter { DataContext = data, Content = data.Content }
+            );
+            dockHost.DataTemplates.Add(toolTemplate);
 #if DEBUG
             this.AttachDevTools();
             Console.WriteLine("[Log][MainWindow] DevTools attached.");

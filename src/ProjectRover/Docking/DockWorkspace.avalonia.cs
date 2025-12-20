@@ -5,15 +5,15 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using Avalonia.Controls;
-using Dock.Avalonia.Controls;
-using Dock.Model.Avalonia;
-using Dock.Model.Avalonia.Controls;
 using Dock.Model.Core;
 using Dock.Model.Core.Events;
 using ICSharpCode.ILSpy.TextView;
 using ICSharpCode.ILSpy.ViewModels;
 using ICSharpCode.ILSpy.Search;
 using Dock.Model.Controls;
+using Dock.Avalonia.Controls;
+using Dock.Model.TomsToolbox.Controls;
+using Dock.Model.TomsToolbox;
 
 namespace ICSharpCode.ILSpy.Docking
 {
@@ -26,7 +26,6 @@ namespace ICSharpCode.ILSpy.Docking
     private DockControl? dockHost;
     private IDocumentDock? documentDock;
     private IFactory? factory;
-    private readonly Dictionary<TabPageModel, Dock.Model.Avalonia.Controls.Document> documents = new();
 
     public void InitializeLayout()
     {
@@ -97,13 +96,7 @@ namespace ICSharpCode.ILSpy.Docking
         // Populate tools
         foreach (var toolModel in this.ToolPanes)
         {
-            var tool = new Tool 
-            { 
-                Id = toolModel.ContentId, 
-                Title = toolModel.Title,
-                Content = toolModel 
-            };
-            toolDock.VisibleDockables.Add(tool);
+            toolDock.VisibleDockables.Add(toolModel);
         }
 
         // Assign factory and ensure factory/layout initialization flags are enabled
@@ -179,13 +172,9 @@ namespace ICSharpCode.ILSpy.Docking
         }
 
         // Closing documents should remove the corresponding tab page.
-        if (e?.Dockable is Dock.Model.Avalonia.Controls.Document doc)
+        if (e?.Dockable is TabPageModel doc)
         {
-            var tab = documents.FirstOrDefault(kv => kv.Value == doc).Key;
-            if (tab != null)
-            {
-                tabPages.Remove(tab);
-            }
+            tabPages.Remove(doc);
         }
     }
 
@@ -254,10 +243,7 @@ namespace ICSharpCode.ILSpy.Docking
             {
                 PopulateDocuments();
             }
-            else
-            {
-                RebindExistingDocuments(documentDock);
-            }
+
             SyncActiveDocument();
         }
     }
@@ -266,13 +252,6 @@ namespace ICSharpCode.ILSpy.Docking
     {
         tabPages.CollectionChanged -= TabPages_CollectionChangedForDock;
         tabPages.CollectionChanged += TabPages_CollectionChangedForDock;
-
-        // Keep document titles/content synced
-        foreach (var tab in tabPages)
-        {
-            tab.PropertyChanged -= TabPage_PropertyChanged;
-            tab.PropertyChanged += TabPage_PropertyChanged;
-        }
 
         this.PropertyChanged -= DockWorkspace_PropertyChanged;
         this.PropertyChanged += DockWorkspace_PropertyChanged;
@@ -320,11 +299,6 @@ namespace ICSharpCode.ILSpy.Docking
         if (documentDock?.VisibleDockables == null)
             return;
 
-        foreach (var kvp in documents.Keys.ToList())
-        {
-            kvp.PropertyChanged -= TabPage_PropertyChanged;
-        }
-        documents.Clear();
         documentDock.VisibleDockables.Clear();
         EnsureTabPage();
 
@@ -334,88 +308,41 @@ namespace ICSharpCode.ILSpy.Docking
         }
     }
 
-    private Dock.Model.Avalonia.Controls.Document CreateDocument(TabPageModel tabPage)
+    private Document CreateDocument(TabPageModel tabPage)
     {
-        // Ensure there is a visible text view and that it knows its tab page
-        if (tabPage.Content is not DecompilerTextView textView)
+        // Preserve arbitrary content: if tabPage.Content is a Control (or other UI element)
+        // ensure its DataContext is set so it can bind to the TabPageModel.
+        object? content = tabPage.Content;
+        if (content is DecompilerTextView dtv)
         {
-            textView = new DecompilerTextView(tabPage.ExportProvider);
-            tabPage.Content = textView;
+            if (dtv.DataContext == null)
+                dtv.DataContext = tabPage;
+            content = new Label { Content = "DEBUG: DECOMPILER TEXT VIEW SHOULD BE HERE", Background = Avalonia.Media.Brushes.LightGreen, Width = 200, Height = 200 };
         }
-        if (textView.DataContext == null)
+        else if (content is Control ctrl)
         {
+            if (ctrl.DataContext == null)
+                ctrl.DataContext = tabPage;
+            content = new Label { Content = "DEBUG: NON-TEXT VIEW SHOULD BE HERE", Background = Avalonia.Media.Brushes.Yellow, Width = 200, Height = 200 };
+        }
+        else if (content == null)
+        {
+            // Fallback to providing a DecompilerTextView when no content is set.
+            var textView = new DecompilerTextView(tabPage.ExportProvider);
             textView.DataContext = tabPage;
+            content = textView;
+            tabPage.Content = content;
         }
 
-        var doc = new Dock.Model.Avalonia.Controls.Document
-        {
-            Id = tabPage.ContentId ?? $"Tab{documents.Count + 1}",
-            Title = tabPage.Title,
-            Content = tabPage.Content,
-            Context = tabPage,
-            CanClose = tabPage.IsCloseable,
-            CanFloat = false,
-            CanPin = false
-        };
-
-        documents[tabPage] = doc;
-        tabPage.PropertyChanged -= TabPage_PropertyChanged;
-        tabPage.PropertyChanged += TabPage_PropertyChanged;
-
-        return doc;
+        tabPage.Id = tabPage.ContentId ?? $"Tab{TabPages.Count + 1}";
+        tabPage.CanFloat = false;
+        tabPage.CanPin = false;
+        return tabPage;
     }
 
     private void RemoveDocument(TabPageModel tabPage)
     {
-        if (documents.TryGetValue(tabPage, out var doc))
-        {
-            tabPage.PropertyChanged -= TabPage_PropertyChanged;
-            documents.Remove(tabPage);
-            documentDock?.VisibleDockables?.Remove(doc);
-        }
-    }
-
-    private void RebindExistingDocuments(IDocumentDock docDock)
-    {
-        foreach (var kvp in documents.Keys.ToList())
-        {
-            kvp.PropertyChanged -= TabPage_PropertyChanged;
-        }
-        documents.Clear();
-
-        if (docDock.VisibleDockables == null)
-            return;
-
-        foreach (var dockable in docDock.VisibleDockables.OfType<Dock.Model.Avalonia.Controls.Document>())
-        {
-            if (dockable.Context is TabPageModel tab)
-            {
-                documents[tab] = dockable;
-                tab.PropertyChanged -= TabPage_PropertyChanged;
-                tab.PropertyChanged += TabPage_PropertyChanged;
-            }
-        }
-    }
-
-    private void TabPage_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (sender is not TabPageModel tab || !documents.TryGetValue(tab, out var doc))
-            return;
-
-        switch (e.PropertyName)
-        {
-            case nameof(TabPageModel.Title):
-                doc.Title = tab.Title;
-                break;
-            case nameof(TabPageModel.Content):
-                doc.Content = tab.Content;
-                if (doc.Content is DecompilerTextView dtv && dtv.DataContext == null)
-                    dtv.DataContext = tab;
-                break;
-            case nameof(TabPageModel.IsCloseable):
-                doc.CanClose = tab.IsCloseable;
-                break;
-        }
+        documentDock?.VisibleDockables?.Remove(tabPage);
     }
 
     private void HookDocumentDockListeners(IDocumentDock docDock)
@@ -431,12 +358,11 @@ namespace ICSharpCode.ILSpy.Docking
     {
         if (e.PropertyName == nameof(IDock.ActiveDockable) && sender is IDock dock)
         {
-            if (dock.ActiveDockable is Dock.Model.Avalonia.Controls.Document doc)
+            if (dock.ActiveDockable is TabPageModel doc)
             {
-                var tab = documents.FirstOrDefault(kv => kv.Value == doc).Key;
-                if (tab != null && !ReferenceEquals(ActiveTabPage, tab))
+                if (!ReferenceEquals(ActiveTabPage, doc))
                 {
-                    ActiveTabPage = tab;
+                    ActiveTabPage = doc;
                 }
             }
         }
@@ -451,12 +377,9 @@ namespace ICSharpCode.ILSpy.Docking
         if (targetTab == null)
             return;
 
-        if (!documents.TryGetValue(targetTab, out var doc))
-            return;
-
-        documentDock.ActiveDockable = doc;
-        factory.SetActiveDockable(doc);
-        factory.SetFocusedDockable(documentDock, doc);
+        documentDock.ActiveDockable = targetTab;
+        factory.SetActiveDockable(targetTab);
+        factory.SetFocusedDockable(documentDock, targetTab);
     }
 
     private void EnsureTabPage()

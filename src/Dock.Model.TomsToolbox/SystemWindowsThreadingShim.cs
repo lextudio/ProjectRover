@@ -62,27 +62,27 @@ namespace System.Windows.Threading
             Avalonia.Threading.Dispatcher.UIThread.Post(callback);
         }
 
-        internal void Invoke(DispatcherPriority normal, Action action)
+        public void Invoke(DispatcherPriority normal, Action action)
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(action, Translate(normal));
         }
 
-        internal async Task InvokeAsync(Action value, DispatcherPriority normal)
+        public async Task InvokeAsync(Action value, DispatcherPriority normal)
 		{
 			await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(value, Translate(normal));
 		}
 
-		internal async Task InvokeAsync(Action value)
+		public async Task InvokeAsync(Action value)
 		{
 			await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(value);
 		}
 
-		internal void BeginInvoke(Action action, DispatcherPriority priority)
+		public void BeginInvoke(Action action, DispatcherPriority priority)
 		{
 			Avalonia.Threading.Dispatcher.UIThread.Post(action, Translate(priority));
 		}
 
-        internal void VerifyAccess()
+        public void VerifyAccess()
         {
             // TODO: implement if needed
         }

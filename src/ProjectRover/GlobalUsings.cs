@@ -68,3 +68,5 @@ global using Window = Avalonia.Controls.Window;
 global using WindowState = Avalonia.Controls.WindowState;
 
 global using static Avalonia.Controls.ResourceNodeExtensions;
+
+global using PaneModel = Dock.Model.TomsToolbox.Core.DockableBase;
