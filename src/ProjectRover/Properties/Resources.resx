@@ -694,7 +694,7 @@ Are you sure you want to continue?</value>
     <value>ILSpy version </value>
   </data>
   <data name="ILSpyVersionAvailable" xml:space="preserve">
-    <value>A new ILSpy version is available.</value>
+    <value>A new Project Rover version is available.</value>
   </data>
   <data name="IndentSize" xml:space="preserve">
     <value>Indent size:</value>
@@ -1016,7 +1016,7 @@ Do you want to continue?</value>
     <value>System</value>
   </data>
   <data name="UpdateILSpyFound" xml:space="preserve">
-    <value>No update for ILSpy found.</value>
+    <value>No update for Project Rover found.</value>
   </data>
   <data name="UseFieldSugar" xml:space="preserve">
     <value>UseFieldSugar</value>

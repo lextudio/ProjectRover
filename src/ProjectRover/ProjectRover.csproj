@@ -50,6 +50,8 @@
     <PackageReference Include="Dock.Model.Avalonia" />
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
     <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Octokit" />
+    <PackageReference Include="NuGet.Versioning" />
     <PackageReference Include="TomsToolbox.Composition" />
     <PackageReference Include="TomsToolbox.Composition.MicrosoftExtensions" />
     <PackageReference Include="TomsToolbox.Essentials" />
@@ -649,16 +651,8 @@
       <Link>TreeNodes\TypeTreeNode.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Updates\AppUpdateService.cs">
-      <Link>Updates\AppUpdateService.cs</Link>
-    </Compile>
-
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Updates\AvailableVersionInfo.cs">
       <Link>Updates\AvailableVersionInfo.cs</Link>
-    </Compile>
-
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Updates\UpdateService.cs">
-      <Link>Updates\UpdateService.cs</Link>
     </Compile>
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Updates\UpdateSettings.cs">

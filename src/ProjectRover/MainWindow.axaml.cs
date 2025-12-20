@@ -14,6 +14,7 @@ using ICSharpCode.ILSpy.ViewModels;
 using Dock.Model.TomsToolbox.Controls;
 using Dock.Model.Core;
 using System.Reflection;
+using NuGet.Versioning;
 
 namespace ICSharpCode.ILSpy
 {
@@ -42,7 +43,7 @@ namespace ICSharpCode.ILSpy
             Console.WriteLine("[Log][MainWindow] DevTools attached.");
 #endif
 
-            // Set the window title to include ProjectRover version (short: major.minor)
+            // Set the window title to include ProjectRover version (major.minor)
             try {
                 var ver = GetRoverShortVersion();
                 if (!string.IsNullOrEmpty(ver))
@@ -69,7 +70,30 @@ namespace ICSharpCode.ILSpy
                     return $"{major}.{minor}";
             }
 
+            var informationalVersion = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            if (TryParseInformationalVersion(informationalVersion, out var infoVersion))
+                return $"{infoVersion.Major}.{infoVersion.Minor}";
+
             return null;
+        }
+
+        private static bool TryParseInformationalVersion(string? informationalVersion, out NuGetVersion version)
+        {
+            version = null;
+            if (string.IsNullOrWhiteSpace(informationalVersion))
+                return false;
+
+            if (NuGetVersion.TryParse(informationalVersion, out version))
+                return true;
+
+            var plusIndex = informationalVersion.IndexOf('+');
+            if (plusIndex > 0)
+            {
+                var trimmed = informationalVersion.Substring(0, plusIndex);
+                return NuGetVersion.TryParse(trimmed, out version);
+            }
+
+            return false;
         }
 
         public MainWindow(MainWindowViewModel viewModel) : this()
