@@ -61,8 +61,7 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			try
 			{
-				// TODO: AvalonEditTextOutput output = new AvalonEditTextOutput();
-				Bitmap image = new Bitmap("");
+				AvalonEditTextOutput output = new AvalonEditTextOutput();
 				byte[] curData;
 				using (var data = OpenStream())
 				{
@@ -79,21 +78,20 @@ namespace ICSharpCode.ILSpy.TreeNodes
 					}
 					curData = s.ToArray();
 				}
+
 				curData[2] = 1;
 				using (Stream stream = new MemoryStream(curData))
 				{
-					//image.BeginInit();
-					//image.StreamSource = stream;
-					//image.EndInit();
+					Bitmap image = new Bitmap(stream);
+					output.AddUIElement(() => new Image { Source = image });
 				}
 
-				//output.AddUIElement(() => new Image { Source = image });
-				//output.WriteLine();
-				//output.AddButton(Images.Save, Resources.Save, delegate {
-				//	Save(null);
-				//});
-				//tabPage.ShowTextView(textView => textView.ShowNode(output, this));
-				//tabPage.SupportsLanguageSwitching = false;
+				output.WriteLine();
+				output.AddButton(Images.Save, Resources.Save, delegate {
+					Save(null);
+				});
+				tabPage.ShowTextView(textView => textView.ShowNode(output, this));
+				tabPage.SupportsLanguageSwitching = false;
 				return true;
 			}
 			catch (Exception)

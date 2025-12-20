@@ -143,6 +143,11 @@ namespace ICSharpCode.AvalonEdit.Rendering
     
 }
 
+namespace ICSharpCode.AvalonEdit.Utils
+{
+    
+}
+
 namespace TomsToolbox.Wpf.Composition
 {
 

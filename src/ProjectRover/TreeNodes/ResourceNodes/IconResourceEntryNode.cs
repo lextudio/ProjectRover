@@ -19,7 +19,8 @@
 using System;
 using System.Composition;
 using System.IO;
-
+using Avalonia.Controls;
+using ICSharpCode.Decompiler.CSharp.Transforms;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.ILSpy.Properties;
 using ICSharpCode.ILSpy.TextView;
@@ -55,21 +56,17 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			try
 			{
-				// TODO: AvalonEditTextOutput output = new AvalonEditTextOutput();
+				AvalonEditTextOutput output = new AvalonEditTextOutput();
 				using var data = OpenStream();
 				if (data == null)
 					return false;
-				//IconBitmapDecoder decoder = new IconBitmapDecoder(data, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-				//foreach (var frame in decoder.Frames)
-				//{
-				//	output.Write(String.Format("{0}x{1}, {2} bit: ", frame.PixelHeight, frame.PixelWidth, frame.Thumbnail.Format.BitsPerPixel));
-				//	AddIcon(output, frame);
-				//	output.WriteLine();
-				//}
-				//output.AddButton(Images.Save, Resources.Save, delegate {
-				//	Save(null);
-				//});
-				//tabPage.ShowTextView(textView => textView.ShowNode(output, this));
+				var icon = new WindowIcon(data);
+				output.Write("Windows icon file. No cross platform preview support.");
+				output.WriteLine();
+				output.AddButton(Images.Save, Resources.Save, delegate {
+					Save(null);
+				});
+				tabPage.ShowTextView(textView => textView.ShowNode(output, this));
 				tabPage.SupportsLanguageSwitching = false;
 				return true;
 			}
@@ -79,9 +76,9 @@ namespace ICSharpCode.ILSpy.TreeNodes
 			}
 		}
 
-		//private static void AddIcon(AvalonEditTextOutput output, BitmapFrame frame)
-		//{
-		//	output.AddUIElement(() => new Image { Source = frame });
-		//}
+		// TODO: private static void AddIcon(AvalonEditTextOutput output, BitmapFrame frame)
+		// {
+		// 	output.AddUIElement(() => new Image { Source = frame });
+		// }
 	}
 }

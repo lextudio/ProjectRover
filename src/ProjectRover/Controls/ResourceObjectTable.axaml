@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ICSharpCode.ILSpy.Controls"
+             x:Class="ICSharpCode.ILSpy.Controls.ResourceObjectTable"
+             Cursor="Arrow">
+  <UserControl.Styles>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid Margin="5,0,0,0">
+    <Grid.RowDefinitions>
+      <RowDefinition />
+      <RowDefinition />
+      <RowDefinition />
+    </Grid.RowDefinitions>
+    <TextBlock Text="Other Resources" FontWeight="Bold" FontSize="12" />
+    <local:SearchBox x:Name="resourceFilterBox"
+                     FontSize="12"
+                     Grid.Row="1"
+                     TextChanged="OnFilterTextChanged" />
+    <ListBox Name="resourceListView"
+             Grid.Row="2"
+             ItemTemplate="{StaticResource ResourceListTemplate}" />
+  </Grid>
+</UserControl>

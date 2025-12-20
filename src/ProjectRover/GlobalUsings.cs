@@ -70,3 +70,4 @@ global using WindowState = Avalonia.Controls.WindowState;
 global using static Avalonia.Controls.ResourceNodeExtensions;
 
 global using PaneModel = Dock.Model.TomsToolbox.Core.DockableBase;
+global using FileReader = AvaloniaEdit.Utils.FileReader;

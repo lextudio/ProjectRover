@@ -17,59 +17,27 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
-using System.Composition;
-using System.IO;
-
-using ICSharpCode.Decompiler.Metadata;
+using Avalonia.Media.Imaging;
 using ICSharpCode.ILSpy.Properties;
 using ICSharpCode.ILSpy.TextView;
 using ICSharpCode.ILSpy.ViewModels;
-using ICSharpCode.ILSpyX.Abstractions;
 
 namespace ICSharpCode.ILSpy.TreeNodes
 {
-	[Export(typeof(IResourceNodeFactory))]
-	[Shared]
-	sealed class ImageResourceNodeFactory : IResourceNodeFactory
+	sealed partial class ImageResourceEntryNode : ResourceEntryNode
 	{
-		static readonly string[] imageFileExtensions = { ".png", ".gif", ".bmp", ".jpg" };
-
-		public ITreeNode CreateNode(Resource resource)
-		{
-			string key = resource.Name;
-			foreach (string fileExt in imageFileExtensions)
-			{
-				if (key.EndsWith(fileExt, StringComparison.OrdinalIgnoreCase))
-					return new ImageResourceEntryNode(key, resource.TryOpenStream);
-			}
-			return null;
-		}
-	}
-
-	sealed class ImageResourceEntryNode : ResourceEntryNode
-	{
-		public ImageResourceEntryNode(string key, Func<Stream> openStream)
-			: base(key, openStream)
-		{
-		}
-
-		public override object Icon => Images.ResourceImage;
-
 		public override bool View(TabPageModel tabPage)
 		{
 			try
 			{
-				// TODO: AvalonEditTextOutput output = new AvalonEditTextOutput();
-				//BitmapImage image = new BitmapImage();
-				//image.BeginInit();
-				//image.StreamSource = OpenStream();
-				//image.EndInit();
-				//output.AddUIElement(() => new Image { Source = image });
-				//output.WriteLine();
-				//output.AddButton(Images.Save, Resources.Save, delegate {
-				//	Save(null);
-				//});
-				//tabPage.ShowTextView(textView => textView.ShowNode(output, this));
+				AvalonEditTextOutput output = new AvalonEditTextOutput();
+				Bitmap image = new Bitmap(OpenStream());
+				output.AddUIElement(() => new Image { Source = image });
+				output.WriteLine();
+				output.AddButton(Images.Save, Resources.Save, delegate {
+					Save(null);
+				});
+				tabPage.ShowTextView(textView => textView.ShowNode(output, this));
 				tabPage.SupportsLanguageSwitching = false;
 				return true;
 			}

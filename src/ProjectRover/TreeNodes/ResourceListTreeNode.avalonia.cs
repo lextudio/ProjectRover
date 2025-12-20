@@ -18,8 +18,7 @@
 
 using System;
 using System.Linq;
-
-using Avalonia.Threading;
+using System.Windows.Threading;
 
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.Metadata;
@@ -30,21 +29,9 @@ namespace ICSharpCode.ILSpy.TreeNodes
 	/// <summary>
 	/// Lists the embedded resources in an assembly.
 	/// </summary>
-	sealed class ResourceListTreeNode : ILSpyTreeNode
+	partial class ResourceListTreeNode
 	{
-		readonly MetadataFile module;
-
-		public ResourceListTreeNode(MetadataFile module)
-		{
-			this.LazyLoading = true;
-			this.module = module;
-		}
-
-		public override object Text => Resources._Resources;
-
 		public override object Icon => IsExpanded ? Images.FolderOpen : Images.FolderClosed;
-
-		public override object ExpandedIcon => Images.FolderOpen;
 
 		protected override void OnExpanding()
 		{
@@ -56,30 +43,6 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			base.OnCollapsing();
 			RaisePropertyChanged(nameof(Icon));
-		}
-
-		protected override void LoadChildren()
-		{
-			foreach (Resource r in module.Resources.OrderBy(m => m.Name, NaturalStringComparer.Instance))
-				this.Children.Add(ResourceTreeNode.Create(r));
-		}
-
-		public override FilterResult Filter(LanguageSettings settings)
-		{
-			if (string.IsNullOrEmpty(settings.SearchTerm))
-				return FilterResult.MatchAndRecurse;
-			else
-				return FilterResult.Recurse;
-		}
-
-		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
-		{
-			// TODO: App.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(EnsureLazyChildren));
-			foreach (ILSpyTreeNode child in this.Children)
-			{
-				child.Decompile(language, output, options);
-				output.WriteLine();
-			}
 		}
 	}
 }

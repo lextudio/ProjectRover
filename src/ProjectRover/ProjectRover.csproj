@@ -388,6 +388,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Languages\LanguageService.cs">
       <Link>Languages\LanguageService.cs</Link>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ResourceNodes\ResourcesFileTreeNode.cs">
+      <Link>TreeNodes\ResourceNodes\ResourcesFileTreeNode.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ResourceNodes\ResourceEntryNode.cs">
+      <Link>TreeNodes\ResourceNodes\ResourceEntryNode.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\GuessFileType.cs">
+      <Link>GuessFileType.cs</Link>
+    </Compile>
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\LanguageSettings.cs">
       <Link>LanguageSettings.cs</Link>
@@ -399,6 +409,10 @@
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\DebugDirectory\CodeViewTreeNode.cs">
       <Link>Metadata\DebugDirectory\CodeViewTreeNode.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ResourceListTreeNode.cs">
+      <Link>TreeNodes\ResourceListTreeNode.cs</Link>
     </Compile>
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\DebugDirectory\DebugDirectoryEntryTreeNode.cs">
@@ -713,6 +727,22 @@
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ICSharpCode.Decompiler\Util\CollectionExtensions.cs">
       <Link>Util\CollectionExtensions.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ResourceNodes\ResourceTreeNode.cs">
+      <Link>TreeNodes\ResourceNodes\ResourceTreeNode.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ResourceNodes\ImageResourceEntryNode.cs">
+      <Link>TreeNodes\ResourceNodes\ImageResourceEntryNode.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ResourceNodes\XmlResourceNode.cs">
+      <Link>TreeNodes\ResourceNodes\XmlResourceNode.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ResourceNodes\XamlResourceNode.cs">
+      <Link>TreeNodes\ResourceNodes\XamlResourceNode.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

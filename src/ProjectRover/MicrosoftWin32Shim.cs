@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -154,8 +155,9 @@ namespace Microsoft.Win32
         public string InitialDirectory { get; set; } = string.Empty;
         public string Title { get; set; }
 		public string DefaultExt { get; internal set; }
+        public int FilterIndex { get; internal set; } // TODO: how to implement this?
 
-		public bool? ShowDialog()
+        public bool? ShowDialog()
         {
             return DialogHelper.RunSync(ShowDialogAsync());
         }
@@ -192,6 +194,11 @@ namespace Microsoft.Win32
                 return true;
             }
             return false;
+        }
+
+        internal FileStream OpenFile()
+        {
+            return File.Open(FileName, FileMode.Create, FileAccess.Write);
         }
     }
 

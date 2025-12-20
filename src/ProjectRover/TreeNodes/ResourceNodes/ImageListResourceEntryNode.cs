@@ -16,9 +16,11 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+using System;
 using System.Composition;
+using System.Windows.Forms;
 using System.IO;
-
+using Avalonia.Media.Imaging;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.ILSpyX.Abstractions;
@@ -36,8 +38,8 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
 		public ILSpyTreeNode CreateNode(string key, object data)
 		{
-			// TODO: if (data is ImageListStreamer)
-			//	return new ImageListResourceEntryNode(key, (ImageListStreamer)data);
+			if (data is ImageListStreamer)
+				return new ImageListResourceEntryNode(key, (ImageListStreamer)data);
 			return null;
 		}
 	}
@@ -45,14 +47,15 @@ namespace ICSharpCode.ILSpy.TreeNodes
 	sealed class ImageListResourceEntryNode : ILSpyTreeNode
 	{
 		private readonly string key;
+		private readonly Bitmap[] bitmaps;
 		//private readonly ImageList data;
 
-		public ImageListResourceEntryNode(string key)//, ImageListStreamer data)
+		public ImageListResourceEntryNode(string key, ImageListStreamer data)
 		{
 			this.LazyLoading = true;
 			this.key = key;
-			//this.data = new ImageList();
-			//this.data.ImageStream = data;
+			// Use the Avalonia Bitmap array exposed by the ported streamer.
+			this.bitmaps = data?.Images ?? Array.Empty<Bitmap>();
 		}
 
 		public override object Text {
@@ -64,15 +67,20 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		protected override void LoadChildren()
 		{
 			int i = 0;
-			//foreach (Image image in this.data.Images)
-			//{
-			//	using var s = new MemoryStream();
-			//	image.Save(s, System.Drawing.Imaging.ImageFormat.Bmp);
-			//	var node = ResourceEntryNode.Create("Image" + i.ToString(), s.ToArray());
-			//	if (node != null)
-			//		Children.Add(node);
-			//	++i;
-			//}
+			foreach (var bmp in bitmaps)
+			{
+				using var s = new MemoryStream();
+				// Avalonia Bitmap provides Save method via pixel formats through platform.
+				try {
+					bmp.Save(s);
+					var node = ResourceEntryNode.Create("Image" + i.ToString(), s.ToArray());
+					if (node != null)
+						Children.Add(node);
+				} catch {
+					// ignore image serialization failures
+				}
+				++i;
+			}
 		}
 
 
