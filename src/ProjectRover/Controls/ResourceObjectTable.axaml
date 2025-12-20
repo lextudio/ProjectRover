@@ -17,10 +17,11 @@
       <RowDefinition />
     </Grid.RowDefinitions>
     <TextBlock Text="Other Resources" FontWeight="Bold" FontSize="12" />
-    <local:SearchBox x:Name="resourceFilterBox"
-                     FontSize="12"
-                     Grid.Row="1"
-                     TextChanged="OnFilterTextChanged" />
+    <TextBox x:Name="resourceFilterBox"
+             FontSize="12"
+             Watermark="Filter..."
+             Grid.Row="1"
+             TextChanged="OnFilterTextChanged" />
     <ListBox Name="resourceListView"
              Grid.Row="2"
              ItemTemplate="{StaticResource ResourceListTemplate}" />

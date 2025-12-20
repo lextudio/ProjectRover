@@ -75,14 +75,11 @@ public partial class SearchPane : UserControl
         InitializeComponent();
         
         // Resolve dependencies
-        if (ProjectRover.App.ExportProvider != null)
+        if (App.ExportProvider != null)
         {
-            assemblyTreeModel = ProjectRover.App.ExportProvider.GetExportedValue<AssemblyTreeModel>();
-            settingsService = ProjectRover.App.ExportProvider.GetExportedValue<SettingsService>();
-            treeNodeFactory = ProjectRover.App.ExportProvider.GetExportedValue<ITreeNodeFactory>();
-            try {
-                Console.WriteLine($"[Log][SearchPane] Resolved AssemblyTreeModel instance={assemblyTreeModel?.GetHashCode()}");
-            } catch { }
+            assemblyTreeModel = App.ExportProvider.GetExportedValue<AssemblyTreeModel>();
+            settingsService = App.ExportProvider.GetExportedValue<SettingsService>();
+            treeNodeFactory = App.ExportProvider.GetExportedValue<ITreeNodeFactory>();
         }
 
         // Avalonia doesn't have CompositionTarget.Rendering in the same way, but we can use DispatcherTimer or similar.
@@ -96,7 +93,7 @@ public partial class SearchPane : UserControl
 
     public TextBox SearchTextBoxControl => SearchTextBox;
 
-    private void OnClearSearchClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnClearSearchClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is SearchPaneModel vm)
         {

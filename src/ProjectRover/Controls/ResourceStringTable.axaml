@@ -10,9 +10,10 @@
       <RowDefinition />
     </Grid.RowDefinitions>
     <TextBlock Text="Strings" FontWeight="Bold" FontSize="12" />
-    <local:SearchBox x:Name="resourceFilterBox"
-                     Grid.Row="1"
-                     TextChanged="OnFilterTextChanged" />
+    <TextBox x:Name="resourceFilterBox"
+             Watermark="Filter..."
+             Grid.Row="1"
+             TextChanged="OnFilterTextChanged" />
     <ListBox Name="resourceListView" Grid.Row="2" />
   </Grid>
 </UserControl>

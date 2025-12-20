@@ -4,6 +4,8 @@
              xmlns:vm="clr-namespace:ICSharpCode.ILSpy.Search"
              xmlns:search="clr-namespace:ICSharpCode.ILSpyX.Search;assembly=ICSharpCode.ILSpyX"
              xmlns:converters="clr-namespace:ICSharpCode.ILSpy.Converters;assembly=ProjectRover"
+             xmlns:controls="clr-namespace:ICSharpCode.ILSpy.Controls;assembly=ProjectRover"
+             xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
              x:DataType="vm:SearchPaneModel"
              x:Name="SearchPaneControl">
   <UserControl.Resources>
@@ -21,7 +23,7 @@
     </Grid>
     <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="5">
       <TextBox x:Name="SearchTextBox"
-               Watermark="Search..."
+               Watermark="{x:Static properties:Resources.WatermarkText}"
                Text="{Binding SearchTerm}"
                Margin="0,0,8,0">
         <TextBox.InnerRightContent>
