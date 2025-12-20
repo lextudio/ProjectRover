@@ -12,23 +12,18 @@
     <AssemblyName>ProjectRover</AssemblyName>
     <UserSecretsId>57fe8775-5a92-48de-8bd9-948dc8880d3d</UserSecretsId>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="..\ILSpy\ILSpy\Options\MiscSettingsViewModel.cs">
-      <Link>Options\MiscSettingsViewModel.cs</Link>
-    </Compile>
-    <Compile Include="..\ILSpy\ILSpy\Options\DisplaySettingsViewModel.cs">
-      <Link>Options\DisplaySettingsViewModel.cs</Link>
-    </Compile>
-    <Compile Include="..\ILSpy\ILSpy\Options\DecompilerSettingsViewModel.cs">
-      <Link>Options\DecompilerSettingsViewModel.cs</Link>
-    </Compile>
-    <AvaloniaResource Include="Assets\**" />
-    <AvaloniaResource Include="Themes\**\*.axaml" />
-  </ItemGroup>
-
+  <PropertyGroup>
+    <!-- prefer GitVersion-provided semantic versioning when available -->
+    <Version>$(GitVersion_NuGetVersionV2)</Version>
+    <PackageVersion>$(GitVersion_NuGetVersionV2)</PackageVersion>
+    <AssemblyVersion>$(GitVersion_Major).$(GitVersion_Minor).$(GitVersion_Patch).0</AssemblyVersion>
+    <FileVersion>$(GitVersion_Major).$(GitVersion_Minor).$(GitVersion_Patch).0</FileVersion>
+    <AssemblyInformationalVersion>$(GitVersion_FullSemVer)+$(GitCommitId)</AssemblyInformationalVersion>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="GitVersion.MsBuild" PrivateAssets="all" />
     <PackageReference Include="Avalonia.Labs.CommandManager" />
     <PackageReference Include="Avalonia.Svg.Skia" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
@@ -100,7 +95,19 @@
   </ItemGroup>
 
   <ItemGroup>
-
+    <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Include="Themes\**\*.axaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\ILSpy\ILSpy\Options\MiscSettingsViewModel.cs">
+      <Link>Options\MiscSettingsViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\ILSpy\ILSpy\Options\DisplaySettingsViewModel.cs">
+      <Link>Options\DisplaySettingsViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\ILSpy\ILSpy\Options\DecompilerSettingsViewModel.cs">
+      <Link>Options\DecompilerSettingsViewModel.cs</Link>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Analyzers\AnalyzeCommand.cs">
       <Link>Analyzers\AnalyzeCommand.cs</Link>
     </Compile>
