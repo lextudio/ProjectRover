@@ -35,7 +35,7 @@ jobs:
         dotnet-version: 10.0.x
 
     - name : Restore dependencies (x64)
-      run: dotnet restore -r win-x64 --force-evaluate
+      run: dotnet restore -c Release -r win-x64 --force-evaluate
       working-directory: ./src/ProjectRover
 
     - name: Publish (x64)
@@ -43,7 +43,7 @@ jobs:
       working-directory: ./src/ProjectRover
 
     - name : Restore dependencies (ARM)
-      run: dotnet restore -r win-arm64 --force-evaluate
+      run: dotnet restore -c Release-r win-arm64 --force-evaluate
       working-directory: ./src/ProjectRover
 
     - name: Publish (ARM)
