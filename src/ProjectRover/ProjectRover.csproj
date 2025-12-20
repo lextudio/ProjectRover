@@ -358,10 +358,6 @@
       <Link>ISmartTextOutput.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\AboutPage.cs">
-      <Link>AboutPage.cs</Link>
-    </Compile>
-
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Languages\CSharpBracketSearcher.cs">
       <Link>Languages\CSharpBracketSearcher.cs</Link>
     </Compile>
