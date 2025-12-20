@@ -4,6 +4,8 @@ Project Rover is a cross-platform desktop UI for ILSpy, focused on giving macOS 
 
 This project is currently maintained by LeXtudio Inc, and not affiliated with or endorsed by the ILSpy team.
 
+![Project Rover banner](projectrover-social-v6.png)
+
 ## Quick start
 
 Download the latest release archive for your platform from the Releases page, extract it, and run the app.
