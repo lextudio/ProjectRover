@@ -14,4 +14,8 @@
     <PackageReference Include="Dock.Model.Avalonia" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\thirdParty\TomsToolbox\src\TomsToolbox.Avalonia\TomsToolbox.Avalonia.csproj" />
+  </ItemGroup>
+
 </Project>

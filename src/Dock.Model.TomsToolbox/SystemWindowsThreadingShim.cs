@@ -36,7 +36,7 @@ namespace System.Windows.Threading
 
         public static Dispatcher CurrentDispatcher { get; } = new Dispatcher();
 
-		private static Avalonia.Threading.DispatcherPriority Translate(DispatcherPriority priority)
+		public static Avalonia.Threading.DispatcherPriority Translate(DispatcherPriority priority)
 		{
             return priority switch
             {

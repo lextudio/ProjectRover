@@ -5,3 +5,6 @@
 	path = src/ILSpy
 	url = https://github.com/lextudio/ILSpy
 	branch = wpf-isolation
+[submodule "src/TomsToolbox"]
+	path = thirdparty/TomsToolbox
+	url = https://github.com/lextudio/TomsToolbox.git
