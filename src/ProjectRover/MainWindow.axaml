@@ -7,6 +7,9 @@
         xmlns:views="clr-namespace:ICSharpCode.ILSpy.Views"
         xmlns:controls="clr-namespace:ICSharpCode.ILSpy.Controls;assembly=ProjectRover"
         xmlns:converters="clr-namespace:ICSharpCode.ILSpy.Converters"
+        xmlns:viewModels="clr-namespace:ICSharpCode.ILSpy.ViewModels;assembly=ProjectRover"
+        xmlns:assemblyTree="clr-namespace:ICSharpCode.ILSpy.AssemblyTree;assembly=ProjectRover"
+        xmlns:search="clr-namespace:ICSharpCode.ILSpy.Search;assembly=ProjectRover"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="ICSharpCode.ILSpy.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -19,7 +22,21 @@
             <controls:MainMenu DockPanel.Dock="Top" />
             <controls:MainToolBar DockPanel.Dock="Top" />
 
-            <dock:DockControl x:Name="DockHost" IsVisible="False" />
+            <dock:DockControl x:Name="DockHost" IsVisible="False">
+                <dock:DockControl.DataTemplates>
+                    <DataTemplate DataType="{x:Type viewModels:TabPageModel}">
+                        <ContentPresenter Content="{Binding Content}" />
+                    </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type assemblyTree:AssemblyTreeModel}">
+                        <assemblyTree:AssemblyListPane DataContext="{Binding}" />
+                    </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type search:SearchPaneModel}">
+                        <search:SearchPane DataContext="{Binding}" />
+                    </DataTemplate>
+                </dock:DockControl.DataTemplates>
+            </dock:DockControl>
         </DockPanel>
     </Grid>
 </Window>

@@ -1,18 +1,9 @@
 using System;
-using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Dock.Avalonia.Controls;
-using Dock.Model.Avalonia;
-using ICSharpCode.ILSpy.Search;
-using ICSharpCode.ILSpy.AssemblyTree;
 using System.Windows.Threading;
-using Avalonia.Controls.Templates;
-using Avalonia.Controls.Presenters;
-using ICSharpCode.ILSpy.ViewModels;
-using Dock.Model.TomsToolbox.Controls;
-using Dock.Model.Core;
 using System.Reflection;
 using NuGet.Versioning;
 
@@ -26,22 +17,6 @@ namespace ICSharpCode.ILSpy
         {
             InitializeComponent();
             var dockHost = this.FindControl<DockControl>("DockHost");
-            var documentTemplate = new FuncDataTemplate<TabPageModel>(
-                (data, scope) => {
-                    var contentPresenter = new ContentPresenter { DataContext = data };
-                    contentPresenter.Bind(ContentPresenter.ContentProperty, new Binding("Content"));
-                    return contentPresenter;
-                }
-            );
-            dockHost.DataTemplates.Add(documentTemplate);
-            var assemblyTreeTemplate = new FuncDataTemplate<AssemblyTreeModel>(
-                (data, scope) => new AssemblyListPane { DataContext = data }
-            );
-            dockHost.DataTemplates.Add(assemblyTreeTemplate);
-            var searchPaneTemplate = new FuncDataTemplate<SearchPaneModel>(
-                (data, scope) => new SearchPane { DataContext = data }
-            );
-            dockHost.DataTemplates.Add(searchPaneTemplate);
 #if DEBUG
             this.AttachDevTools();
             Console.WriteLine("[Log][MainWindow] DevTools attached.");
