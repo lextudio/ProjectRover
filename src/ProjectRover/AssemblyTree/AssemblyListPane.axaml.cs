@@ -13,6 +13,14 @@ namespace ICSharpCode.ILSpy.AssemblyTree
             InitializeComponent();
         }
 
+        protected override void OnDataContextChanged(EventArgs e)
+        {
+            base.OnDataContextChanged(e);
+
+            if (DataContext is AssemblyTreeModel model)
+                model.SetActiveView(this);
+        }
+
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);

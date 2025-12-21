@@ -34,21 +34,23 @@ namespace ICSharpCode.ILSpy
                 }
             );
             dockHost.DataTemplates.Add(documentTemplate);
-            var toolTemplate = new FuncDataTemplate<Tool>(
-                (data, scope) => new ContentPresenter { DataContext = data, Content = data.Content }
+            var assemblyTreeTemplate = new FuncDataTemplate<AssemblyTreeModel>(
+                (data, scope) => new AssemblyListPane { DataContext = data }
             );
-            dockHost.DataTemplates.Add(toolTemplate);
+            dockHost.DataTemplates.Add(assemblyTreeTemplate);
+            var searchPaneTemplate = new FuncDataTemplate<SearchPaneModel>(
+                (data, scope) => new SearchPane { DataContext = data }
+            );
+            dockHost.DataTemplates.Add(searchPaneTemplate);
 #if DEBUG
             this.AttachDevTools();
             Console.WriteLine("[Log][MainWindow] DevTools attached.");
 #endif
 
             // Set the window title to include ProjectRover version (major.minor)
-            try {
-                var ver = GetRoverShortVersion();
-                if (!string.IsNullOrEmpty(ver))
-                    this.Title = $"{this.Title} (v{ver})";
-            } catch { }
+            var ver = GetRoverShortVersion();
+            if (!string.IsNullOrEmpty(ver))
+                this.Title = $"{this.Title} (v{ver})";
 			Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, () => {
 				viewModel.Workspace.InitializeLayout();
 				MessageBus.Send(this, new MainWindowLoadedEventArgs());

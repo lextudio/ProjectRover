@@ -10,7 +10,6 @@ using Dock.Model.Core.Events;
 using ICSharpCode.ILSpy.TextView;
 using ICSharpCode.ILSpy.ViewModels;
 using ICSharpCode.ILSpy.Search;
-using ICSharpCode.ILSpy.AssemblyTree;
 using Dock.Model.Controls;
 using Dock.Avalonia.Controls;
 using Dock.Model.TomsToolbox.Controls;
@@ -34,7 +33,7 @@ namespace ICSharpCode.ILSpy.Docking
       {
         var app = Avalonia.Application.Current;
         var mainWindow = (app?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow
-                         ?? Avalonia.Controls.TopLevel.GetTopLevel(null) as Avalonia.Controls.Window;
+                         ?? Avalonia.Controls.TopLevel.GetTopLevel(null) as Window;
         if (mainWindow == null)
           return;
 
@@ -61,14 +60,8 @@ namespace ICSharpCode.ILSpy.Docking
 
         Console.WriteLine("DockWorkspace.InitializeLayout: Creating specific layout structure");
 
-        // Create Views
-        var leftDockView = new AssemblyListPane { DataContext = viewModel.AssemblyTreeModel };
-        try {
-            viewModel.AssemblyTreeModel?.SetActiveView(leftDockView);
-            Console.WriteLine($"[Log][DockWorkspace] Explicitly called SetActiveView on AssemblyTreeModel instance={viewModel.AssemblyTreeModel?.GetHashCode()}");
-        } catch { }
-
-        var searchDockView = new SearchPane { DataContext = viewModel.SearchPaneModel };
+        var assemblyTreeModel = viewModel.AssemblyTreeModel;
+        var searchPaneModel = viewModel.SearchPaneModel;
 
         // Create Dock Structure
         var documentDock = this.CreateDocumentDock() ?? new DocumentDock
@@ -78,39 +71,18 @@ namespace ICSharpCode.ILSpy.Docking
             VisibleDockables = new ObservableCollection<IDockable>()
         };
 
-        var tool = new Tool
-        {
-            Id = "Explorer",
-            Title = "Explorer",
-            Content = leftDockView,
-            Context = viewModel,
-            CanClose = false,
-            CanFloat = false,
-            CanPin = false
-        };
-        this.RegisterTool(tool);
+        this.RegisterTool(assemblyTreeModel);
 
         var toolDock = new ToolDock
         {
             Id = "LeftDock",
             Title = "LeftDock",
             Alignment = Alignment.Left,
-            VisibleDockables = new ObservableCollection<IDockable> { tool },
-            ActiveDockable = tool,
+            VisibleDockables = new ObservableCollection<IDockable>(),
             Proportion = 0.3
         };
 
-        var searchTool = new Tool
-        {
-            Id = ICSharpCode.ILSpy.Search.SearchPaneModel.PaneContentId,
-            Title = "Search",
-            Content = searchDockView,
-            Context = viewModel,
-            CanClose = true,
-            CanFloat = false,
-            CanPin = false
-        };
-        this.RegisterTool(searchTool);
+        this.RegisterTool(searchPaneModel);
 
         var searchDock = new ToolDock
         {
@@ -118,7 +90,6 @@ namespace ICSharpCode.ILSpy.Docking
             Title = "Search",
             Alignment = Alignment.Top,
             VisibleDockables = new ObservableCollection<IDockable>(),
-            ActiveDockable = null,
             CanCloseLastDockable = true,
             Proportion = 0.5
         };
@@ -168,7 +139,7 @@ namespace ICSharpCode.ILSpy.Docking
         AttachToDockHost(dockHost, factory, documentDock);
         HookUpToolListeners(dockHost);
 
-        try { dockHost.IsVisible = true; } catch { }
+        dockHost.IsVisible = true;
 
         Console.WriteLine("DockWorkspace.InitializeLayout: Specific layout initialized successfully");
       }
@@ -239,10 +210,10 @@ namespace ICSharpCode.ILSpy.Docking
         }
     }
 
-    private Dictionary<string, Dock.Model.Controls.ITool> _registeredTools = new();
-    private Dictionary<string, Dock.Model.Core.IDockable> _registeredDockables = new();
+    private Dictionary<string, ITool> _registeredTools = new();
+    private Dictionary<string, IDockable> _registeredDockables = new();
 
-    public void RegisterTool(Dock.Model.Controls.ITool tool)
+    public void RegisterTool(ITool tool)
     {
         if (tool.Id != null)
         {
@@ -250,7 +221,7 @@ namespace ICSharpCode.ILSpy.Docking
         }
     }
 
-    public void RegisterDockable(Dock.Model.Core.IDockable dockable)
+    public void RegisterDockable(IDockable dockable)
     {
         if (dockable.Id != null)
         {
@@ -378,13 +349,11 @@ namespace ICSharpCode.ILSpy.Docking
         {
             if (dtv.DataContext == null)
                 dtv.DataContext = tabPage;
-            content = new Label { Content = "DEBUG: DECOMPILER TEXT VIEW SHOULD BE HERE", Background = Avalonia.Media.Brushes.LightGreen, Width = 200, Height = 200 };
         }
         else if (content is Control ctrl)
         {
             if (ctrl.DataContext == null)
                 ctrl.DataContext = tabPage;
-            content = new Label { Content = "DEBUG: NON-TEXT VIEW SHOULD BE HERE", Background = Avalonia.Media.Brushes.Yellow, Width = 200, Height = 200 };
         }
         else if (content == null)
         {
@@ -481,7 +450,7 @@ namespace ICSharpCode.ILSpy.Docking
                         var rightDock = FindDockById(layout, "RightDock");
                         if (rightDock != null && rightDock.VisibleDockables != null)
                         {
-                             if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is Dock.Model.Controls.IToolDock sd)
+                             if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is IToolDock sd)
                              {
                                  sd.Owner = rightDock;
                                  sd.Factory = factory;
@@ -498,7 +467,7 @@ namespace ICSharpCode.ILSpy.Docking
                         }
                     }
 
-                    if (targetDock is Dock.Model.Controls.IToolDock toolDock)
+                    if (targetDock is IToolDock toolDock)
                     {
                         factory.AddDockable(toolDock, registeredTool);
                         factory.SetActiveDockable(registeredTool);
@@ -517,12 +486,12 @@ namespace ICSharpCode.ILSpy.Docking
         }
     }
 
-    private static Dock.Model.Controls.ITool? FindToolById(Dock.Model.Core.IDockable root, string id)
+    private static ITool? FindToolById(IDockable root, string id)
     {
-      if (root is Dock.Model.Controls.ITool tool && tool.Id == id)
+      if (root is ITool tool && tool.Id == id)
         return tool;
 
-      if (root is Dock.Model.Core.IDock dock && dock.VisibleDockables != null)
+      if (root is IDock dock && dock.VisibleDockables != null)
       {
         foreach (var dockable in dock.VisibleDockables)
         {
@@ -534,9 +503,9 @@ namespace ICSharpCode.ILSpy.Docking
       return null;
     }
 
-    private static Dock.Model.Core.IDock? FindDockById(Dock.Model.Core.IDockable root, string id)
+    private static IDock? FindDockById(IDockable root, string id)
     {
-      if (root is Dock.Model.Core.IDock dock)
+      if (root is IDock dock)
       {
           if (dock.Id == id) return dock;
           
