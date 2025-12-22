@@ -7,7 +7,7 @@
              x:DataType="options:MiscSettingsViewModel">
   <StackPanel Orientation="Vertical">
     <controls:GroupBox Header="Misc">
-      <StackPanel Margin="10">
+      <StackPanel Margin="12">
         <CheckBox IsChecked="{Binding Settings.AllowMultipleInstances}" Content="Allow multiple instances" />
         <CheckBox IsChecked="{Binding Settings.LoadPreviousAssemblies}" Content="Load assemblies that were loaded in the last instance" />
         <Button Command="{Binding AddRemoveShellIntegrationCommand}"

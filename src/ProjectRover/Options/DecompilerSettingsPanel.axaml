@@ -9,13 +9,15 @@
       <ItemsControl.ItemTemplate>
         <DataTemplate DataType="options:DecompilerSettingsGroupViewModel">
           <controls:GroupBox Header="{Binding Category}">
-            <ItemsControl ItemsSource="{Binding Settings}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="options:DecompilerSettingsItemViewModel">
-                  <CheckBox IsChecked="{Binding IsEnabled}" Content="{Binding Description}" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <Grid Margin="12">
+              <ItemsControl ItemsSource="{Binding Settings}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="options:DecompilerSettingsItemViewModel">
+                    <CheckBox IsChecked="{Binding IsEnabled}" Content="{Binding Description}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Grid>
           </controls:GroupBox>
         </DataTemplate>
       </ItemsControl.ItemTemplate>
