@@ -114,8 +114,8 @@ namespace ICSharpCode.ILSpy.Controls
             {
                 try
                 {
-                    var roverSettings = new ProjectRoverSettingsService().Load();
-                    var keepAvaloniaMenu = roverSettings.ShowAvaloniaMainMenuOnMac;
+                    var roverSettings = settingsService?.GetSettings<ProjectRoverSettingsSection>();
+                    var keepAvaloniaMenu = roverSettings?.ShowAvaloniaMainMenuOnMac ?? false;
 
                     var visualRoot = TopLevel.GetTopLevel(mainMenu) ?? mainMenu.GetVisualRoot();
                     var rootObj = visualRoot as AvaloniaObject;

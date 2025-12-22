@@ -26,6 +26,7 @@ using ICSharpCode.ILSpy.AssemblyTree;
 using ICSharpCode.ILSpy.Search;
 using ICSharpCode.ILSpyX;
 using ICSharpCode.ILSpy.Themes;
+using ICSharpCode.ILSpy.Util;
 
 using TomsToolbox.Wpf;
 
@@ -43,6 +44,8 @@ namespace ICSharpCode.ILSpy
         private readonly DockWorkspace dockWorkspace;
         private readonly AssemblyTreeModel assemblyTreeModel;
         private readonly SearchPaneModel searchPaneModel;
+
+        private bool deferThemeSave = true;
 
         public MainWindowViewModel(
             SettingsService settingsService, 
@@ -66,6 +69,14 @@ namespace ICSharpCode.ILSpy
             };
             var savedTheme = settingsService.SessionSettings.Theme;
             SelectedTheme = Themes.FirstOrDefault(t => t.Name.Equals(savedTheme, StringComparison.OrdinalIgnoreCase)) ?? Themes[0];
+
+            MessageBus<MainWindowLoadedEventArgs>.Subscribers += (_, _) => {
+                deferThemeSave = false;
+                if (!string.Equals(SessionSettings.Theme, SelectedTheme.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    SessionSettings.Theme = SelectedTheme.Name;
+                }
+            };
 
             SearchModes = new ObservableCollection<SearchModeOption>
             {
@@ -100,7 +111,8 @@ namespace ICSharpCode.ILSpy
                 if (SetProperty(ref selectedTheme, value))
                 {
                     ThemeManager.Current.ApplyTheme(value.Name);
-                    SessionSettings.Theme = value.Name;
+                    if (!deferThemeSave)
+                        SessionSettings.Theme = value.Name;
                 }
             }
         }

@@ -1,19 +1,20 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using ProjectRover.Settings;
+using ICSharpCode.ILSpy.Util;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ProjectRover.Settings
 {
     public class DisplayMacSettingsViewModel : INotifyPropertyChanged
     {
-        private readonly ProjectRoverSettingsService _service;
-        private ProjectRoverSettings _settings;
+        private readonly ProjectRoverSettingsSection _settings;
 
         public DisplayMacSettingsViewModel()
         {
-            _service = new ProjectRoverSettingsService();
-            _settings = _service.Load();
+            var services = ProjectRover.App.Current?.Services;
+            var settingsService = services?.GetService<SettingsService>() ?? new SettingsService();
+            _settings = settingsService.GetSettings<ProjectRoverSettingsSection>();
+            _settings.PropertyChanged += Settings_PropertyChanged;
         }
 
         public bool ShowAvaloniaMainMenuOnMac
@@ -25,13 +26,20 @@ namespace ProjectRover.Settings
                 {
                     _settings.ShowAvaloniaMainMenuOnMac = value;
                     OnPropertyChanged();
-                    // Save off the UI thread to avoid blocking UI during file I/O and MessageBus delivery
-                    Task.Run(() => _service.Save(_settings));
                 }
             }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        private void Settings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ProjectRoverSettingsSection.ShowAvaloniaMainMenuOnMac))
+            {
+                OnPropertyChanged(nameof(ShowAvaloniaMainMenuOnMac));
+            }
+        }
+
     }
 }
