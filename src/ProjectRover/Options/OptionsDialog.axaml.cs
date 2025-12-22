@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using System.Threading.Tasks;
 using ICSharpCode.ILSpy.Util;
 
@@ -24,6 +25,22 @@ namespace ICSharpCode.ILSpy.Options
             if (owner != null)
                 this.Owner = owner;
             return this.ShowDialog<bool?>(owner);
+        }
+
+        private void OnOkClicked(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is OptionsDialogViewModel viewModel
+                && viewModel.CommitCommand.CanExecute(null))
+            {
+                viewModel.CommitCommand.Execute(null);
+            }
+
+            Close(true);
+        }
+
+        private void OnCancelClicked(object? sender, RoutedEventArgs e)
+        {
+            Close(false);
         }
     }
 }

@@ -3,11 +3,12 @@
   xmlns:d="https://github.com/avaloniaui/designer"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:options="clr-namespace:ICSharpCode.ILSpy.Options;assembly=ProjectRover"
+  xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
   mc:Ignorable="d"
   x:Class="ICSharpCode.ILSpy.Options.OptionsDialog"
   x:DataType="options:OptionsDialogViewModel"
   Width="800" Height="600"
-  Title="Options">
+  Title="{x:Static properties:Resources.Options}">
   <Window.DataTemplates>
     <DataTemplate DataType="options:MiscSettingsViewModel">
       <options:MiscSettingsPanel />
@@ -20,18 +21,36 @@
     </DataTemplate>
   </Window.DataTemplates>
   <DockPanel>
-    <ListBox DockPanel.Dock="Left" Width="220" ItemsSource="{Binding OptionPages}"
-             SelectedValueBinding="{Binding Content, DataType=options:OptionsItemViewModel}"
-             SelectedValue="{Binding SelectedPage}">
-      <ListBox.ItemTemplate>
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right"
+      Margin="12,8">
+      <Button Margin="2,0"
+        Command="{Binding ResetDefaultsCommand}"
+        Content="{x:Static properties:Resources.ResetToDefaults}" />
+      <Button Margin="2,0"
+        IsDefault="True"
+        Click="OnOkClicked"
+        Content="{x:Static properties:Resources.OK}" />
+      <Button Margin="2,0"
+        IsCancel="True"
+        Click="OnCancelClicked"
+        Content="{x:Static properties:Resources.Cancel}" />
+    </StackPanel>
+
+    <TabControl x:Name="OptionsTabControl" ItemsSource="{Binding OptionPages}"
+      SelectedValueBinding="{Binding Content, DataType=options:OptionsItemViewModel}"
+      SelectedValue="{Binding SelectedPage}">
+      <TabControl.ItemTemplate>
         <DataTemplate x:DataType="options:OptionsItemViewModel">
           <TextBlock Text="{Binding Title}" />
         </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
-
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-      <ContentControl Content="{Binding SelectedPage}" />
-    </ScrollViewer>
+      </TabControl.ItemTemplate>
+      <TabControl.ContentTemplate>
+        <DataTemplate x:DataType="options:OptionsItemViewModel">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ContentControl Content="{Binding Content}" />
+          </ScrollViewer>
+        </DataTemplate>
+      </TabControl.ContentTemplate>
+    </TabControl>
   </DockPanel>
 </Window>
