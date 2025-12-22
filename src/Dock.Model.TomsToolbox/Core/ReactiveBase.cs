@@ -1,4 +1,4 @@
-using TomsToolbox.Avalonia;
+using TomsToolbox.Wpf;
 
 namespace Dock.Model.TomsToolbox.Core;
 

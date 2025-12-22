@@ -71,6 +71,3 @@ global using static Avalonia.Controls.ResourceNodeExtensions;
 
 global using PaneModel = Dock.Model.TomsToolbox.Core.DockableBase;
 global using FileReader = AvaloniaEdit.Utils.FileReader;
-global using ObservableObject = TomsToolbox.Avalonia.ObservableObject;
-global using ObservableObjectBase = TomsToolbox.Avalonia.ObservableObjectBase;
-global using PropertyDependencyAttribute = TomsToolbox.Avalonia.PropertyDependencyAttribute;
