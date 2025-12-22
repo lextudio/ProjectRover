@@ -20,16 +20,18 @@
                             VerticalAlignment="Bottom"
                             Opacity="0.5" />
 
-                        <!-- header text overlays the line; background masks the line behind text -->
-                        <TextBlock Text="{TemplateBinding Header}"
-                                FontWeight="SemiBold"
-                                FontSize="12"
-                                Foreground="{DynamicResource ThemeForegroundBrush}"
-                                Background="{DynamicResource ThemeBackgroundBrush}"
+                        <!-- header content overlays the line; background masks the line behind it -->
+                        <Border Background="{DynamicResource ThemeBackgroundBrush}"
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Left"
                                 Padding="6,0"
-                                Margin="6,0,6,0" />
+                                Margin="6,0,6,0">
+                            <ContentPresenter Content="{TemplateBinding Header}"
+                                              ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                              FontWeight="SemiBold"
+                                              FontSize="12"
+                                              Foreground="{DynamicResource ThemeForegroundBrush}" />
+                        </Border>
                     </Grid>
                 </Grid>
             </ControlTemplate>

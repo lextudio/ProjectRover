@@ -8,12 +8,21 @@
     <ItemsControl ItemsSource="{Binding Settings}">
       <ItemsControl.ItemTemplate>
         <DataTemplate DataType="options:DecompilerSettingsGroupViewModel">
-          <controls:GroupBox Header="{Binding Category}">
+          <controls:GroupBox>
+            <controls:GroupBox.Header>
+              <CheckBox Content="{Binding Category}"
+                        IsChecked="{Binding AreAllItemsChecked, Mode=TwoWay}"
+                        IsThreeState="True"
+                        FontSize="12"
+                        FontWeight="Bold" />
+            </controls:GroupBox.Header>
             <Grid Margin="12">
               <ItemsControl ItemsSource="{Binding Settings}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate DataType="options:DecompilerSettingsItemViewModel">
-                    <CheckBox IsChecked="{Binding IsEnabled}" Content="{Binding Description}" />
+                    <CheckBox Margin="24,12,0,0"
+                              IsChecked="{Binding IsEnabled}"
+                              Content="{Binding Description}" />
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>

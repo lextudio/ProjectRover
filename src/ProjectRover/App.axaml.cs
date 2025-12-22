@@ -31,7 +31,6 @@ using System.Composition.Convention;
 using TomsToolbox.Composition;
 using TomsToolbox.Composition.MicrosoftExtensions;
 using ICSharpCode.ILSpyX.Analyzers;
-using TomsToolbox.Composition;
 using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 using ICSharpCode.ILSpy.Views;
