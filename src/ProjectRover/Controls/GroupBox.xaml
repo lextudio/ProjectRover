@@ -1,0 +1,38 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:ProjectRover.Controls">
+    <Style Selector="controls|GroupBox">
+        <Setter Property="Template">
+            <ControlTemplate TargetType="controls:GroupBox">
+                <Grid>
+                    <Border BorderThickness="1"
+                            CornerRadius="4"
+                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            Background="{TemplateBinding Background}"
+                            Padding="10,14,10,10">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}" />
+                    </Border>
+                    <Grid Margin="12,6,12,0" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+                        <!-- full-width underline -->
+                        <Border Height="1"
+                            Background="{DynamicResource ThemeForegroundBrush}"
+                            VerticalAlignment="Bottom"
+                            Opacity="0.5" />
+
+                        <!-- header text overlays the line; background masks the line behind text -->
+                        <TextBlock Text="{TemplateBinding Header}"
+                                FontWeight="SemiBold"
+                                FontSize="12"
+                                Foreground="{DynamicResource ThemeForegroundBrush}"
+                                Background="{DynamicResource ThemeBackgroundBrush}"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Left"
+                                Padding="6,0"
+                                Margin="6,0,6,0" />
+                    </Grid>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

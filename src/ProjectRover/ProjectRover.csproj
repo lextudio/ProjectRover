@@ -101,6 +101,10 @@
     <AvaloniaResource Include="Themes\**\*.axaml" />
   </ItemGroup>
   <ItemGroup>
+    <AvaloniaXaml Remove="Controls\GroupBox.xaml" />
+    <AvaloniaResource Include="Controls\GroupBox.xaml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="..\ILSpy\ILSpy\Options\MiscSettingsViewModel.cs">
       <Link>Options\MiscSettingsViewModel.cs</Link>
     </Compile>
