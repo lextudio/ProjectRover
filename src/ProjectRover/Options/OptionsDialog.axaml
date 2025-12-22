@@ -24,16 +24,22 @@
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right"
       Margin="12,8">
       <Button Margin="2,0"
-        Command="{Binding ResetDefaultsCommand}"
-        Content="{x:Static properties:Resources.ResetToDefaults}" />
+              MinWidth="90"
+              HorizontalContentAlignment="Center"
+              Command="{Binding ResetDefaultsCommand}"
+              Content="{x:Static properties:Resources.ResetToDefaults}" />
       <Button Margin="2,0"
-        IsDefault="True"
-        Click="OnOkClicked"
-        Content="{x:Static properties:Resources.OK}" />
+              MinWidth="90"
+              HorizontalContentAlignment="Center"
+              IsDefault="True"
+              Click="OnOkClicked"
+              Content="{x:Static properties:Resources.OK}" />
       <Button Margin="2,0"
-        IsCancel="True"
-        Click="OnCancelClicked"
-        Content="{x:Static properties:Resources.Cancel}" />
+              MinWidth="90"
+              HorizontalContentAlignment="Center"
+              IsCancel="True"
+              Click="OnCancelClicked"
+              Content="{x:Static properties:Resources.Cancel}" />
     </StackPanel>
 
     <TabControl x:Name="OptionsTabControl" ItemsSource="{Binding OptionPages}"

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:options="clr-namespace:ICSharpCode.ILSpy.Options"
+             xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
              xmlns:controls="clr-namespace:ProjectRover.Controls;assembly=ProjectRover"
              x:Class="ICSharpCode.ILSpy.Options.MiscSettingsPanel"
              x:DataType="options:MiscSettingsViewModel">
@@ -9,7 +10,9 @@
       <StackPanel Margin="10">
         <CheckBox IsChecked="{Binding Settings.AllowMultipleInstances}" Content="Allow multiple instances" />
         <CheckBox IsChecked="{Binding Settings.LoadPreviousAssemblies}" Content="Load assemblies that were loaded in the last instance" />
-        <Button Command="{Binding AddRemoveShellIntegrationCommand}" Content="{Binding AddRemoveShellIntegrationText}" Margin="3" />
+        <Button Command="{Binding AddRemoveShellIntegrationCommand}"
+                Content="{Binding AddRemoveShellIntegrationText, FallbackValue={x:Static properties:Resources.AddShellIntegration}}"
+                Margin="3" />
       </StackPanel>
     </controls:GroupBox>
   </StackPanel>
