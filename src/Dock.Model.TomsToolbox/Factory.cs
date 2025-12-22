@@ -58,7 +58,6 @@ public class Factory : FactoryBase
     public override IDocumentDock CreateDocumentDock() => new DocumentDock();
     public override IDockWindow CreateDockWindow() => new DockWindow();
     public override IRootDock CreateLayout() => CreateRootDock();
-    
-    // public override IDocument CreateDocument() => new Controls.Document();
-    // public override ITool CreateTool() => new Controls.Tool();
+    public override IDocument CreateDocument() => new Document();
+    public override ITool CreateTool() => new Tool();
 }
