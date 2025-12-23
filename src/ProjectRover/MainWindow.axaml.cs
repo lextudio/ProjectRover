@@ -84,5 +84,11 @@ namespace ICSharpCode.ILSpy
             AvaloniaXamlLoader.Load(this);
         }
 
+        protected override void OnClosing(WindowClosingEventArgs e)
+        {
+            viewModel?.Workspace.SaveLayout();
+            base.OnClosing(e);
+        }
+
     }
 }

@@ -92,4 +92,10 @@ public class DocumentDock : DockBase, IDocumentDock
         Factory?.SetActiveDockable(tool);
         Factory?.SetFocusedDockable(this, tool);
     }
+
+    [OnDeserialized]
+    private void OnDeserialized(StreamingContext context)
+    {
+        CreateDocument = new RelayCommand(CreateNewDocument);
+    }
 }

@@ -9,7 +9,7 @@ namespace Dock.Model.TomsToolbox.Core;
 [DataContract(IsReference = true)]
 public abstract class DockBase : DockableBase, IDock
 {
-    internal readonly INavigateAdapter _navigateAdapter;
+    internal INavigateAdapter _navigateAdapter;
     private IList<IDockable>? _visibleDockables;
     private IDockable? _activeDockable;
     private IDockable? _defaultDockable;
@@ -94,21 +94,31 @@ public abstract class DockBase : DockableBase, IDock
     public bool CanGoForward => _navigateAdapter.CanGoForward;
 
     [IgnoreDataMember]
-    public ICommand GoBack { get; }
+    public ICommand GoBack { get; private set; }
 
     [IgnoreDataMember]
-    public ICommand GoForward { get; }
+    public ICommand GoForward { get; private set; }
 
     [IgnoreDataMember]
-    public ICommand Navigate { get; }
+    public ICommand Navigate { get; private set; }
 
     [IgnoreDataMember]
-    public ICommand Close { get; }
+    public ICommand Close { get; private set; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public bool EnableGlobalDocking
     {
         get => _enableGlobalDocking;
         set => SetProperty(ref _enableGlobalDocking, value);
+    }
+
+    [OnDeserialized]
+    private void OnDeserialized(StreamingContext context)
+    {
+        _navigateAdapter = new NavigateAdapter(this);
+        GoBack = new RelayCommand(() => _navigateAdapter.GoBack());
+        GoForward = new RelayCommand(() => _navigateAdapter.GoForward());
+        Navigate = new RelayCommand<object>(root => _navigateAdapter.Navigate(root, true));
+        Close = new RelayCommand(() => _navigateAdapter.Close());
     }
 }

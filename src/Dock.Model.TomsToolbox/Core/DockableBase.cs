@@ -10,7 +10,7 @@ namespace Dock.Model.TomsToolbox.Core;
 [DataContract(IsReference = true)]
 public abstract class DockableBase : ReactiveBase, IDockable
 {
-    private readonly TrackingAdapter _trackingAdapter = new();
+    private TrackingAdapter _trackingAdapter = new();
     private string _id = string.Empty;
     private string _title = string.Empty;
     private object? _context;
@@ -29,6 +29,7 @@ public abstract class DockableBase : ReactiveBase, IDockable
     private double _collapsedProportion = double.NaN;
     private bool _canClose = true;
     private bool _canPin = true;
+    private bool _keepPinnedDockableVisible;
     private bool _canFloat = true;
     private bool _canDrag = true;
     private bool _canDrop = true;
@@ -199,6 +200,13 @@ public abstract class DockableBase : ReactiveBase, IDockable
     }
 
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public bool KeepPinnedDockableVisible
+    {
+        get => _keepPinnedDockableVisible;
+        set => SetProperty(ref _keepPinnedDockableVisible, value);
+    }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public bool CanFloat
     {
         get => _canFloat;
@@ -333,4 +341,10 @@ public abstract class DockableBase : ReactiveBase, IDockable
     }
 
     public virtual void OnPointerScreenPositionChanged(double x, double y) { }
+
+    [OnDeserialized]
+    private void OnDeserialized(StreamingContext context)
+    {
+        _trackingAdapter = new TrackingAdapter();
+    }
 }

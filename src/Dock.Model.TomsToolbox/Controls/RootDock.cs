@@ -109,11 +109,11 @@ public class RootDock : DockBase, IRootDock, ILocalTarget
 
     /// <inheritdoc/>
     [IgnoreDataMember]
-    public ICommand ShowWindows { get; }
+    public ICommand ShowWindows { get; private set; }
 
     /// <inheritdoc/>
     [IgnoreDataMember]
-    public ICommand ExitWindows { get; }
+    public ICommand ExitWindows { get; private set; }
     
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
@@ -121,5 +121,12 @@ public class RootDock : DockBase, IRootDock, ILocalTarget
     {
         get => _enableAdaptiveGlobalDockTargets;
         set => SetProperty(ref _enableAdaptiveGlobalDockTargets, value);
+    }
+
+    [OnDeserialized]
+    private void OnDeserialized(StreamingContext context)
+    {
+        ShowWindows = new RelayCommand(() => _navigateAdapter.ShowWindows());
+        ExitWindows = new RelayCommand(() => _navigateAdapter.ExitWindows());
     }
 }

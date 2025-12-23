@@ -10,10 +10,13 @@ using Dock.Model.Core.Events;
 using ICSharpCode.ILSpy.TextView;
 using ICSharpCode.ILSpy.ViewModels;
 using ICSharpCode.ILSpy.Search;
+using ICSharpCode.ILSpy.Util;
 using Dock.Model.Controls;
 using Dock.Avalonia.Controls;
 using Dock.Model.TomsToolbox.Controls;
 using Dock.Model.TomsToolbox;
+using Dock.Model.TomsToolbox.Core;
+using ProjectRover.Settings;
 
 namespace ICSharpCode.ILSpy.Docking
 {
@@ -26,6 +29,24 @@ namespace ICSharpCode.ILSpy.Docking
     private DockControl? dockHost;
     private IDocumentDock? documentDock;
     private IFactory? factory;
+    private ProjectRoverSettingsSection? roverSettings;
+    private static readonly Type[] dockLayoutKnownTypes = new[]
+    {
+      typeof(RootDock),
+      typeof(ProportionalDock),
+      typeof(DockDock),
+      typeof(StackDock),
+      typeof(GridDock),
+      typeof(WrapDock),
+      typeof(UniformGridDock),
+      typeof(ToolDock),
+      typeof(DocumentDock),
+      typeof(ProportionalDockSplitter),
+      typeof(GridDockSplitter),
+      typeof(Tool),
+      typeof(Document),
+      typeof(DockWindow)
+    };
 
     public void InitializeLayout()
     {
@@ -56,6 +77,11 @@ namespace ICSharpCode.ILSpy.Docking
         {
              Console.WriteLine("DockWorkspace.InitializeLayout: ViewModel is null, cannot initialize specific layout.");
              return;
+        }
+
+        if (TryRestoreLayout(dockHost))
+        {
+          return;
         }
 
         Console.WriteLine("DockWorkspace.InitializeLayout: Creating specific layout structure");
@@ -147,6 +173,351 @@ namespace ICSharpCode.ILSpy.Docking
       {
         Console.WriteLine($"DockWorkspace.InitializeLayout error: {ex}");
       }
+    }
+
+    public void SaveLayout()
+    {
+      if (dockHost?.Layout is not IRootDock rootLayout)
+        return;
+
+      try
+      {
+        var snapshot = BuildLayoutSnapshot(rootLayout);
+        if (snapshot == null)
+          return;
+
+        var serializer = CreateLayoutSerializer();
+        var layoutXml = serializer.Serialize(snapshot);
+        if (!string.IsNullOrWhiteSpace(layoutXml))
+        {
+          GetRoverSettings().DockLayout = layoutXml;
+        }
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"DockWorkspace.SaveLayout error: {ex}");
+      }
+    }
+
+    private ProjectRoverSettingsSection GetRoverSettings()
+    {
+      roverSettings ??= exportProvider.GetExportedValue<SettingsService>()
+        .GetSettings<ProjectRoverSettingsSection>();
+      return roverSettings;
+    }
+
+    private bool TryRestoreLayout(DockControl dockHost)
+    {
+      var layoutXml = GetRoverSettings().DockLayout;
+      if (string.IsNullOrWhiteSpace(layoutXml))
+        return false;
+
+      try
+      {
+        var serializer = CreateLayoutSerializer();
+        var layout = serializer.Deserialize<RootDock>(layoutXml);
+        if (layout == null)
+          return false;
+
+        RegisterKnownTools();
+        ReplaceToolDockables(layout);
+        ResetDocumentDock(layout);
+        RegisterDockablesForActivation(layout);
+
+        var factory = new Factory();
+        dockHost.Factory = factory;
+        dockHost.InitializeFactory = true;
+        dockHost.InitializeLayout = true;
+        dockHost.Layout = layout;
+
+        var docDock = FindDockById(layout, "DocumentDock") as IDocumentDock;
+        AttachToDockHost(dockHost, factory, docDock);
+        HookUpToolListeners(dockHost);
+
+        dockHost.IsVisible = true;
+        Console.WriteLine("DockWorkspace.InitializeLayout: Restored layout from ProjectRover settings");
+        return true;
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"DockWorkspace.InitializeLayout: Failed to restore layout: {ex}");
+        return false;
+      }
+    }
+
+    private void RegisterKnownTools()
+    {
+      foreach (var tool in ToolPanes)
+      {
+        RegisterTool(tool);
+      }
+    }
+
+    private void RegisterDockablesForActivation(IDockable layout)
+    {
+      if (FindDockableById(layout, "SearchDock") is IDockable searchDock)
+        RegisterDockable(searchDock);
+
+      if (FindDockableById(layout, "SearchSplitter") is IDockable searchSplitter)
+        RegisterDockable(searchSplitter);
+    }
+
+    private void ReplaceToolDockables(IDockable root)
+    {
+      var toolsById = ToolPanes
+        .Where(tool => !string.IsNullOrWhiteSpace(tool.Id))
+        .ToDictionary(tool => tool.Id, StringComparer.Ordinal);
+
+      ReplaceToolDockables(root, toolsById);
+    }
+
+    private static void ReplaceToolDockables(IDockable root, IReadOnlyDictionary<string, ToolPaneModel> toolsById)
+    {
+      if (root is IDock dock && dock.VisibleDockables != null)
+      {
+        for (int i = dock.VisibleDockables.Count - 1; i >= 0; i--)
+        {
+          var dockable = dock.VisibleDockables[i];
+          if (dockable is IDock nestedDock)
+          {
+            ReplaceToolDockables(nestedDock, toolsById);
+            continue;
+          }
+
+          if (dockable is Tool tool)
+          {
+            if (tool.Id != null && toolsById.TryGetValue(tool.Id, out var actualTool))
+            {
+              actualTool.IsVisible = tool.IsVisible;
+              actualTool.IsActive = tool.IsActive;
+              dock.VisibleDockables[i] = actualTool;
+            }
+            else
+            {
+              dock.VisibleDockables.RemoveAt(i);
+            }
+          }
+        }
+
+        dock.ActiveDockable = RemapDockable(dock.ActiveDockable, toolsById);
+        dock.DefaultDockable = RemapDockable(dock.DefaultDockable, toolsById);
+        dock.FocusedDockable = RemapDockable(dock.FocusedDockable, toolsById);
+      }
+
+      if (root is RootDock rootDock)
+      {
+        ReplaceDockableList(rootDock.HiddenDockables, toolsById);
+        ReplaceDockableList(rootDock.LeftPinnedDockables, toolsById);
+        ReplaceDockableList(rootDock.RightPinnedDockables, toolsById);
+        ReplaceDockableList(rootDock.TopPinnedDockables, toolsById);
+        ReplaceDockableList(rootDock.BottomPinnedDockables, toolsById);
+        if (rootDock.PinnedDock != null)
+          ReplaceToolDockables(rootDock.PinnedDock, toolsById);
+      }
+    }
+
+    private static IDockable? RemapDockable(IDockable? dockable, IReadOnlyDictionary<string, ToolPaneModel> toolsById)
+    {
+      if (dockable is ITool tool && tool.Id != null && toolsById.TryGetValue(tool.Id, out var actualTool))
+        return actualTool;
+
+      return dockable is ITool ? null : dockable;
+    }
+
+    private static void ReplaceDockableList(IList<IDockable>? dockables, IReadOnlyDictionary<string, ToolPaneModel> toolsById)
+    {
+      if (dockables == null)
+        return;
+
+      for (int i = dockables.Count - 1; i >= 0; i--)
+      {
+        var dockable = dockables[i];
+        if (dockable is IDock dock)
+        {
+          ReplaceToolDockables(dock, toolsById);
+          continue;
+        }
+
+        if (dockable is Tool tool)
+        {
+          if (tool.Id != null && toolsById.TryGetValue(tool.Id, out var actualTool))
+          {
+            actualTool.IsVisible = tool.IsVisible;
+            actualTool.IsActive = tool.IsActive;
+            dockables[i] = actualTool;
+          }
+          else
+          {
+            dockables.RemoveAt(i);
+          }
+        }
+        else if (dockable is IDocument)
+        {
+          dockables.RemoveAt(i);
+        }
+      }
+    }
+
+    private static void ResetDocumentDock(IDockable root)
+    {
+      if (FindDockById(root, "DocumentDock") is IDocumentDock docDock)
+      {
+        docDock.VisibleDockables?.Clear();
+        docDock.ActiveDockable = null;
+        docDock.DefaultDockable = null;
+        docDock.FocusedDockable = null;
+      }
+    }
+
+    private static RootDock? BuildLayoutSnapshot(IRootDock layout)
+    {
+      // Clone the layout with stub dockables so we don't serialize view-model types.
+      var map = new Dictionary<IDockable, IDockable>();
+      return CloneDockable(layout, map) as RootDock;
+    }
+
+    private static DockLayoutXmlSerializer CreateLayoutSerializer()
+    {
+      return new DockLayoutXmlSerializer(typeof(ObservableCollection<>), dockLayoutKnownTypes);
+    }
+
+    private static IDockable? CloneDockable(IDockable source, IDictionary<IDockable, IDockable> map)
+    {
+      if (map.TryGetValue(source, out var existing))
+        return existing;
+
+      IDockable? clone = source switch
+      {
+        IRootDock => new RootDock(),
+        IProportionalDock => new ProportionalDock(),
+        IToolDock => new ToolDock(),
+        IDocumentDock => new DocumentDock(),
+        IProportionalDockSplitter => new ProportionalDockSplitter(),
+        IDocument => null,
+        ITool => new Tool(),
+        _ => null
+      };
+
+      if (clone == null)
+        return null;
+
+      map[source] = clone;
+      CopyDockableProperties(source, clone);
+
+      if (source is ToolDock sourceToolDock && clone is ToolDock cloneToolDock)
+      {
+        cloneToolDock.Alignment = sourceToolDock.Alignment;
+        cloneToolDock.IsExpanded = sourceToolDock.IsExpanded;
+        cloneToolDock.AutoHide = sourceToolDock.AutoHide;
+        cloneToolDock.GripMode = sourceToolDock.GripMode;
+      }
+
+      if (source is DocumentDock sourceDocDock && clone is DocumentDock cloneDocDock)
+      {
+        cloneDocDock.CanCreateDocument = sourceDocDock.CanCreateDocument;
+        cloneDocDock.EnableWindowDrag = sourceDocDock.EnableWindowDrag;
+        cloneDocDock.TabsLayout = sourceDocDock.TabsLayout;
+      }
+
+      if (source is ProportionalDock sourceProportional && clone is ProportionalDock cloneProportional)
+      {
+        cloneProportional.Orientation = sourceProportional.Orientation;
+      }
+
+      if (source is ProportionalDockSplitter sourceSplitter && clone is ProportionalDockSplitter cloneSplitter)
+      {
+        cloneSplitter.CanResize = sourceSplitter.CanResize;
+        cloneSplitter.ResizePreview = sourceSplitter.ResizePreview;
+      }
+
+      if (source is RootDock sourceRoot && clone is RootDock cloneRoot)
+      {
+        cloneRoot.IsFocusableRoot = sourceRoot.IsFocusableRoot;
+        cloneRoot.EnableAdaptiveGlobalDockTargets = sourceRoot.EnableAdaptiveGlobalDockTargets;
+        cloneRoot.HiddenDockables = CloneDockablesList(sourceRoot.HiddenDockables, map);
+        cloneRoot.LeftPinnedDockables = CloneDockablesList(sourceRoot.LeftPinnedDockables, map);
+        cloneRoot.RightPinnedDockables = CloneDockablesList(sourceRoot.RightPinnedDockables, map);
+        cloneRoot.TopPinnedDockables = CloneDockablesList(sourceRoot.TopPinnedDockables, map);
+        cloneRoot.BottomPinnedDockables = CloneDockablesList(sourceRoot.BottomPinnedDockables, map);
+        if (sourceRoot.PinnedDock != null)
+          cloneRoot.PinnedDock = CloneDockable(sourceRoot.PinnedDock, map) as IToolDock;
+      }
+
+      if (source is IDock sourceDock && clone is IDock cloneDock)
+      {
+        if (sourceDock.VisibleDockables != null)
+        {
+          var visibleDockables = new ObservableCollection<IDockable>();
+          foreach (var dockable in sourceDock.VisibleDockables)
+          {
+            var dockableClone = CloneDockable(dockable, map);
+            if (dockableClone != null)
+              visibleDockables.Add(dockableClone);
+          }
+          cloneDock.VisibleDockables = visibleDockables;
+        }
+
+        cloneDock.ActiveDockable = MapDockable(sourceDock.ActiveDockable, map);
+        cloneDock.DefaultDockable = MapDockable(sourceDock.DefaultDockable, map);
+        cloneDock.FocusedDockable = MapDockable(sourceDock.FocusedDockable, map);
+      }
+
+      return clone;
+    }
+
+    private static IList<IDockable>? CloneDockablesList(IList<IDockable>? source, IDictionary<IDockable, IDockable> map)
+    {
+      if (source == null)
+        return null;
+
+      var list = new ObservableCollection<IDockable>();
+      foreach (var dockable in source)
+      {
+        var clone = CloneDockable(dockable, map);
+        if (clone != null)
+          list.Add(clone);
+      }
+      return list;
+    }
+
+    private static IDockable? MapDockable(IDockable? source, IDictionary<IDockable, IDockable> map)
+    {
+      if (source != null && map.TryGetValue(source, out var clone))
+        return clone;
+      return null;
+    }
+
+    private static void CopyDockableProperties(IDockable source, IDockable target)
+    {
+      if (source is not DockableBase sourceBase || target is not DockableBase targetBase)
+        return;
+
+      targetBase.Id = sourceBase.Id;
+      targetBase.Title = sourceBase.Title;
+      targetBase.Proportion = sourceBase.Proportion;
+      targetBase.Dock = sourceBase.Dock;
+      targetBase.Column = sourceBase.Column;
+      targetBase.Row = sourceBase.Row;
+      targetBase.ColumnSpan = sourceBase.ColumnSpan;
+      targetBase.RowSpan = sourceBase.RowSpan;
+      targetBase.IsSharedSizeScope = sourceBase.IsSharedSizeScope;
+      targetBase.CollapsedProportion = sourceBase.CollapsedProportion;
+      targetBase.IsCollapsable = sourceBase.IsCollapsable;
+      targetBase.IsEmpty = sourceBase.IsEmpty;
+      targetBase.CanClose = sourceBase.CanClose;
+      targetBase.CanPin = sourceBase.CanPin;
+      targetBase.KeepPinnedDockableVisible = sourceBase.KeepPinnedDockableVisible;
+      targetBase.CanFloat = sourceBase.CanFloat;
+      targetBase.CanDrag = sourceBase.CanDrag;
+      targetBase.CanDrop = sourceBase.CanDrop;
+      targetBase.MinWidth = sourceBase.MinWidth;
+      targetBase.MaxWidth = sourceBase.MaxWidth;
+      targetBase.MinHeight = sourceBase.MinHeight;
+      targetBase.MaxHeight = sourceBase.MaxHeight;
+      targetBase.IsModified = sourceBase.IsModified;
+      targetBase.DockGroup = sourceBase.DockGroup;
+      targetBase.IsVisible = sourceBase.IsVisible;
+      targetBase.IsActive = sourceBase.IsActive;
     }
 
     private void HookUpToolListeners(DockControl dockHost)
@@ -496,6 +867,23 @@ namespace ICSharpCode.ILSpy.Docking
         foreach (var dockable in dock.VisibleDockables)
         {
           var found = FindToolById(dockable, id);
+          if (found != null)
+            return found;
+        }
+      }
+      return null;
+    }
+
+    private static IDockable? FindDockableById(IDockable root, string id)
+    {
+      if (root.Id == id)
+        return root;
+
+      if (root is IDock dock && dock.VisibleDockables != null)
+      {
+        foreach (var dockable in dock.VisibleDockables)
+        {
+          var found = FindDockableById(dockable, id);
           if (found != null)
             return found;
         }

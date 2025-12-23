@@ -8,7 +8,7 @@ namespace Dock.Model.TomsToolbox.Core;
 [DataContract(IsReference = true)]
 public class DockWindow : ReactiveBase, IDockWindow
 {
-    private readonly IHostAdapter _hostAdapter;
+    private IHostAdapter _hostAdapter;
     private string _id;
     private double _x;
     private double _y;
@@ -35,28 +35,28 @@ public class DockWindow : ReactiveBase, IDockWindow
         set => SetProperty(ref _id, value);
     }
 
-    [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public double X
     {
         get => _x;
         set => SetProperty(ref _x, value);
     }
 
-    [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public double Y
     {
         get => _y;
         set => SetProperty(ref _y, value);
     }
 
-    [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public double Width
     {
         get => _width;
         set => SetProperty(ref _width, value);
     }
 
-    [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public double Height
     {
         get => _height;
@@ -114,4 +114,10 @@ public class DockWindow : ReactiveBase, IDockWindow
     public void Present(bool isDialog) => _hostAdapter.Present(isDialog);
     public void Exit() => _hostAdapter.Exit();
     public void SetActive() => _hostAdapter.SetActive();
+
+    [OnDeserialized]
+    private void OnDeserialized(StreamingContext context)
+    {
+        _hostAdapter = new HostAdapter(this);
+    }
 }
