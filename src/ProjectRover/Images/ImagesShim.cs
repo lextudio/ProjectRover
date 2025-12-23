@@ -57,7 +57,6 @@ namespace ICSharpCode.ILSpy
 			{
 				// Build candidate paths: themed first (if dark), then the original
 				var candidates = new System.Collections.Generic.List<string>();
-				bool triedTheme = false;
 				try
 				{
 					if (App.Current != null && App.Current.ActualThemeVariant.ToString().Equals("Dark", StringComparison.OrdinalIgnoreCase))
@@ -67,13 +66,11 @@ namespace ICSharpCode.ILSpy
 						{
 							var darkPath = path.Replace("/Assets/", "/Assets/Dark/");
 							candidates.Add(darkPath);
-							triedTheme = true;
 						}
 						else if (path.Contains("/ProjectRover/Assets/") && !path.Contains("/ProjectRover/Assets/Dark/"))
 						{
 							var darkPath = path.Replace("/ProjectRover/Assets/", "/ProjectRover/Assets/Dark/");
 							candidates.Add(darkPath);
-							triedTheme = true;
 						}
 					}
 				}
