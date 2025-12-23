@@ -222,6 +222,24 @@ namespace ICSharpCode.ILSpy.Docking
         RegisterKnownTools();
         ReplaceToolDockables(layout);
         ResetDocumentDock(layout);
+
+        if (FindDockableById(layout, "SearchDock") is IDockable searchDock)
+        {
+            if (searchDock.Proportion > 0.9)
+            {
+                searchDock.Proportion = 0.33;
+            }
+        }
+
+        if (FindDockableById(layout, "DocumentDock") is IDockable foundDocDock)
+        {
+             if (double.IsNaN(foundDocDock.Proportion) || foundDocDock.Proportion < 0.1)
+             {
+                 foundDocDock.Proportion = 0.66;
+             }
+             foundDocDock.IsCollapsable = false;
+        }
+
         RegisterDockablesForActivation(layout);
 
         var factory = new Factory();
@@ -366,6 +384,7 @@ namespace ICSharpCode.ILSpy.Docking
         docDock.ActiveDockable = null;
         docDock.DefaultDockable = null;
         docDock.FocusedDockable = null;
+        docDock.Proportion = double.NaN;
       }
     }
 
@@ -605,6 +624,7 @@ namespace ICSharpCode.ILSpy.Docking
     /// </summary>
     public DocumentDock CreateDocumentDock()
     {
+        Console.WriteLine("[DockWorkspace.Avalonia] CreateDocumentDock called");
         EnsureTabPage();
 
         var docDock = new DocumentDock
@@ -707,6 +727,8 @@ namespace ICSharpCode.ILSpy.Docking
 
         foreach (var tab in tabPages)
         {
+            if (documentDock.VisibleDockables.Contains(tab))
+                continue;
             documentDock.VisibleDockables.Add(CreateDocument(tab));
         }
     }
