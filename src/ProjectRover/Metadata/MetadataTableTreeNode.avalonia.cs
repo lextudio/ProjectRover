@@ -88,7 +88,7 @@ namespace ICSharpCode.ILSpy.Metadata
 
 		private void View_Loaded(object sender, RoutedEventArgs e)
 		{
-			ListBox view = (ListBox)sender;
+			DataGrid view = (DataGrid)sender;
 			var sv = view
 				.GetVisualDescendants()
 				.OfType<ScrollViewer>()
