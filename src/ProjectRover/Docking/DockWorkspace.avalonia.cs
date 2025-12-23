@@ -242,6 +242,9 @@ namespace ICSharpCode.ILSpy.Docking
 
         RegisterDockablesForActivation(layout);
 
+        var rightDock = FindDockById(layout, "RightDock");
+        Console.WriteLine($"[DockWorkspace] TryRestoreLayout: RightDock found: {rightDock != null}");
+
         var factory = new Factory();
         dockHost.Factory = factory;
         dockHost.InitializeFactory = true;
@@ -273,11 +276,28 @@ namespace ICSharpCode.ILSpy.Docking
 
     private void RegisterDockablesForActivation(IDockable layout)
     {
-      if (FindDockableById(layout, "SearchDock") is IDockable searchDock)
-        RegisterDockable(searchDock);
+      var searchDock = FindDockableById(layout, "SearchDock") as ToolDock;
+      Console.WriteLine($"[DockWorkspace] RegisterDockablesForActivation: SearchDock found in layout: {searchDock != null}");
+      if (searchDock == null)
+      {
+          searchDock = new ToolDock
+          {
+              Id = "SearchDock",
+              Title = "Search",
+              Alignment = Alignment.Top,
+              VisibleDockables = new ObservableCollection<IDockable>(),
+              CanCloseLastDockable = true,
+              Proportion = 0.5
+          };
+      }
+      RegisterDockable(searchDock);
 
-      if (FindDockableById(layout, "SearchSplitter") is IDockable searchSplitter)
-        RegisterDockable(searchSplitter);
+      var searchSplitter = FindDockableById(layout, "SearchSplitter") as ProportionalDockSplitter;
+      if (searchSplitter == null)
+      {
+          searchSplitter = new ProportionalDockSplitter { Id = "SearchSplitter", CanResize = true };
+      }
+      RegisterDockable(searchSplitter);
     }
 
     private void ReplaceToolDockables(IDockable root)
@@ -826,7 +846,6 @@ namespace ICSharpCode.ILSpy.Docking
             {
                 factory.SetActiveDockable(tool);
                 factory.SetFocusedDockable(layout, tool);
-                Console.WriteLine($"DockWorkspace: Activated tool {contentId}");
             }
             else
             {
@@ -840,23 +859,76 @@ namespace ICSharpCode.ILSpy.Docking
                     // If target dock not found in layout, try to find in registered dockables and insert it
                     if (targetDock == null && targetDockId == "SearchDock")
                     {
-                        var rightDock = FindDockById(layout, "RightDock");
-                        if (rightDock != null && rightDock.VisibleDockables != null)
+                        var docDock = FindDockById(layout, "DocumentDock");
+                        if (docDock != null && docDock.Owner is IDock docOwner && docOwner.VisibleDockables != null)
                         {
-                             if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is IToolDock sd)
-                             {
-                                 sd.Owner = rightDock;
-                                 sd.Factory = factory;
-                                 rightDock.VisibleDockables.Insert(0, sd);
-                                 targetDock = sd;
+                            // If the owner is horizontal (e.g. MainLayout), we need to wrap DocumentDock in a vertical dock
+                            if (docOwner is IProportionalDock propDock && propDock.Orientation == Dock.Model.Core.Orientation.Horizontal)
+                            {
+                                var newVerticalDock = new ProportionalDock
+                                {
+                                    Id = "RightDock",
+                                    Orientation = Dock.Model.Core.Orientation.Vertical,
+                                    Proportion = double.IsNaN(docDock.Proportion) ? 1.0 : docDock.Proportion,
+                                    VisibleDockables = new ObservableCollection<IDockable>()
+                                };
 
-                                 if (_registeredDockables.TryGetValue("SearchSplitter", out var splitter))
-                                 {
-                                     splitter.Owner = rightDock;
-                                     splitter.Factory = factory;
-                                     rightDock.VisibleDockables.Insert(1, splitter);
-                                 }
-                             }
+                                int index = docOwner.VisibleDockables.IndexOf(docDock);
+                                if (index >= 0)
+                                {
+                                    docOwner.VisibleDockables.RemoveAt(index);
+                                    docOwner.VisibleDockables.Insert(index, newVerticalDock);
+                                    newVerticalDock.Owner = docOwner;
+                                    newVerticalDock.Factory = factory;
+
+                                    if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is IToolDock sd)
+                                    {
+                                        sd.Owner = newVerticalDock;
+                                        sd.Factory = factory;
+                                        newVerticalDock.VisibleDockables.Add(sd);
+                                        targetDock = sd;
+
+                                        if (_registeredDockables.TryGetValue("SearchSplitter", out var splitter))
+                                        {
+                                            splitter.Owner = newVerticalDock;
+                                            splitter.Factory = factory;
+                                            newVerticalDock.VisibleDockables.Add(splitter);
+                                        }
+                                    }
+
+                                    docDock.Owner = newVerticalDock;
+                                    newVerticalDock.VisibleDockables.Add(docDock);
+                                    newVerticalDock.ActiveDockable = docDock;
+                                }
+                            }
+                            else
+                            {
+                                // Owner is likely vertical (or we assume it is safe to insert), just insert at top
+                                if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is IToolDock sd)
+                                {
+                                    if (!docOwner.VisibleDockables.Contains(sd))
+                                    {
+                                        sd.Owner = docOwner;
+                                        sd.Factory = factory;
+                                        docOwner.VisibleDockables.Insert(0, sd);
+                                        targetDock = sd;
+
+                                        if (_registeredDockables.TryGetValue("SearchSplitter", out var splitter))
+                                        {
+                                            if (!docOwner.VisibleDockables.Contains(splitter))
+                                            {
+                                                splitter.Owner = docOwner;
+                                                splitter.Factory = factory;
+                                                docOwner.VisibleDockables.Insert(1, splitter);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        targetDock = sd;
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -869,7 +941,6 @@ namespace ICSharpCode.ILSpy.Docking
                         return;
                     }
                 }
-
                 Console.WriteLine($"DockWorkspace: Tool {contentId} not found for activation");
             }
         }
