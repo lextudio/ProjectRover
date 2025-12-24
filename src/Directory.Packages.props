@@ -65,7 +65,6 @@
     <PackageVersion Include="NUnit" Version="4.4.0" />
     <PackageVersion Include="NUnit3TestAdapter" Version="6.0.0" />
     <PackageVersion Include="NuGet.Protocol" Version="7.0.1" />
-    <PackageVersion Include="NuGet.Versioning" Version="7.0.1" />
     <PackageVersion Include="PowerShellStandard.Library" Version="5.1.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="System.Composition.AttributedModel" Version="10.0.1" />

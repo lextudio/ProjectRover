@@ -5,7 +5,6 @@ using Avalonia.Markup.Xaml;
 using Dock.Avalonia.Controls;
 using System.Windows.Threading;
 using System.Reflection;
-using NuGet.Versioning;
 
 namespace ICSharpCode.ILSpy
 {
@@ -48,29 +47,10 @@ namespace ICSharpCode.ILSpy
             }
 
             var informationalVersion = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-            if (TryParseInformationalVersion(informationalVersion, out var infoVersion))
-                return $"{infoVersion.Major}.{infoVersion.Minor}.{infoVersion.Patch}";
+            if (ICSharpCode.ILSpy.Updates.AppUpdateService.TryParseVersionString(informationalVersion, out var infoVersion))
+                return $"{infoVersion.Major}.{infoVersion.Minor}.{infoVersion.Build}";
 
             return null;
-        }
-
-        private static bool TryParseInformationalVersion(string? informationalVersion, out NuGetVersion version)
-        {
-            version = null;
-            if (string.IsNullOrWhiteSpace(informationalVersion))
-                return false;
-
-            if (NuGetVersion.TryParse(informationalVersion, out version))
-                return true;
-
-            var plusIndex = informationalVersion.IndexOf('+');
-            if (plusIndex > 0)
-            {
-                var trimmed = informationalVersion.Substring(0, plusIndex);
-                return NuGetVersion.TryParse(trimmed, out version);
-            }
-
-            return false;
         }
 
         public MainWindow(MainWindowViewModel viewModel) : this()

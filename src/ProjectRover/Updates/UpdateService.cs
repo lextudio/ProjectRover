@@ -19,7 +19,6 @@
 using System;
 using System.Threading.Tasks;
 using Octokit;
-using NuGet.Versioning;
 
 namespace ICSharpCode.ILSpy.Updates
 {
@@ -27,20 +26,21 @@ namespace ICSharpCode.ILSpy.Updates
 	{
 		const string RepoOwner = "LeXtudio";
 		const string RepoName = "ProjectRover";
-		const bool IncludePrereleases = true;
 
 		static readonly ProductHeaderValue ProductHeader = new ProductHeaderValue("ProjectRover");
 
 		public static AvailableVersionInfo LatestAvailableVersion { get; private set; }
-		public static NuGetVersion? LatestAvailableSemanticVersion { get; private set; }
+		public static Version? LatestAvailableSemanticVersion { get; private set; }
 
 		public static async Task<AvailableVersionInfo> GetLatestVersionAsync()
 		{
+			Console.WriteLine("[UpdateService] GetLatestVersionAsync called");
 			var client = new GitHubClient(ProductHeader);
 			var releaseInfo = await GetLatestReleaseAsync(client).ConfigureAwait(false);
 			if (releaseInfo.Release == null || releaseInfo.Version == null)
 			{
-				LatestAvailableSemanticVersion = AppUpdateService.CurrentSemanticVersion;
+				Console.WriteLine("[UpdateService] No release info found; returning current version");
+				LatestAvailableSemanticVersion = AppUpdateService.CurrentVersion;
 				LatestAvailableVersion = new AvailableVersionInfo {
 					Version = AppUpdateService.CurrentVersion,
 					DownloadUrl = null
@@ -54,60 +54,31 @@ namespace ICSharpCode.ILSpy.Updates
 
 			LatestAvailableSemanticVersion = releaseInfo.Version;
 			LatestAvailableVersion = new AvailableVersionInfo {
-				Version = releaseInfo.Version.Version,
+				Version = releaseInfo.Version,
 				DownloadUrl = url
 			};
+			Console.WriteLine($"[UpdateService] Found latest release: {LatestAvailableVersion.Version} (semantic {LatestAvailableSemanticVersion}) url={LatestAvailableVersion.DownloadUrl}");
 			return LatestAvailableVersion;
 		}
 
-		static async Task<(Release? Release, NuGetVersion? Version)> GetLatestReleaseAsync(GitHubClient client)
+		static async Task<(Release? Release, Version? Version)> GetLatestReleaseAsync(GitHubClient client)
 		{
-			var releases = await client.Repository.Release.GetAll(RepoOwner, RepoName).ConfigureAwait(false);
-			Release? bestRelease = null;
-			NuGetVersion? bestVersion = null;
-			var hasBest = false;
-
-			foreach (var release in releases)
+			try
 			{
-				if (release.Draft)
-					continue;
-				if (!IncludePrereleases && release.Prerelease)
-					continue;
+				// GitHub API already returns the latest non-draft, non-prerelease.
+				var latest = await client.Repository.Release.GetLatest(RepoOwner, RepoName).ConfigureAwait(false);
+				if (latest == null || latest.Draft || latest.Prerelease)
+					return (null, null);
 
-				if (!TryParseReleaseVersion(release, out var version))
-					continue;
+				if (!AppUpdateService.TryParseVersionString(latest.TagName, out var version))
+					return (null, null);
 
-				if (!hasBest || (bestVersion != null && version.CompareTo(bestVersion) > 0))
-				{
-					bestRelease = release;
-					bestVersion = version;
-					hasBest = true;
-				}
+				return (latest, version);
 			}
-
-			if (!hasBest || bestRelease == null || bestVersion == null)
+			catch
+			{
 				return (null, null);
-
-			return (bestRelease, bestVersion);
-		}
-
-		static bool TryParseReleaseVersion(Release release, out NuGetVersion version)
-		{
-			return TryParseNuGetVersion(release.TagName, out version)
-				|| TryParseNuGetVersion(release.Name, out version);
-		}
-
-		static bool TryParseNuGetVersion(string? value, out NuGetVersion version)
-		{
-			version = null;
-			if (string.IsNullOrWhiteSpace(value))
-				return false;
-
-			var trimmed = value.Trim();
-			if (trimmed.Length > 1 && (trimmed[0] == 'v' || trimmed[0] == 'V') && char.IsDigit(trimmed[1]))
-				trimmed = trimmed.Substring(1);
-
-			return NuGetVersion.TryParse(trimmed, out version);
+			}
 		}
 
 		static bool IsHttpUrl(string? url)
@@ -125,7 +96,10 @@ namespace ICSharpCode.ILSpy.Updates
 		public static async Task<string> CheckForUpdatesIfEnabledAsync(UpdateSettings settings)
 		{
 			if (!settings.AutomaticUpdateCheckEnabled)
+			{
+				Console.WriteLine("[UpdateService] Automatic update check disabled in settings.");
 				return null;
+			}
 
 			// perform update check if we never did one before;
 			// or if the last check wasn't in the past 7 days
@@ -133,6 +107,7 @@ namespace ICSharpCode.ILSpy.Updates
 				|| settings.LastSuccessfulUpdateCheck < DateTime.UtcNow.AddDays(-7)
 				|| settings.LastSuccessfulUpdateCheck > DateTime.UtcNow)
 			{
+				Console.WriteLine("[UpdateService] Performing update check based on LastSuccessfulUpdateCheck.");
 				return await CheckForUpdateInternal(settings).ConfigureAwait(false);
 			}
 
@@ -148,10 +123,21 @@ namespace ICSharpCode.ILSpy.Updates
 		{
 			try
 			{
+				Console.WriteLine("[UpdateService] CheckForUpdateInternal: calling GetLatestVersionAsync");
 				var v = await GetLatestVersionAsync().ConfigureAwait(false);
 				settings.LastSuccessfulUpdateCheck = DateTime.UtcNow;
-				var latest = LatestAvailableSemanticVersion ?? new NuGetVersion(v.Version);
-				return latest.CompareTo(AppUpdateService.CurrentSemanticVersion) > 0 ? v.DownloadUrl : null;
+				var latest = LatestAvailableSemanticVersion ?? v.Version;
+				Console.WriteLine($"[UpdateService] LatestAvailableSemanticVersion={LatestAvailableSemanticVersion} AppCurrent={AppUpdateService.CurrentVersion}");
+
+				// If the current app version couldn't be resolved (0.0.0), skip update notifications
+				if (AppUpdateService.IsUnset(AppUpdateService.CurrentVersion))
+				{
+					Console.WriteLine("[UpdateService] Current application semantic version appears to be unset (0.0.0); skipping update check.");
+					return null;
+				}
+				bool isNewer = AppUpdateService.IsNewerThanCurrent(latest);
+				Console.WriteLine($"[UpdateService] Is newer: {isNewer}");
+				return isNewer ? v.DownloadUrl : null;
 			}
 			catch (Exception)
 			{

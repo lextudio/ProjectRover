@@ -18,7 +18,6 @@
 
 using System;
 using System.Reflection;
-using NuGet.Versioning;
 
 namespace ICSharpCode.ILSpy.Updates
 {
@@ -32,26 +31,56 @@ namespace ICSharpCode.ILSpy.Updates
 	{
 		public static readonly UpdateStrategy updateStrategy = UpdateStrategy.NotifyOfUpdates;
 
-		public static readonly NuGetVersion CurrentSemanticVersion = ResolveCurrentSemanticVersion();
+		public static readonly Version CurrentVersion = ResolveCurrentVersion();
 
-		public static readonly Version CurrentVersion = CurrentSemanticVersion.Version;
-
-		static NuGetVersion ResolveCurrentSemanticVersion()
+		static Version ResolveCurrentVersion()
 		{
 			var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+			// First prefer AssemblyInformationalVersion (may include prerelease/build metadata)
 			var info = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-			if (!string.IsNullOrWhiteSpace(info))
-			{
-				if (NuGetVersion.TryParse(info, out var semanticVersion))
-					return semanticVersion;
+			Console.WriteLine($"[AppUpdateService] Assembly InformationalVersion attribute: '{info}'");
+			if (TryParseVersionString(info, out var semanticVersion))
+				return semanticVersion;
 
-				var plusIndex = info.IndexOf('+');
-				if (plusIndex > 0 && NuGetVersion.TryParse(info.Substring(0, plusIndex), out semanticVersion))
-					return semanticVersion;
-			}
+			// If InformationalVersion is not set, prefer AssemblyFileVersionAttribute
+			var fileVer = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
+			Console.WriteLine($"[AppUpdateService] Assembly FileVersion attribute: '{fileVer}'");
+			if (TryParseVersionString(fileVer, out var fileVersion))
+				return fileVersion;
 
 			var version = assembly.GetName().Version ?? new Version(0, 0, 0, 0);
-			return new NuGetVersion(version);
+			return NormalizeToMajorMinorPatch(version);
+		}
+
+		public static bool IsUnset(Version? version)
+		{
+			return version == null
+				|| (version.Major == 0 && version.Minor == 0 && version.Build == 0);
+		}
+
+		public static bool IsNewerThanCurrent(Version? candidate)
+		{
+			return candidate != null && candidate > CurrentVersion;
+		}
+
+		public static bool TryParseVersionString(string? raw, out Version version)
+		{
+			version = null;
+			if (string.IsNullOrWhiteSpace(raw))
+				return false;
+
+			var trimmed = raw.Trim();
+			// Strip leading 'v' if present (e.g., v1.2.3)
+			if (trimmed.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+				trimmed = trimmed.Substring(1);
+
+			return Version.TryParse(trimmed, out version);
+		}
+
+		static Version NormalizeToMajorMinorPatch(Version v)
+		{
+			if (v == null) return new Version(0, 0, 0);
+			return new Version(v.Major, v.Minor, v.Build < 0 ? 0 : v.Build);
 		}
 	}
 }
