@@ -1,0 +1,13 @@
+mode: ContinuousDelivery
+tag-prefix: 'v'
+
+branches:
+  master:
+    regex: master
+    increment: Patch
+  main:
+    regex: main
+    increment: Patch
+
+ignore:
+  sha: []
