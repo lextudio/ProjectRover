@@ -152,3 +152,8 @@ namespace TomsToolbox.Wpf.Composition
 {
 
 }
+
+namespace TomsToolbox.Wpf.Interactivity
+{
+    
+}

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <DefineConstants>CROSS_PLATFORM</DefineConstants>
     <OutputType>WinExe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -476,6 +477,9 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\OptionalHeaderTreeNode.cs">
       <Link>Metadata\OptionalHeaderTreeNode.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\Helpers.cs">
+      <Link>Metadata\Helpers.cs</Link>
     </Compile>
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\NavigationHistory.cs">

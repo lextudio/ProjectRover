@@ -15,4 +15,53 @@
 
   <!-- ByteWidthConverter lives in code; keep the key available for bindings if needed. -->
   <local:ByteWidthConverter x:Key="byteWidthConverter" />
+
+  <!-- Simple filter templates to mimic WPF DataGridExtensions behavior. -->
+  <ControlTemplate x:Key="DefaultFilter" TargetType="dgrid:DataGridColumnHeader">
+    <TextBox
+      Margin="0,2,0,0"
+      Watermark="Filter..."
+      Text="{Binding FilterValue, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" />
+  </ControlTemplate>
+
+  <ControlTemplate x:Key="HexFilter" TargetType="dgrid:DataGridColumnHeader">
+    <TextBox
+      Margin="0,2,0,0"
+      Watermark="Hex or dec (e.g. 0x20, 32)"
+      Text="{Binding FilterValue, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" />
+  </ControlTemplate>
+
+  <!-- WPF-ish styling: headers/cells/rows with hover/selected visuals and gridlines. -->
+  <Style x:Key="MetadataGridRowTheme" Selector="dgrid|DataGridRow">
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Style Selector="^:pointerover">
+      <Setter Property="Background" Value="#FFE6F2FF"/>
+    </Style>
+    <Style Selector="^:selected">
+      <Setter Property="Background" Value="#FFCCE5FF"/>
+      <Setter Property="BorderBrush" Value="#FF7AA2FF"/>
+    </Style>
+  </Style>
+
+  <Style x:Key="MetadataGridCellTheme" Selector="dgrid|DataGridCell">
+    <Setter Property="Padding" Value="2"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Style Selector="^:pointerover">
+      <Setter Property="Background" Value="#FFE6F2FF"/>
+    </Style>
+    <Style Selector="^:selected">
+      <Setter Property="Background" Value="#FFCCE5FF"/>
+      <Setter Property="BorderBrush" Value="#FF7AA2FF"/>
+    </Style>
+  </Style>
+
+  <Style x:Key="MetadataGridHeaderTheme" Selector="dgrid|DataGridColumnHeader">
+    <Style Selector="^:pointerover">
+      <Setter Property="Background" Value="#FFE6F2FF"/>
+    </Style>
+    <Style Selector="^:pressed">
+      <Setter Property="Background" Value="#FFCCE5FF"/>
+    </Style>
+  </Style>
 </ResourceDictionary>
