@@ -71,3 +71,10 @@ global using static Avalonia.Controls.ResourceNodeExtensions;
 
 global using PaneModel = Dock.Model.TomsToolbox.Core.DockableBase;
 global using FileReader = AvaloniaEdit.Utils.FileReader;
+global using DataGrid = Avalonia.Controls.DataGrid;
+global using DataTemplate = Avalonia.Markup.Xaml.Templates.DataTemplate;
+global using DependencyObject = Avalonia.AvaloniaObject;
+global using DataGridTextColumn = Avalonia.Controls.DataGridTextColumn;
+global using ScrollViewer = Avalonia.Controls.ScrollViewer;
+global using DataGridRowDetailsVisibilityMode = Avalonia.Controls.DataGridRowDetailsVisibilityMode;
+global using Visibility = Avalonia.Controls.DataGridRowDetailsVisibilityMode;

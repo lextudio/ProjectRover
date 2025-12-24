@@ -8,7 +8,7 @@ namespace ICSharpCode.ILSpy.Metadata
     {
         public MetadataTableViews()
         {
-            // ResourceDictionary will be loaded by Avalonia XAML infrastructure when referenced.
+            AvaloniaXamlLoader.Load(this);
         }
 
         static MetadataTableViews instance;

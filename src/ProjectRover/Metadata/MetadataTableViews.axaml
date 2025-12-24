@@ -1,8 +1,18 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:ICSharpCode.ILSpy.Metadata">
+                    xmlns:local="clr-namespace:ICSharpCode.ILSpy.Metadata"
+                    xmlns:dgrid="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.DataGrid">
 
-  <!-- Minimal resource dictionary for metadata table views used by the shimmed UI -->
+  <!-- Lightweight styling so generated grid cells look sane in Avalonia. -->
+  <Style x:Key="DataGridCellStyle" Selector="dgrid|DataGridCell">
+    <Setter Property="Padding" Value="2"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+  </Style>
 
-  <!-- Minimal placeholder: ByteWidthConverter is provided by code. -->
+  <Style x:Key="DataGridRowStyle" Selector="dgrid|DataGridRow">
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+
+  <!-- ByteWidthConverter lives in code; keep the key available for bindings if needed. -->
+  <local:ByteWidthConverter x:Key="byteWidthConverter" />
 </ResourceDictionary>

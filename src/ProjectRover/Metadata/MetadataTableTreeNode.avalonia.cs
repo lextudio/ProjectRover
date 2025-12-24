@@ -36,28 +36,8 @@ using ICSharpCode.ILSpy.ViewModels;
 
 namespace ICSharpCode.ILSpy.Metadata
 {
-	internal abstract class MetadataTableTreeNode : ILSpyTreeNode
+	partial class MetadataTableTreeNode
 	{
-		protected readonly MetadataFile metadataFile;
-		protected int scrollTarget;
-
-		public TableIndex Kind { get; }
-
-		public override object Text => $"{(int)Kind:X2} {Kind} ({metadataFile.Metadata.GetTableRowCount(Kind)})";
-
-		public override object Icon => Images.MetadataTable;
-
-		public MetadataTableTreeNode(TableIndex table, MetadataFile metadataFile)
-		{
-			this.Kind = table;
-			this.metadataFile = metadataFile;
-		}
-
-		internal void ScrollTo(Handle handle)
-		{
-			this.scrollTarget = metadataFile.Metadata.GetRowNumber((EntityHandle)handle);
-		}
-
 		protected void ScrollRowIntoView(DataGrid view, int row)
 		{
 			if (!view.IsLoaded)
@@ -66,167 +46,29 @@ namespace ICSharpCode.ILSpy.Metadata
 			}
 			else
 			{
-				View_Loaded(view, new RoutedEventArgs());
+				View_Loaded(view, new Avalonia.Interactivity.RoutedEventArgs());
 			}
-			// TODO: if (row < 0 || row >= view.ItemCount) // ItemCount is the Avalonia way
-				return;
-
-			// var index = row;
-
-			// Dispatcher.UIThread.Post(() =>
-			// {
-			// 	if (index < 0 || index >= view.ItemCount)
-			// 		return;
-
-			// 	var item = view.Items[index];
-
-			// 	// equivalent of SelectItem + ensure visibility
-			// 	view.SelectedItem = item;
-			// 	view.ScrollIntoView(item);
-			// }, DispatcherPriority.Background);
+			if (row >= 0)
+			{
+				var items = view.ItemsSource as System.Collections.IList ?? view.Items;
+				if (items != null && items.Count > row)
+				{
+					Dispatcher.UIThread.Post(() =>
+					{
+						var item = items[row];
+						view.SelectItem(item);
+						view.ScrollIntoView(item);
+					}, DispatcherPriority.Background);
+				}
+			}
 		}
 
-		private void View_Loaded(object sender, RoutedEventArgs e)
+		private void View_Loaded(object sender, Avalonia.Interactivity.RoutedEventArgs e)
 		{
 			DataGrid view = (DataGrid)sender;
-			var sv = view
-				.GetVisualDescendants()
-				.OfType<ScrollViewer>()
-				.FirstOrDefault();
-
-			if (sv != null)
-			{
-				var offset = sv.Offset;
-				sv.Offset = new Vector(offset.X, scrollTarget - 1);
-			}
-
+			view.ScrollIntoView(scrollTarget - 1);
 			view.Loaded -= View_Loaded;
 			this.scrollTarget = default;
-		}
-
-		protected static string GenerateTooltip(ref string tooltip, MetadataFile module, EntityHandle handle)
-		{
-			if (tooltip == null)
-			{
-				if (handle.IsNil)
-				{
-					return null;
-				}
-				ITextOutput output = new PlainTextOutput();
-				var context = new MetadataGenericContext(default(TypeDefinitionHandle), module.Metadata);
-				var metadata = module.Metadata;
-				switch (handle.Kind)
-				{
-					case HandleKind.ModuleDefinition:
-						output.Write(metadata.GetString(metadata.GetModuleDefinition().Name));
-						output.Write(" (this module)");
-						break;
-					case HandleKind.ModuleReference:
-						ModuleReference moduleReference = metadata.GetModuleReference((ModuleReferenceHandle)handle);
-						output.Write(metadata.GetString(moduleReference.Name));
-						break;
-					case HandleKind.AssemblyReference:
-						var asmRef = new Decompiler.Metadata.AssemblyReference(metadata, (AssemblyReferenceHandle)handle);
-						output.Write(asmRef.ToString());
-						break;
-					case HandleKind.Parameter:
-						var param = metadata.GetParameter((ParameterHandle)handle);
-						output.Write(param.SequenceNumber + " - " + metadata.GetString(param.Name));
-						break;
-					case HandleKind.EventDefinition:
-						var @event = metadata.GetEventDefinition((EventDefinitionHandle)handle);
-						output.Write(metadata.GetString(@event.Name));
-						break;
-					case HandleKind.PropertyDefinition:
-						var prop = metadata.GetPropertyDefinition((PropertyDefinitionHandle)handle);
-						output.Write(metadata.GetString(prop.Name));
-						break;
-					case HandleKind.AssemblyDefinition:
-						var ad = metadata.GetAssemblyDefinition();
-						output.Write(metadata.GetString(ad.Name));
-						output.Write(" (this assembly)");
-						break;
-					case HandleKind.AssemblyFile:
-						var af = metadata.GetAssemblyFile((AssemblyFileHandle)handle);
-						output.Write(metadata.GetString(af.Name));
-						break;
-					case HandleKind.GenericParameter:
-						var gp = metadata.GetGenericParameter((GenericParameterHandle)handle);
-						output.Write(metadata.GetString(gp.Name));
-						break;
-					case HandleKind.ManifestResource:
-						var mfr = metadata.GetManifestResource((ManifestResourceHandle)handle);
-						output.Write(metadata.GetString(mfr.Name));
-						break;
-					case HandleKind.Document:
-						var doc = metadata.GetDocument((DocumentHandle)handle);
-						output.Write(metadata.GetString(doc.Name));
-						break;
-					default:
-						handle.WriteTo(module, output, context);
-						break;
-				}
-				tooltip = "(" + handle.Kind + ") " + output.ToString();
-			}
-			return tooltip;
-		}
-
-		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
-		{
-		}
-	}
-
-	internal abstract class MetadataTableTreeNode<TEntry> : MetadataTableTreeNode
-		where TEntry : struct
-	{
-		public MetadataTableTreeNode(TableIndex kind, MetadataFile metadataFile)
-			: base(kind, metadataFile)
-		{
-		}
-
-		protected abstract IReadOnlyList<TEntry> LoadTable();
-
-		protected virtual void ConfigureDataGrid(DataGrid view)
-		{
-		}
-
-		public override bool View(TabPageModel tabPage)
-		{
-			tabPage.Title = Text.ToString();
-			tabPage.SupportsLanguageSwitching = false;
-
-			var view = Helpers.PrepareDataGrid(tabPage, this);
-			ConfigureDataGrid(view);
-
-			view.ItemsSource = LoadTable();
-			tabPage.Content = view;
-
-			ScrollRowIntoView(view, scrollTarget);
-
-			return true;
-		}
-	}
-
-	internal abstract class DebugMetadataTableTreeNode<TEntry> : MetadataTableTreeNode<TEntry>
-		where TEntry : struct
-	{
-		public DebugMetadataTableTreeNode(TableIndex kind, MetadataFile metadataFile)
-			: base(kind, metadataFile)
-		{
-		}
-	}
-
-	internal class UnsupportedMetadataTableTreeNode : MetadataTableTreeNode
-	{
-		public UnsupportedMetadataTableTreeNode(TableIndex kind, MetadataFile file)
-			: base(kind, file)
-		{
-		}
-		public override object Text => $"{(int)Kind:X2} {Kind.ToString()} [unsupported] ({metadataFile.Metadata.GetTableRowCount(Kind)})";
-
-		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
-		{
-			output.WriteLine($"Unsupported table '{(int)Kind:X2} {Kind}' contains {metadataFile.Metadata.GetTableRowCount(Kind)} rows.");
 		}
 	}
 }

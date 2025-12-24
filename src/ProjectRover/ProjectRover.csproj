@@ -30,7 +30,7 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
     <PackageReference Include="Avalonia.Xaml.Behaviors" />
-    <PackageReference Include="Avalonia.Controls.DataGrid" />
+    <ProjectReference Include="..\..\..\Avalonia.Controls.DataGrid\src\Avalonia.Controls.DataGrid\Avalonia.Controls.DataGrid.csproj" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
@@ -464,8 +464,18 @@
       <Link>Metadata\MetadataTablesTreeNode.cs</Link>
     </Compile>
 
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\MetadataTableTreeNode.cs">
+      <Link>Metadata\MetadataTableTreeNode.cs</Link>
+    </Compile>
+
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\MetadataTreeNode.cs">
       <Link>Metadata\MetadataTreeNode.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\CoffHeaderTreeNode.cs">
+      <Link>Metadata\CoffHeaderTreeNode.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\OptionalHeaderTreeNode.cs">
+      <Link>Metadata\OptionalHeaderTreeNode.cs</Link>
     </Compile>
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\NavigationHistory.cs">
