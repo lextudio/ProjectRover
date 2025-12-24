@@ -1,7 +1,8 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:ICSharpCode.ILSpy.Metadata"
-                    xmlns:dgrid="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.DataGrid">
+                    xmlns:dgrid="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.DataGrid"
+                    x:Class="ICSharpCode.ILSpy.Metadata.MetadataTableViews">
 
   <!-- Lightweight styling so generated grid cells look sane in Avalonia. -->
   <Style x:Key="DataGridCellStyle" Selector="dgrid|DataGridCell">
