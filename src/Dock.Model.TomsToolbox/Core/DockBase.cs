@@ -15,7 +15,6 @@ public abstract class DockBase : DockableBase, IDock
     private IDockable? _defaultDockable;
     private IDockable? _focusedDockable;
     private int _openedDockablesCount = 0;
-    private bool _isActive;
     private bool _canCloseLastDockable = true;
     private bool _enableGlobalDocking = true;
 
@@ -64,13 +63,6 @@ public abstract class DockBase : DockableBase, IDock
             SetProperty(ref _focusedDockable, value);
             Factory?.OnFocusedDockableChanged(value);
         }
-    }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = true)]
-    public bool IsActive
-    {
-        get => _isActive;
-        set => SetProperty(ref _isActive, value);
     }
 
     [DataMember(IsRequired = false, EmitDefaultValue = true)]

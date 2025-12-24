@@ -25,7 +25,9 @@ public abstract class DockableBase : ReactiveBase, IDockable
     private int _row = 0;
     private int _columnSpan = 1;
     private int _rowSpan = 1;
+    private bool _isActive = true;
     private bool _isSharedSizeScope;
+    private bool _isVisible = true;
     private double _collapsedProportion = double.NaN;
     private bool _canClose = true;
     private bool _canPin = true;
@@ -241,10 +243,14 @@ public abstract class DockableBase : ReactiveBase, IDockable
         set => SetProperty(ref _dockGroup, value);
     }
 
-    public bool IsActive { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public bool IsActive
+    {
+        get => _isActive;
+        set => SetProperty(ref _isActive, value);
+    }
 
-    private bool _isVisible;
-
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public bool IsVisible
     {
         get => _isVisible;
