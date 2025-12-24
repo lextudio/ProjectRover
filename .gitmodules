@@ -8,3 +8,6 @@
 [submodule "src/TomsToolbox"]
 	path = thirdparty/TomsToolbox
 	url = https://github.com/lextudio/TomsToolbox.git
+[submodule "thirdparty/Avalonia.Controls.DataGrid"]
+	path = thirdparty/Avalonia.Controls.DataGrid
+	url = https://github.com/lextudio/Avalonia.Controls.DataGrid.git
