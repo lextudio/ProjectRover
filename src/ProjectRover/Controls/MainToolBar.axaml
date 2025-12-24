@@ -9,81 +9,135 @@
              x:Class="ICSharpCode.ILSpy.Controls.MainToolBar"
              x:DataType="ilSpy:MainWindowViewModel"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="32">
-  <StackPanel Orientation="Horizontal" Spacing="2">
-    <!-- Navigation -->
-    <ItemsControl Name="NavToolbarItems">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate>
-          <StackPanel Orientation="Horizontal" Spacing="2" />
-        </ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-    </ItemsControl>
-    
-    <Border Width="1" Height="16" Background="Gray" Margin="4,0" />
-    
-    <!-- Open -->
-    <ItemsControl Name="OpenToolbarItems">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate>
-          <StackPanel Orientation="Horizontal" Spacing="2" />
-        </ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-    </ItemsControl>
-    
-    <Border Width="1" Height="16" Background="Gray" Margin="4,0" />
-    
-    <!-- Assembly Lists -->
-    <ComboBox Name="assemblyListComboBox" MaxDropDownHeight="300"
-              ItemsSource="{Binding AssemblyListManager.AssemblyLists}"
-              ToolTip.Tip="{x:Static properties:Resources.SelectAssemblyListDropdownTooltip}"
-              SelectedItem="{Binding SessionSettings.ActiveAssemblyList}" />
-              
-    <Button Command="{Binding ManageAssemblyListsCommand}"
-            ToolTip.Tip="{x:Static properties:Resources.ManageAssemblyLists}">
-        <svg:Svg Width="16" Height="16" Path="/Assets/AssemblyList.svg" />
-    </Button>
-    
-    <Border Width="1" Height="16" Background="Gray" Margin="4,0" />
-    
-    <!-- API Visibility -->
-    <CheckBox IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicOnly}"
-              ToolTip.Tip="{x:Static properties:Resources.ShowPublicOnlyTypesMembers}">
-        <svg:Svg Width="16" Height="16" Path="/Assets/ShowPublicOnly.svg" />
-    </CheckBox>
-    <CheckBox IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicAndInternal}"
-              ToolTip.Tip="{x:Static properties:Resources.ShowInternalTypesMembers}">
-        <svg:Svg Width="16" Height="16" Path="/Assets/ShowPrivateInternal.svg" />
-    </CheckBox>
-    <CheckBox IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisAll}"
-              ToolTip.Tip="{x:Static properties:Resources.ShowAllTypesAndMembers}">
-        <svg:Svg Width="16" Height="16" Path="/Assets/ShowAll.svg" />
-    </CheckBox>
-    
-    <Border Width="1" Height="16" Background="Gray" Margin="4,0" />
-    
-    <!-- Language -->
-    <ComboBox Name="languageComboBox" DisplayMemberBinding="{Binding Name}" MaxDropDownHeight="300"
-              IsEnabled="{Binding Workspace.ActiveTabPage.SupportsLanguageSwitching}"
-              ItemsSource="{Binding LanguageService.AllLanguages}"
-              ToolTip.Tip="{x:Static properties:Resources.SelectLanguageDropdownTooltip}"
-              SelectedItem="{Binding LanguageService.Language}" />
-              
-    <ComboBox Name="languageVersionComboBox" DisplayMemberBinding="{Binding DisplayName}" MaxDropDownHeight="300"
-              ToolTip.Tip="{x:Static properties:Resources.SelectVersionDropdownTooltip}"
-              IsVisible="{Binding LanguageService.Language.HasLanguageVersions}"
-              IsEnabled="{Binding Workspace.ActiveTabPage.SupportsLanguageSwitching}"
-              ItemsSource="{Binding LanguageService.Language.LanguageVersions}"
-              SelectedItem="{Binding LanguageService.LanguageVersion}" />
-              
-    <Border Width="1" Height="16" Background="Gray" Margin="4,0" />
-    
-    <!-- Other -->
-    <ItemsControl Name="OtherToolbarItems">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate>
-          <StackPanel Orientation="Horizontal" Spacing="2" />
-        </ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-    </ItemsControl>
-  </StackPanel>
+
+  <UserControl.Styles>
+    <Style Selector="Border#ToolbarHost">
+      <Setter Property="Padding" Value="8,4,8,3" />
+      <Setter Property="Background" Value="{DynamicResource ToolbarBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ToolbarBorderBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="#ToolbarHost Button, #ToolbarHost ToggleButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="2" />
+      <Setter Property="Padding" Value="4" />
+      <Setter Property="Margin" Value="2,0" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="#ToolbarHost Button:pointerover, #ToolbarHost ToggleButton:pointerover">
+      <Setter Property="Background" Value="{DynamicResource StatusBarHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ToolbarBorderBrush}" />
+    </Style>
+    <Style Selector="#ToolbarHost Button:pressed, #ToolbarHost ToggleButton:pressed, #ToolbarHost ToggleButton:checked">
+      <Setter Property="Background" Value="{DynamicResource ToolbarBorderBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ToolbarBorderBrush}" />
+    </Style>
+    <Style Selector="#ToolbarHost Separator">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="Margin" Value="6,0" />
+      <Setter Property="Background" Value="{DynamicResource ToolbarSeparatorBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="#ToolbarHost ComboBox">
+      <Setter Property="MinWidth" Value="150" />
+      <Setter Property="Margin" Value="4,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="#ToolbarHost Image, #ToolbarHost svg|Svg">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+    </Style>
+    <Style Selector="#ToolbarHost Button:disabled Image, #ToolbarHost Button:disabled svg|Svg, #ToolbarHost ToggleButton:disabled Image, #ToolbarHost ToggleButton:disabled svg|Svg">
+      <Setter Property="Opacity" Value="0.35" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border x:Name="ToolbarHost">
+    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+      <!-- Navigation -->
+      <ItemsControl Name="NavToolbarItems" VerticalAlignment="Center">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="2" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+
+      <Separator />
+
+      <!-- Open -->
+      <ItemsControl Name="OpenToolbarItems" VerticalAlignment="Center">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="2" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+
+      <Separator />
+
+      <!-- Assembly Lists -->
+      <Grid Margin="2,0" VerticalAlignment="Center">
+        <ComboBox Name="assemblyListComboBox" MaxDropDownHeight="300"
+                  ItemsSource="{Binding AssemblyListManager.AssemblyLists}"
+                  ToolTip.Tip="{x:Static properties:Resources.SelectAssemblyListDropdownTooltip}"
+                  SelectedItem="{Binding SessionSettings.ActiveAssemblyList}" />
+      </Grid>
+
+      <Button Command="{Binding ManageAssemblyListsCommand}"
+              ToolTip.Tip="{x:Static properties:Resources.ManageAssemblyLists}" VerticalAlignment="Center">
+        <svg:Svg Path="/Assets/AssemblyList.svg" />
+      </Button>
+
+      <Separator />
+
+      <!-- API Visibility -->
+      <ToggleButton IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicOnly}"
+                    ToolTip.Tip="{x:Static properties:Resources.ShowPublicOnlyTypesMembers}" VerticalAlignment="Center">
+        <svg:Svg Path="/Assets/ShowPublicOnly.svg" />
+      </ToggleButton>
+      <ToggleButton IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicAndInternal}"
+                    ToolTip.Tip="{x:Static properties:Resources.ShowInternalTypesMembers}" VerticalAlignment="Center">
+        <svg:Svg Path="/Assets/ShowPrivateInternal.svg" />
+      </ToggleButton>
+      <ToggleButton IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisAll}"
+                    ToolTip.Tip="{x:Static properties:Resources.ShowAllTypesAndMembers}" VerticalAlignment="Center">
+        <svg:Svg Path="/Assets/ShowAll.svg" />
+      </ToggleButton>
+
+      <Separator />
+
+      <!-- Language -->
+      <Grid Margin="2,0" VerticalAlignment="Center">
+        <ComboBox Name="languageComboBox" DisplayMemberBinding="{Binding Name}" MaxDropDownHeight="300"
+                  IsEnabled="{Binding Workspace.ActiveTabPage.SupportsLanguageSwitching}"
+                  ItemsSource="{Binding LanguageService.AllLanguages}"
+                  ToolTip.Tip="{x:Static properties:Resources.SelectLanguageDropdownTooltip}"
+                  SelectedItem="{Binding LanguageService.Language}" />
+      </Grid>
+
+      <Grid Margin="2,0" VerticalAlignment="Center">
+        <ComboBox Name="languageVersionComboBox" DisplayMemberBinding="{Binding DisplayName}" MaxDropDownHeight="300"
+                  ToolTip.Tip="{x:Static properties:Resources.SelectVersionDropdownTooltip}"
+                  IsVisible="{Binding LanguageService.Language.HasLanguageVersions}"
+                  IsEnabled="{Binding Workspace.ActiveTabPage.SupportsLanguageSwitching}"
+                  ItemsSource="{Binding LanguageService.Language.LanguageVersions}"
+                  SelectedItem="{Binding LanguageService.LanguageVersion}" />
+      </Grid>
+
+      <!-- Other -->
+      <ItemsControl Name="OtherToolbarItems" VerticalAlignment="Center">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="2" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+    </StackPanel>
+  </Border>
 </UserControl>

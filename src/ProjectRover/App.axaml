@@ -22,6 +22,7 @@
              xmlns:editing="https://github.com/avaloniaui/avaloniaedit"
              xmlns:converters="clr-namespace:ProjectRover.Converters"
              xmlns:dockThemes="clr-namespace:Dock.Avalonia.Themes.Fluent;assembly=Dock.Avalonia.Themes.Fluent"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
              x:Class="ProjectRover.App"
              RequestedThemeVariant="Light"
              Name="ProjectRover">
@@ -49,6 +50,9 @@
         
         <Style Selector="Button:disabled">
             <Setter Property="Opacity" Value="0.5" />
+        </Style>
+        <Style Selector="Button:disabled svg|Svg">
+            <Setter Property="Opacity" Value="0.3" />
         </Style>
     </Application.Styles>
 

@@ -1,16 +1,11 @@
-using System;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
-using Avalonia.Media;
-using Avalonia.Platform;
-using Avalonia.Svg.Skia;
-using Avalonia.Styling;
-using TomsToolbox.Composition;
+using ICSharpCode.ILSpy;
 using ICSharpCode.ILSpy.Commands;
 using System.Windows.Input;
-using System.IO;
+using TomsToolbox.Composition;
 
 namespace ICSharpCode.ILSpy.Controls
 {
@@ -45,12 +40,6 @@ namespace ICSharpCode.ILSpy.Controls
                 .GetExports<ICommand, IToolbarCommandMetadata>("ToolbarCommand")
                 .ToList();
 
-            Console.WriteLine($"InitToolbar: Found {toolbarCommands.Count} toolbar commands.");
-            foreach (var tc in toolbarCommands)
-            {
-                Console.WriteLine($"InitToolbar: Command metadata: Category={tc.Metadata?.ToolbarCategory}, Icon={tc.Metadata?.ToolbarIcon}, ToolTip={tc.Metadata?.ToolTip}");
-            }
-
             // 1. Navigation
             var navCommands = toolbarCommands
                 .Where(c => c.Metadata?.ToolbarCategory == "Navigation")
@@ -78,12 +67,10 @@ namespace ICSharpCode.ILSpy.Controls
                 
             foreach (var group in otherGroups)
             {
-                otherToolbar.Items.Add(new Border { 
-                    Width = 1, 
-                    Height = 16, 
-                    Background = Brushes.Gray, 
-                    Margin = new Thickness(4, 0) 
-                });
+                if (!group.Any())
+                    continue;
+
+                otherToolbar.Items.Add(new Separator());
                 
                 foreach (var cmd in group.OrderBy(c => c.Metadata?.ToolbarOrder))
                 {
@@ -94,24 +81,29 @@ namespace ICSharpCode.ILSpy.Controls
 
         static Button CreateToolbarItem(IExport<ICommand, IToolbarCommandMetadata> commandExport)
         {
-            var command = commandExport.Value;
+            var command = CommandWrapper.Unwrap(commandExport.Value);
             var iconPath = commandExport.Metadata?.ToolbarIcon;
-            
+
+            var tooltip = ICSharpCode.ILSpy.Util.ResourceHelper.GetString(commandExport.Metadata?.ToolTip)
+                ?? commandExport.Metadata?.ToolTip;
+
             var button = new Button
             {
                 Command = command,
-                Tag = commandExport.Metadata?.ToolbarIcon ?? commandExport.Metadata?.Tag,
-                Padding = new Thickness(4),
-                Margin = new Thickness(2),
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0)
+                Tag = commandExport.Metadata?.ToolbarIcon ?? commandExport.Metadata?.Tag
             };
-            ToolTip.SetTip(button, ICSharpCode.ILSpy.Util.ResourceHelper.GetString(commandExport.Metadata?.ToolTip));
+
+            if (commandExport.Value is IProvideParameterBinding parameterBinding)
+            {
+                button.Bind(Button.CommandParameterProperty, parameterBinding.ParameterBinding);
+            }
+
+            ToolTip.SetTip(button, tooltip);
 
             if (!string.IsNullOrEmpty(iconPath))
             {
                 // Create an Image control and bind its Source using IconKeyThemeToImageConverter
-                var img = new Image { Width = 16, Height = 16 };
+                var img = new Image();
 
                 var multi = new Avalonia.Data.MultiBinding
                 {
@@ -129,7 +121,7 @@ namespace ICSharpCode.ILSpy.Controls
             else
             {
                 // Fallback text if no icon
-                button.Content = commandExport.Metadata?.ToolTip ?? "Cmd";
+                button.Content = tooltip ?? "Cmd";
             }
 
             return button;

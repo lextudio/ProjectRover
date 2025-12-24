@@ -98,7 +98,6 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
-    <AvaloniaResource Include="Themes\**\*.axaml" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaXaml Remove="Controls\GroupBox.xaml" />
