@@ -23,6 +23,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TomsToolbox.Avalonia", "thi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TomsToolbox.Essentials", "thirdparty\TomsToolbox\src\TomsToolbox.Essentials\TomsToolbox.Essentials.csproj", "{9DC620D1-A74F-5D4B-8261-0011C9A91201}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "thirdparty", "thirdparty", "{356D9C46-07F5-7F13-4EEF-5DD22B885BE8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Avalonia.Controls.DataGrid", "Avalonia.Controls.DataGrid", "{097B2923-3CE3-D3B9-5544-426F93692B62}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9DC0A7AA-2AAB-DE85-738B-4BDE4673F045}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Controls.DataGrid", "thirdparty\Avalonia.Controls.DataGrid\src\Avalonia.Controls.DataGrid\Avalonia.Controls.DataGrid.csproj", "{0E7AC722-ED0F-4777-B94A-A6B392236487}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +149,18 @@ Global
 		{9DC620D1-A74F-5D4B-8261-0011C9A91201}.Release|x64.Build.0 = Release|Any CPU
 		{9DC620D1-A74F-5D4B-8261-0011C9A91201}.Release|x86.ActiveCfg = Release|Any CPU
 		{9DC620D1-A74F-5D4B-8261-0011C9A91201}.Release|x86.Build.0 = Release|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Debug|x64.Build.0 = Debug|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Debug|x86.Build.0 = Debug|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Release|x64.ActiveCfg = Release|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Release|x64.Build.0 = Release|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Release|x86.ActiveCfg = Release|Any CPU
+		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -153,6 +173,9 @@ Global
 		{7AA81520-FE97-870D-CB54-5C7008483B52} = {6829ED21-6F19-4D32-A4FC-F1BB935ECA0A}
 		{B81ACB8A-6AC1-7F0C-9DF1-03C7AC9B3D0A} = {6829ED21-6F19-4D32-A4FC-F1BB935ECA0A}
 		{9DC620D1-A74F-5D4B-8261-0011C9A91201} = {6829ED21-6F19-4D32-A4FC-F1BB935ECA0A}
+		{097B2923-3CE3-D3B9-5544-426F93692B62} = {356D9C46-07F5-7F13-4EEF-5DD22B885BE8}
+		{9DC0A7AA-2AAB-DE85-738B-4BDE4673F045} = {097B2923-3CE3-D3B9-5544-426F93692B62}
+		{0E7AC722-ED0F-4777-B94A-A6B392236487} = {9DC0A7AA-2AAB-DE85-738B-4BDE4673F045}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {97F9ECDE-5C5C-49D0-A85D-EE60FF22F2EA}
