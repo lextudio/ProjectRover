@@ -8,7 +8,7 @@
     <ContentControl />
     <StackPanel Name="inputPanel" Orientation="Horizontal" Margin="4,0,0,0">
       <TextBlock Text="0x" />
-      <TextBox Name="textBox" MinWidth="20" />
+      <TextBox Name="textBox" MinWidth="20" Text="{Binding FilterValue, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=local:HexFilterControl}}" />
     </StackPanel>
   </Grid>
 </UserControl>

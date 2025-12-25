@@ -14,10 +14,21 @@ namespace ICSharpCode.ILSpy.Metadata
         public static readonly StyledProperty<IContentFilter?> FilterProperty =
             AvaloniaProperty.Register<HexFilterControl, IContentFilter?>(nameof(Filter));
 
+        public static readonly StyledProperty<string?> FilterValueProperty =
+            AvaloniaProperty.Register<HexFilterControl, string?>(nameof(FilterValue),
+                defaultValue: null,
+                inherits: false);
+
         public IContentFilter? Filter
         {
             get => GetValue(FilterProperty);
             set => SetValue(FilterProperty, value);
+        }
+
+        public string? FilterValue
+        {
+            get => GetValue(FilterValueProperty);
+            set => SetValue(FilterValueProperty, value);
         }
 
         public HexFilterControl()
@@ -36,9 +47,19 @@ namespace ICSharpCode.ILSpy.Metadata
             UpdateInputPanelOpacity();
         }
 
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property == FilterValueProperty)
+            {
+                // When FilterValue changes, update the Filter object and UI
+                OnTextChanged();
+            }
+        }
+
         private void OnTextChanged()
         {
-            var txt = textBox?.Text;
+            var txt = textBox?.Text ?? FilterValue ?? "";
             if (string.IsNullOrEmpty(txt))
             {
                 Filter = null;

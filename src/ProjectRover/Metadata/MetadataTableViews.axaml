@@ -29,93 +29,93 @@
     <Setter Property="MinWidth" Value="60" />
   </Style>
 
-  <ControlTemplate x:Key="DefaultFilter">
+  <ControlTemplate x:Key="DefaultFilter" x:DataType="dgrid:DataGridColumn">
     <Grid>
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
       <TextBlock Grid.Column="0" Classes="filterIcon" Text="🔍" />
-      <TextBox Grid.Column="1" Classes="filterTextBox"
-           Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}"
-           Watermark="Filter..." />
+       <TextBox Grid.Column="1" Classes="filterTextBox"
+         Text="{Binding Path=FilterValue, Mode=TwoWay}"
+         Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="HexFilter">
-    <local:HexFilterControl Filter="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" />
+  <ControlTemplate x:Key="HexFilter" x:DataType="dgrid:DataGridColumn">
+    <local:HexFilterControl FilterValue="{Binding Path=FilterValue, Mode=TwoWay}" />
   </ControlTemplate>
 
   <!-- Fallback enum/flags filter templates: simple text filter when specialized flags UI is not available in Avalonia port -->
-  <ControlTemplate x:Key="AssemblyFlagsFilter">
+  <ControlTemplate x:Key="AssemblyFlagsFilter" x:DataType="dgrid:DataGridColumn">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="AssemblyHashAlgorithmFilter">
+  <ControlTemplate x:Key="AssemblyHashAlgorithmFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="MethodAttributesFilter">
+  <ControlTemplate x:Key="MethodAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="MethodImplAttributesFilter">
+  <ControlTemplate x:Key="MethodImplAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="MethodSemanticsAttributesFilter">
+  <ControlTemplate x:Key="MethodSemanticsAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="TypeAttributesFilter">
+  <ControlTemplate x:Key="TypeAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="PropertyAttributesFilter">
+  <ControlTemplate x:Key="PropertyAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="EventAttributesFilter">
+  <ControlTemplate x:Key="EventAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="FieldAttributesFilter">
+  <ControlTemplate x:Key="FieldAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="ManifestResourceAttributesFilter">
+  <ControlTemplate x:Key="ManifestResourceAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="GenericParameterAttributesFilter">
+  <ControlTemplate x:Key="GenericParameterAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
-  <ControlTemplate x:Key="PInvokeAttributesFilter">
+  <ControlTemplate x:Key="PInvokeAttributesFilter" x:DataType="dgrid:DataGridColumnHeader">
     <Grid>
-      <TextBox Text="{Binding Path=FilterValue, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgrid:DataGridColumnHeader}, Mode=TwoWay}" Watermark="Filter..." />
+      <TextBox Text="{Binding Path=FilterValue, Mode=TwoWay}" Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 
