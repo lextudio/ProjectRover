@@ -480,6 +480,14 @@
       <Link>Metadata\Helpers.cs</Link>
     </Compile>
 
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\HexFilterControl.ContentFilter.cs">
+      <Link>Metadata\HexFilterControl.ContentFilter.cs</Link>
+    </Compile>
+
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\FlagsContentFilter.cs">
+      <Link>Metadata\FlagsContentFilter.cs</Link>
+    </Compile>
+
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\NavigationHistory.cs">
       <Link>NavigationHistory.cs</Link>
     </Compile>
