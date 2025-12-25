@@ -21,6 +21,7 @@ using System.ComponentModel;
 using System.Reflection;
 
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 
 namespace ICSharpCode.ILSpy.Metadata
 {
@@ -33,8 +34,11 @@ namespace ICSharpCode.ILSpy.Metadata
 				return template;
 			}
 
-			var tb = new HyperlinkButton();
-			tb.Click += Hyperlink_Click;
+			var tb = new TextBlock();
+			var hyper = new HyperlinkButton();
+			hyper.Click += Hyperlink_Click;
+			var run = new Run();
+			run.Bind(Run.TextProperty, binding);
 
 			DataTemplate dataTemplate = new DataTemplate() { VisualTree = tb };
 			linkCellTemplates.Add(name, dataTemplate);
