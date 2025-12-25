@@ -6,7 +6,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 
-#if DEBUG
 [ExportMainMenuCommand(ParentMenuID = "_Help", Header = "Open DevTools", InputGestureText = "F12", MenuOrder = 1000)]
 public class DebugOpenDevToolsMenuCommand : ICommand
 {
@@ -64,4 +63,3 @@ public class DebugOpenDevToolsMenuCommand : ICommand
         catch { }
     }
 }
-#endif
