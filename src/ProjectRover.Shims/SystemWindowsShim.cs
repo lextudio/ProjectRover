@@ -37,7 +37,8 @@ namespace System.Windows
                 var provider = Microsoft.Win32.DialogHelper.GetTopLevel(null)?.Clipboard;
                 if (provider != null)
                 {
-                    return Microsoft.Win32.DialogHelper.RunSync(provider.GetTextAsync()) ?? string.Empty;
+                    var item = Microsoft.Win32.DialogHelper.RunSync(provider.TryGetDataAsync());
+                    return item?.ToString() ?? string.Empty;
                 }
             }
             catch { }
