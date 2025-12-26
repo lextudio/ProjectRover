@@ -2,34 +2,36 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:options="clr-namespace:ICSharpCode.ILSpy.Options"
              xmlns:controls="clr-namespace:ProjectRover.Controls;assembly=ProjectRover"
+             xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
              x:Class="ICSharpCode.ILSpy.Options.DecompilerSettingsPanel"
              x:DataType="options:DecompilerSettingsViewModel">
-  <StackPanel Orientation="Vertical">
-    <ItemsControl ItemsSource="{Binding Settings}">
-      <ItemsControl.ItemTemplate>
-        <DataTemplate DataType="options:DecompilerSettingsGroupViewModel">
-          <controls:GroupBox>
-            <controls:GroupBox.Header>
-              <CheckBox Content="{Binding Category}"
-                        IsChecked="{Binding AreAllItemsChecked, Mode=TwoWay}"
-                        IsThreeState="True"
-                        FontSize="12"
-                        FontWeight="Bold" />
-            </controls:GroupBox.Header>
-            <Grid Margin="12">
-              <ItemsControl ItemsSource="{Binding Settings}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate DataType="options:DecompilerSettingsItemViewModel">
-                    <CheckBox Margin="24,12,0,0"
-                              IsChecked="{Binding IsEnabled}"
-                              Content="{Binding Description}" />
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
+  <DockPanel>
+    <TextBlock Margin="3" DockPanel.Dock="Top" TextWrapping="Wrap" Text="{x:Static properties:Resources.DecompilerSettingsPanelLongText}" />
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Settings}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="options:DecompilerSettingsGroupViewModel">
+            <Grid>
+              <Expander Padding="0" BorderThickness="0" IsExpanded="True" HorizontalAlignment="Stretch">
+                <Expander.Header>
+                  <CheckBox VerticalContentAlignment="Center"
+                            FontSize="16" FontWeight="Bold"
+                            Content="{Binding Category}"
+                            IsChecked="{Binding AreAllItemsChecked, Mode=TwoWay}"
+                            IsThreeState="True" />
+                </Expander.Header>
+                <ItemsControl ItemsSource="{Binding Settings}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="options:DecompilerSettingsItemViewModel">
+                      <CheckBox Margin="28,0,0,0" IsChecked="{Binding IsEnabled}" Content="{Binding Description}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Expander>
             </Grid>
-          </controls:GroupBox>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
-  </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
 </UserControl>

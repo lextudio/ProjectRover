@@ -1,12 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:options="clr-namespace:ICSharpCode.ILSpy.Options"
-             xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
-             xmlns:controls="clr-namespace:ProjectRover.Controls;assembly=ProjectRover"
-             xmlns:themes="clr-namespace:ICSharpCode.ILSpy.Themes;assembly=ProjectRover"
-             x:Class="ICSharpCode.ILSpy.Options.DisplaySettingsPanel"
-             x:DataType="options:DisplaySettingsViewModel"
-             xmlns:prsettings="clr-namespace:ProjectRover.Settings;assembly=ProjectRover">
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:options="clr-namespace:ICSharpCode.ILSpy.Options"
+  xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
+  xmlns:controls="clr-namespace:ProjectRover.Controls;assembly=ProjectRover"
+  xmlns:themes="clr-namespace:ICSharpCode.ILSpy.Themes;assembly=ProjectRover"
+  x:Class="ICSharpCode.ILSpy.Options.DisplaySettingsPanel"
+  x:DataType="options:DisplaySettingsViewModel"
+  xmlns:prsettings="clr-namespace:ProjectRover.Settings;assembly=ProjectRover">
   <UserControl.Resources>
     <prsettings:DisplayMacSettingsViewModel x:Key="DisplayMacSettings" />
     <prsettings:DockLayoutSettingsViewModel x:Key="DockLayoutSettings" />
@@ -15,12 +15,12 @@
   <StackPanel Orientation="Vertical" Margin="6">
     <DockPanel Margin="6,0,6,0">
       <TextBlock DockPanel.Dock="Left"
-                 Margin="0,0,8,0"
-                 VerticalAlignment="Center"
-                 Text="{x:Static properties:Resources.DisplaySettingsPanel_Theme}" />
+        Margin="6,6,6,6"
+        VerticalAlignment="Center"
+        Text="{x:Static properties:Resources.DisplaySettingsPanel_Theme}" />
       <ComboBox ItemsSource="{Binding AllThemes, Source={x:Static themes:ThemeManager.Current}}"
-                SelectedItem="{Binding SessionSettings.Theme}"
-                VerticalContentAlignment="Center" />
+        SelectedItem="{Binding SessionSettings.Theme}"
+        VerticalContentAlignment="Center" />
     </DockPanel>
 
     <controls:GroupBox Header="{x:Static properties:Resources.Font}">
@@ -36,12 +36,14 @@
           <RowDefinition Height="50" />
         </Grid.RowDefinitions>
 
-        <TextBlock Margin="0,0,6,0" Text="{x:Static properties:Resources.DisplaySettingsPanel_Font}" />
+        <TextBlock Margin="0,6,6,0" Text="{x:Static properties:Resources.DisplaySettingsPanel_Font}" />
         <ComboBox Grid.Row="0"
-                  Grid.Column="1"
-                  ItemsSource="{Binding FontFamilies}"
-                  SelectedItem="{Binding Settings.SelectedFont}"
-                  VerticalContentAlignment="Center">
+            Grid.Column="1"
+            HorizontalAlignment="Stretch"
+            Margin="0,0,6,0"
+            ItemsSource="{Binding FontFamilies}"
+            SelectedItem="{Binding Settings.SelectedFont}"
+            VerticalContentAlignment="Center">
           <ComboBox.ItemTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding}" />
@@ -50,27 +52,29 @@
         </ComboBox>
 
         <TextBlock Grid.Row="0"
-                   Grid.Column="2"
-                   Margin="0,0,6,0"
-                   Text="{x:Static properties:Resources.Size}" />
+          Grid.Column="2"
+          Margin="0,6,6,0"
+          Text="{x:Static properties:Resources.Size}" />
         <ComboBox Grid.Row="0"
-                  Grid.Column="3"
-                  ItemsSource="{Binding FontSizes}"
-                  IsEditable="True"
-                  Margin="3,0"
-                  Text="{Binding Settings.SelectedFontSize, Converter={StaticResource FontSizeConverter}, Mode=TwoWay}" />
+          Grid.Column="3"
+          ItemsSource="{Binding FontSizes}"
+          IsEditable="True"
+          Margin="0,0,6,0"
+          Text="{Binding Settings.SelectedFontSize, Converter={StaticResource FontSizeConverter}, Mode=TwoWay}" />
 
         <Border Grid.Row="1"
-                Grid.Column="0"
-                Grid.ColumnSpan="4"
-                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
-                BorderThickness="1"
-                Margin="3,5">
+          Grid.Column="0"
+          Grid.ColumnSpan="4"
+          BorderBrush="{DynamicResource ThemeWarningBorderBrush}"
+          BorderThickness="1"
+          CornerRadius="4"
+          Padding="8"
+          Margin="0,6,6,6">
           <TextBlock HorizontalAlignment="Center"
-                     VerticalAlignment="Center"
-                     Text="AaBbCcXxYyZz"
-                     FontFamily="{Binding Settings.SelectedFont}"
-                     FontSize="{Binding Settings.SelectedFontSize}" />
+            VerticalAlignment="Center"
+            Text="AaBbCcXxYyZz"
+            FontFamily="{Binding Settings.SelectedFont}"
+            FontSize="{Binding Settings.SelectedFontSize}" />
         </Border>
       </Grid>
     </controls:GroupBox>
@@ -78,7 +82,7 @@
     <controls:GroupBox Header="{x:Static properties:Resources.Indentation}">
       <StackPanel Margin="12">
         <CheckBox IsChecked="{Binding Settings.IndentationUseTabs}"
-                  Content="{x:Static properties:Resources.UseTabsInsteadOfSpaces}" />
+          Content="{x:Static properties:Resources.UseTabsInsteadOfSpaces}" />
         <StackPanel Orientation="Horizontal">
           <TextBlock VerticalAlignment="Center" Text="{x:Static properties:Resources.TabSize}" />
           <TextBox Width="50" Margin="3" Text="{Binding Settings.IndentationTabSize}" />
@@ -93,49 +97,49 @@
     <controls:GroupBox Header="{x:Static properties:Resources.DecompilationViewOptions}">
       <StackPanel Margin="12">
         <CheckBox IsChecked="{Binding Settings.ShowLineNumbers}"
-                  Content="{x:Static properties:Resources.ShowLineNumbers}" />
+          Content="{x:Static properties:Resources.ShowLineNumbers}" />
         <CheckBox IsChecked="{Binding Settings.EnableWordWrap}"
-                  Content="{x:Static properties:Resources.EnableWordWrap}" />
+          Content="{x:Static properties:Resources.EnableWordWrap}" />
         <CheckBox IsChecked="{Binding Settings.FoldBraces}"
-                  Content="{x:Static properties:Resources.EnableFoldingBlocksBraces}" />
+          Content="{x:Static properties:Resources.EnableFoldingBlocksBraces}" />
         <CheckBox IsChecked="{Binding Settings.HighlightMatchingBraces}"
-                  Content="{x:Static properties:Resources.HighlightMatchingBraces}" />
+          Content="{x:Static properties:Resources.HighlightMatchingBraces}" />
         <CheckBox IsChecked="{Binding Settings.HighlightCurrentLine}"
-                  Content="{x:Static properties:Resources.HighlightCurrentLine}" />
+          Content="{x:Static properties:Resources.HighlightCurrentLine}" />
         <CheckBox IsChecked="{Binding Settings.ExpandMemberDefinitions}"
-                  Content="{x:Static properties:Resources.ExpandMemberDefinitionsAfterDecompilation}" />
+          Content="{x:Static properties:Resources.ExpandMemberDefinitionsAfterDecompilation}" />
         <CheckBox IsChecked="{Binding Settings.ExpandUsingDeclarations}"
-                  Content="{x:Static properties:Resources.ExpandUsingDeclarationsAfterDecompilation}" />
+          Content="{x:Static properties:Resources.ExpandUsingDeclarationsAfterDecompilation}" />
         <CheckBox IsChecked="{Binding Settings.ShowDebugInfo}"
-                  Content="{x:Static properties:Resources.ShowInfoFromDebugSymbolsAvailable}" />
+          Content="{x:Static properties:Resources.ShowInfoFromDebugSymbolsAvailable}" />
         <CheckBox IsChecked="{Binding Settings.ShowRawOffsetsAndBytesBeforeInstruction}"
-                  Content="{x:Static properties:Resources.ShowRawOffsetsAndBytesBeforeInstruction}" />
+          Content="{x:Static properties:Resources.ShowRawOffsetsAndBytesBeforeInstruction}" />
         <CheckBox IsChecked="{Binding Settings.DecodeCustomAttributeBlobs}"
-                  Content="{x:Static properties:Resources.DecodeCustomAttributeBlobs}" />
+          Content="{x:Static properties:Resources.DecodeCustomAttributeBlobs}" />
       </StackPanel>
     </controls:GroupBox>
 
     <controls:GroupBox Header="{x:Static properties:Resources.TreeViewOptions}">
       <StackPanel Margin="12">
         <CheckBox IsChecked="{Binding Settings.ShowMetadataTokens}"
-                  Content="{x:Static properties:Resources.ShowMetadataTokens}" />
+          Content="{x:Static properties:Resources.ShowMetadataTokens}" />
         <CheckBox IsChecked="{Binding Settings.ShowMetadataTokensInBase10}"
-                  Content="{x:Static properties:Resources.ShowMetadataTokensInBase10}" />
+          Content="{x:Static properties:Resources.ShowMetadataTokensInBase10}" />
         <CheckBox IsChecked="{Binding Settings.HideEmptyMetadataTables}"
-                  Content="{x:Static properties:Resources.HideEmptyMetadataTables}" />
+          Content="{x:Static properties:Resources.HideEmptyMetadataTables}" />
         <CheckBox IsChecked="{Binding Settings.UseNestedNamespaceNodes}"
-                  Content="{x:Static properties:Resources.UseNestedNamespaceNodes}" />
+          Content="{x:Static properties:Resources.UseNestedNamespaceNodes}" />
       </StackPanel>
     </controls:GroupBox>
 
     <controls:GroupBox Header="{x:Static properties:Resources.OtherOptions}">
       <StackPanel Margin="12">
         <CheckBox IsChecked="{Binding Settings.SortResults}"
-                  Content="{x:Static properties:Resources.SortResultsFitness}" />
+          Content="{x:Static properties:Resources.SortResultsFitness}" />
         <CheckBox IsChecked="{Binding Settings.StyleWindowTitleBar}"
-                  Content="{x:Static properties:Resources.StyleTheWindowTitleBar}" />
+          Content="{x:Static properties:Resources.StyleTheWindowTitleBar}" />
         <CheckBox IsChecked="{Binding Settings.EnableSmoothScrolling}"
-                  Content="{x:Static properties:Resources.EnableSmoothScrolling}" />
+          Content="{x:Static properties:Resources.EnableSmoothScrolling}" />
       </StackPanel>
     </controls:GroupBox>
 
@@ -143,21 +147,21 @@
     <controls:GroupBox Header="Rover only">
       <StackPanel Margin="12">
         <Border Background="{DynamicResource ThemeWarningBackgroundBrush}"
-                BorderBrush="{DynamicResource ThemeWarningBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="4"
-                Padding="8"
-                Margin="0,0,0,6">
+          BorderBrush="{DynamicResource ThemeWarningBorderBrush}"
+          BorderThickness="1"
+          CornerRadius="4"
+          Padding="8"
+          Margin="0,0,0,6">
           <TextBlock Text="{x:Static properties:Resources.DockLayoutPersistenceNotice}"
-                     TextWrapping="Wrap"
-                     Foreground="{DynamicResource ThemeWarningForegroundBrush}" />
+            TextWrapping="Wrap"
+            Foreground="{DynamicResource ThemeWarningForegroundBrush}" />
         </Border>
         <CheckBox Content="{x:Static properties:Resources.DockLayoutPersistenceSettingLabel}"
-                  IsChecked="{Binding Source={StaticResource DockLayoutSettings}, Path=UseDefaultDockLayoutOnly, Mode=TwoWay}"
-                  Margin="0,0,0,8" />
+          IsChecked="{Binding Source={StaticResource DockLayoutSettings}, Path=UseDefaultDockLayoutOnly, Mode=TwoWay}"
+          Margin="0,0,0,8" />
         <CheckBox IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}"
-                  IsChecked="{Binding Source={StaticResource DisplayMacSettings}, Path=ShowAvaloniaMainMenuOnMac, Mode=TwoWay}"
-                  Content="Keep main menu visible on macOS (takes effect after restart)" />
+          IsChecked="{Binding Source={StaticResource DisplayMacSettings}, Path=ShowAvaloniaMainMenuOnMac, Mode=TwoWay}"
+          Content="Keep main menu visible on macOS (takes effect after restart)" />
       </StackPanel>
     </controls:GroupBox>
   </StackPanel>
