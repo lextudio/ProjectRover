@@ -1,3 +1,12 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Threading;
 using System.Windows.Input;
 
 namespace System.Windows
@@ -6,11 +15,32 @@ namespace System.Windows
     {
         public static void SetText(string text)
         {
-            // TODO: implement cross-platform clipboard support if needed
+            try
+            {
+                var provider = Microsoft.Win32.DialogHelper.GetTopLevel(null)?.Clipboard;
+                if (provider != null)
+                {
+                    // Avalonia clipboard is async; run synchronously via Dispatcher if needed
+                    Microsoft.Win32.DialogHelper.RunSync(provider.SetTextAsync(text));
+                }
+            }
+            catch
+            {
+                // swallow clipboard errors
+            }
         }
 
         public static string GetText()
         {
+            try
+            {
+                var provider = Microsoft.Win32.DialogHelper.GetTopLevel(null)?.Clipboard;
+                if (provider != null)
+                {
+                    return Microsoft.Win32.DialogHelper.RunSync(provider.GetTextAsync()) ?? string.Empty;
+                }
+            }
+            catch { }
             return string.Empty;
         }
     }
@@ -88,35 +118,135 @@ namespace System.Windows
 
     public static class MessageBox
     {
-        // Minimal overloads for ILSpy logic
+        private static TopLevel? GetTopLevelFromOwner(object? owner)
+        {
+            try
+            {
+                // Prefer explicit Avalonia Window owner if provided
+                if (owner is Avalonia.Controls.Window w) return TopLevel.GetTopLevel(w);
+                // If owner is our shim Window type, try to get the current application's main window
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    return TopLevel.GetTopLevel(desktop.MainWindow);
+            }
+            catch { }
+            return Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime ? TopLevel.GetTopLevel(((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime).MainWindow) : null;
+        }
+
+        private static async Task<MessageBoxResult> ShowDialogAsync(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult, object? owner)
+        {
+            var top = GetTopLevelFromOwner(owner) ?? Microsoft.Win32.DialogHelper.GetTopLevel(null);
+
+            var tcs = new TaskCompletionSource<MessageBoxResult>();
+
+            var dlg = new Avalonia.Controls.Window
+            {
+                Title = caption ?? string.Empty,
+                Width = 560,
+                SizeToContent = SizeToContent.WidthAndHeight,
+                CanResize = false,
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    Margin = new Thickness(12),
+                }
+            };
+
+            var panel = (StackPanel)dlg.Content!;
+            var textBlock = new TextBlock
+            {
+                Text = messageBoxText ?? string.Empty,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(4),
+                MaxWidth = 520
+            };
+            panel.Children.Add(textBlock);
+
+            var buttonsPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(4),
+            };
+
+            void AddButton(string label, MessageBoxResult result)
+            {
+                var btn = new Button { Content = label, Margin = new Thickness(6, 0) };
+                btn.Click += (_, __) =>
+                {
+                    if (!tcs.Task.IsCompleted) tcs.SetResult(result);
+                    dlg.Close();
+                };
+                buttonsPanel.Children.Add(btn);
+            }
+
+            switch (button)
+            {
+                case MessageBoxButton.OK:
+                    AddButton("OK", MessageBoxResult.OK);
+                    break;
+                case MessageBoxButton.OKCancel:
+                    AddButton("OK", MessageBoxResult.OK);
+                    AddButton("Cancel", MessageBoxResult.Cancel);
+                    break;
+                case MessageBoxButton.YesNo:
+                    AddButton("Yes", MessageBoxResult.Yes);
+                    AddButton("No", MessageBoxResult.No);
+                    break;
+                case MessageBoxButton.YesNoCancel:
+                    AddButton("Yes", MessageBoxResult.Yes);
+                    AddButton("No", MessageBoxResult.No);
+                    AddButton("Cancel", MessageBoxResult.Cancel);
+                    break;
+                default:
+                    AddButton("OK", MessageBoxResult.OK);
+                    break;
+            }
+
+            panel.Children.Add(buttonsPanel);
+
+            dlg.Closed += (_, __) =>
+            {
+                if (!tcs.Task.IsCompleted)
+                    tcs.SetResult(defaultResult);
+            };
+
+            // Show the dialog non-modally; completion is driven by button clicks.
+            dlg.Show();
+
+            return await tcs.Task.ConfigureAwait(true);
+        }
+
+        // Synchronous wrappers used by ILSpy code
         public static MessageBoxResult Show(string messageBoxText)
         {
-            return MessageBoxResult.OK;
+            return Microsoft.Win32.DialogHelper.RunSync(ShowDialogAsync(messageBoxText, string.Empty, MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.OK, null));
         }
+
         public static MessageBoxResult Show(string messageBoxText, string caption)
         {
-            return MessageBoxResult.OK;
+            return Microsoft.Win32.DialogHelper.RunSync(ShowDialogAsync(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.OK, null));
         }
+
         public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button)
         {
-            if (button == MessageBoxButton.YesNo || button == MessageBoxButton.YesNoCancel)
-                return MessageBoxResult.Yes;
-            return MessageBoxResult.OK;
+            return Microsoft.Win32.DialogHelper.RunSync(ShowDialogAsync(messageBoxText, caption, button, MessageBoxImage.None, MessageBoxResult.None, null));
         }
+
         public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
         {
-            return Show(messageBoxText, caption, button);
+            return Microsoft.Win32.DialogHelper.RunSync(ShowDialogAsync(messageBoxText, caption, button, icon, MessageBoxResult.None, null));
         }
-        // 5-argument overload for ExtractPackageEntryContextMenuEntry, SaveCodeContextMenuEntry, etc.
+
+        // 5-argument overload
         public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult)
         {
-            // Return defaultResult for compatibility
-            return defaultResult;
+            return Microsoft.Win32.DialogHelper.RunSync(ShowDialogAsync(messageBoxText, caption, button, icon, defaultResult, null));
         }
-        // 7-argument overload for ManageAssemblyListsViewModel
+
+        // 7-argument overload supporting owner/object
         public static MessageBoxResult Show(object owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult, MessageBoxOptions options)
         {
-            return defaultResult;
+            return Microsoft.Win32.DialogHelper.RunSync(ShowDialogAsync(messageBoxText, caption, button, icon, defaultResult, owner));
         }
     }
 

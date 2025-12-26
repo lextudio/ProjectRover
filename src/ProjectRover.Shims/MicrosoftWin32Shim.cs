@@ -61,6 +61,21 @@ namespace Microsoft.Win32
             return task.GetAwaiter().GetResult();
         }
 
+        public static void RunSync(Task task)
+        {
+            if (task.IsCompleted)
+                return;
+
+            Console.WriteLine("DialogHelper: Waiting for async task...");
+            var cts = new CancellationTokenSource();
+            task.ContinueWith(_ => {
+                Console.WriteLine("DialogHelper: Task completed, cancelling token.");
+                cts.Cancel();
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+            Dispatcher.UIThread.MainLoop(cts.Token);
+            task.GetAwaiter().GetResult();
+        }
+
         public static async Task<IStorageFolder?> GetStartLocationAsync(IStorageProvider provider, string path)
         {
             if (string.IsNullOrEmpty(path)) return null;
@@ -191,6 +206,34 @@ namespace Microsoft.Win32
             if (result != null)
             {
                 FileName = result.Path.LocalPath;
+                // Infer FilterIndex from the picked file's extension by matching against the Filter patterns.
+                try
+                {
+                    var ext = Path.GetExtension(FileName);
+                    if (!string.IsNullOrEmpty(ext))
+                    {
+                        var patterns = DialogHelper.ParseFilter(Filter);
+                        for (int i = 0; i < patterns.Count; i++)
+                        {
+                            var p = patterns[i];
+                            // Patterns may contain entries like "*.cs" or "*.dll;*.exe"
+                            foreach (var pattern in p.Patterns)
+                            {
+                                var pat = pattern.Trim();
+                                if (pat.StartsWith("*.") && string.Equals(pat.Substring(1), ext, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    FilterIndex = i + 1; // 1-based
+                                    break;
+                                }
+                            }
+                            if (FilterIndex != 0) break;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"SaveFileDialog: Failed to infer FilterIndex: {ex}");
+                }
                 return true;
             }
             return false;
