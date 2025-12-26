@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- WPF-like menu separator: thin line aligned with menu text -->
+  <Style Selector="Menu Separator, ContextMenu Separator">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Margin" Value="12,6,12,6" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate>
+          <Border Height="1" HorizontalAlignment="Stretch" Background="{DynamicResource ToolbarSeparatorBrush}"/>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</Styles>
