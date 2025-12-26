@@ -5,12 +5,33 @@
              xmlns:local="clr-namespace:ICSharpCode.ILSpy.Controls"
              xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties"
              xmlns:toms="urn:TomsToolbox"
+             xmlns:ilSpy="clr-namespace:ICSharpCode.ILSpy"
              x:Class="ICSharpCode.ILSpy.Controls.MainMenu"
+             x:DataType="ilSpy:MainWindowViewModel"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="24">
+  <UserControl.Resources>
+    <local:CultureSelectionConverter x:Key="CultureSelectionConverter" />
+  </UserControl.Resources>
+
   <Menu Name="Menu" Height="24" IsVisible="{OnPlatform Windows='true', Linux='true', macOS='false'}">
     <MenuItem Header="File" Tag="_File" />
-    <MenuItem Header="View" Tag="_View">
-      <!-- static entries can be added here -->
+    <MenuItem Header="{x:Static properties:Resources._View}" Tag="_View">
+      <MenuItem Header="{x:Static properties:Resources.Show_publiconlyTypesMembers}"
+                IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicOnly, Mode=TwoWay}" />
+      <MenuItem Header="{x:Static properties:Resources.Show_internalTypesMembers}"
+                IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicAndInternal, Mode=TwoWay}" />
+      <MenuItem Header="{x:Static properties:Resources.Show_allTypesAndMembers}"
+                IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisAll, Mode=TwoWay}" />
+      <Separator />
+      <MenuItem Header="{x:Static properties:Resources.Theme}" Tag="_Theme" />
+      <MenuItem Header="{x:Static properties:Resources.UILanguage}">
+        <MenuItem Header="{x:Static properties:Resources.UILanguage_System}"
+            IsChecked="{Binding SessionSettings.CurrentCulture, Converter={StaticResource CultureSelectionConverter}, ConverterParameter={x:Null}}" />
+        <MenuItem Header="English"
+            IsChecked="{Binding SessionSettings.CurrentCulture, Converter={StaticResource CultureSelectionConverter}, ConverterParameter=en-US}" />
+        <MenuItem Header="中文"
+            IsChecked="{Binding SessionSettings.CurrentCulture, Converter={StaticResource CultureSelectionConverter}, ConverterParameter=zh-Hans}" />
+      </MenuItem>
     </MenuItem>
     <MenuItem Header="Window" Tag="_Window" />
   </Menu>

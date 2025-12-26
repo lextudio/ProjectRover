@@ -28,6 +28,27 @@ namespace ICSharpCode.ILSpy.Themes
 			currentTheme = DefaultTheme;
 		}
 
+		// Ensure we react to persisted settings changes (Options dialog commit) so theme is applied immediately.
+		static ThemeManager()
+		{
+			try
+			{
+				MessageBus<SettingsChangedEventArgs>.Subscribers += (sender, e) => {
+					if (sender is SessionSettings ss)
+					{
+						if (!string.IsNullOrWhiteSpace(ss.Theme))
+						{
+							Current.ApplyTheme(ss.Theme);
+						}
+					}
+				};
+			}
+			catch
+			{
+				// ignore if MessageBus isn't available
+			}
+		}
+
 		public IReadOnlyCollection<string> AllThemes { get; } = new[] { "Light", "Dark" };
 
 		public bool IsDarkTheme { get; private set; }

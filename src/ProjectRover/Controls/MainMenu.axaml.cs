@@ -16,6 +16,11 @@ namespace ICSharpCode.ILSpy.Controls
 {
     public partial class MainMenu : UserControl
     {
+        // Attached property to remember the original icon key for each MenuItem so we can reload
+        // the themed image when the application theme changes.
+        public static readonly AttachedProperty<string?> MenuIconKeyProperty =
+            Avalonia.AvaloniaProperty.RegisterAttached<MainMenu, MenuItem, string?>("MenuIconKey");
+
         public MainMenu()
         {
             InitializeComponent();
@@ -50,7 +55,13 @@ namespace ICSharpCode.ILSpy.Controls
                 {
                     if (parentMenuItem.Items.Count > 0)
                     {
-                        parentMenuItem.Items.Add(new Separator());
+                        // Avoid inserting duplicate separators: only add a Separator when the last
+                        // added item is not already a Separator.
+                        var last = parentMenuItem.Items.LastOrDefault();
+                        if (!(last is Separator))
+                        {
+                            parentMenuItem.Items.Add(new Separator());
+                        }
                     }
                     foreach (var entry in category)
                     {
@@ -58,7 +69,21 @@ namespace ICSharpCode.ILSpy.Controls
                         {
                             var subParent = GetOrAddParentMenuItem(mainMenu, parentMenuItems, entry.Metadata?.MenuID);
                             subParent.Header = entry.Metadata?.Header ?? subParent.Header?.ToString();
-                            parentMenuItem.Items.Add(subParent);
+
+                            // If the submenu item we found already has a visual parent, don't add the same
+                            // instance again (that causes an InvalidOperationException at runtime).
+                            // Instead, when it's already parented under a different menu, add a lightweight
+                            // placeholder MenuItem (same header/tag) so the menu structure is represented
+                            // without moving the original visual element.
+                            if (subParent.Parent == null)
+                            {
+                                parentMenuItem.Items.Add(subParent);
+                            }
+                            else if (!object.ReferenceEquals(subParent.Parent, parentMenuItem))
+                            {
+                                var placeholder = new MenuItem { Header = subParent.Header, Tag = subParent.Tag };
+                                parentMenuItem.Items.Add(placeholder);
+                            }
                         }
                         else
                         {
@@ -70,6 +95,26 @@ namespace ICSharpCode.ILSpy.Controls
                                 Tag = entry.Metadata?.MenuID,
                                 Header = headerText ?? entry.Metadata?.Header
                             };
+                            if (!string.IsNullOrEmpty(entry.Metadata?.MenuIcon))
+                            {
+                                try
+                                {
+                                    var imgSource = Images.LoadImage(entry.Metadata.MenuIcon);
+                                    if (imgSource != null)
+                                    {
+                                        var img = new Avalonia.Controls.Image
+                                        {
+                                            Width = 16,
+                                            Height = 16,
+                                            Source = imgSource
+                                        };
+                                        menuItem.Icon = img;
+                                        // Remember the key so we can reload when theme changes
+                                        menuItem.SetValue(MenuIconKeyProperty, entry.Metadata.MenuIcon);
+                                    }
+                                }
+                                catch { }
+                            }
                             if (string.Equals(entry.Metadata?.ParentMenuID, "_Theme", StringComparison.OrdinalIgnoreCase))
                             {
                                 menuItem.ToggleType = MenuItemToggleType.Radio;
@@ -102,9 +147,25 @@ namespace ICSharpCode.ILSpy.Controls
                         {
                             MainMenuThemeHelpers.UpdateThemeChecks(themeMenuItems, sessionSettings.Theme);
                             MainMenuThemeHelpers.UpdateNativeThemeChecks(nativeThemeItems, sessionSettings.Theme);
+                            // When the theme stored in SessionSettings changes, the application theme
+                            // will be applied via ThemeManager and MessageBus. Also refresh menu icons
+                            // to pick up themed variants (Assets/Dark/...)
+                            Avalonia.Threading.Dispatcher.UIThread.Post(() => RefreshMenuIcons(mainMenu));
                         }
                     };
                 }
+            }
+
+            // Subscribe to theme change notifications and refresh icons when theme changes.
+            try
+            {
+                MessageBus<ThemeChangedEventArgs>.Subscribers += (_, __) => {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => RefreshMenuIcons(mainMenu));
+                };
+            }
+            catch
+            {
+                // Ignore if MessageBus is unavailable for any reason.
             }
 
             // On macOS, default behavior is to hide the Avalonia menu and mirror it to the native menu bar.
@@ -201,12 +262,79 @@ namespace ICSharpCode.ILSpy.Controls
             }
         }
 
+        static void RefreshMenuIcons(Menu mainMenu)
+        {
+            if (mainMenu == null) return;
+            foreach (var item in mainMenu.Items.OfType<MenuItem>())
+            {
+                RefreshMenuItemIconsRecursive(item);
+            }
+        }
+
+        static void RefreshMenuItemIconsRecursive(MenuItem mi)
+        {
+            if (mi == null) return;
+
+            try
+            {
+                var iconKey = mi.GetValue(MenuIconKeyProperty);
+                if (!string.IsNullOrEmpty(iconKey))
+                {
+                    var imgSource = Images.LoadImage(iconKey);
+                    if (imgSource != null)
+                    {
+                        mi.Icon = new Avalonia.Controls.Image { Width = 16, Height = 16, Source = imgSource };
+                    }
+                    else
+                    {
+                        mi.Icon = null;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore failures while reloading icons
+            }
+
+            if (mi.Items != null)
+            {
+                foreach (var child in mi.Items.OfType<MenuItem>())
+                {
+                    RefreshMenuItemIconsRecursive(child);
+                }
+            }
+        }
+
         static MenuItem GetOrAddParentMenuItem(Menu mainMenu, Dictionary<string, MenuItem> parentMenuItems, string menuId)
         {
             if (menuId == null) menuId = string.Empty;
             if (!parentMenuItems.TryGetValue(menuId, out var parentMenuItem))
             {
-                var topLevel = mainMenu.Items.OfType<MenuItem>().FirstOrDefault(m => (string?)m.Tag == menuId);
+                // Search entire menu tree (not only top-level) for an existing MenuItem with matching Tag.
+                MenuItem? FindInChildren(MenuItem item)
+                {
+                    if (string.Equals((item.Tag as string) ?? string.Empty, menuId, StringComparison.Ordinal))
+                        return item;
+                    if (item.Items != null)
+                    {
+                        foreach (var child in item.Items.OfType<MenuItem>())
+                        {
+                            var found = FindInChildren(child);
+                            if (found != null)
+                                return found;
+                        }
+                    }
+                    return null;
+                }
+
+                MenuItem? topLevel = null;
+                foreach (var mi in mainMenu.Items.OfType<MenuItem>())
+                {
+                    topLevel = FindInChildren(mi);
+                    if (topLevel != null)
+                        break;
+                }
+
                 if (topLevel == null)
                 {
                     parentMenuItem = new MenuItem { Header = menuId, Tag = menuId };
