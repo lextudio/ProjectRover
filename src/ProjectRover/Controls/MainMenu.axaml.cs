@@ -24,6 +24,11 @@ namespace ICSharpCode.ILSpy.Controls
         public static readonly AttachedProperty<string?> MenuIconKeyProperty =
             Avalonia.AvaloniaProperty.RegisterAttached<MainMenu, MenuItem, string?>("MenuIconKey");
 
+        private EventHandler<TabPagesCollectionChangedEventArgs>? _windowMenuTabPagesChangedHandler;
+        private readonly Dictionary<MenuItem, Action> _windowMenuTabPageUpdaters = new();
+        private EventHandler<ThemeChangedEventArgs>? _windowMenuThemeChangedHandler;
+        private const string TabPageMenuIconPath = "/Assets/Checkmark.svg";
+
         public MainMenu()
         {
             InitializeComponent();
@@ -363,11 +368,23 @@ namespace ICSharpCode.ILSpy.Controls
             return parentMenuItem;
         }
 
-        static void InitWindowMenu(MenuItem windowMenuItem, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
+        void InitWindowMenu(MenuItem windowMenuItem, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
         {
             // Store default items (MEF-exported items like Close All Documents, Reset Layout)
             var defaultItems = windowMenuItem.Items.OfType<Control>().ToList();
             windowMenuItem.Items.Clear();
+            _windowMenuTabPageUpdaters.Clear();
+            if (_windowMenuThemeChangedHandler == null)
+            {
+                _windowMenuThemeChangedHandler = (_, __) => {
+                    var updaters = _windowMenuTabPageUpdaters.Values.ToArray();
+                    foreach (var updater in updaters)
+                    {
+                        updater();
+                    }
+                };
+                MessageBus<ThemeChangedEventArgs>.Subscribers += _windowMenuThemeChangedHandler;
+            }
 
             // Create menu items for tool panes (Assemblies, Analyze, Search, etc.)
             var toolItems = dockWorkspace.ToolPanes.Select(toolPane => CreateToolPaneMenuItem(toolPane, dockWorkspace)).ToArray();
@@ -379,11 +396,11 @@ namespace ICSharpCode.ILSpy.Controls
             
             foreach (var tabPage in dockWorkspace.TabPages)
             {
-                tabPageMenuItems.Add(CreateTabPageMenuItem(tabPage, dockWorkspace));
+                tabPageMenuItems.Add(CreateTabPageMenuItem(tabPage, dockWorkspace, _windowMenuTabPageUpdaters));
             }
 
             // Listen to tab page collection changes via MessageBus to keep menu in sync
-            ICSharpCode.ILSpy.Util.MessageBus<ICSharpCode.ILSpy.Util.TabPagesCollectionChangedEventArgs>.Subscribers += (_, e) => {
+            _windowMenuTabPagesChangedHandler = (_, e) => {
                 // Convert wrapped event args to NotifyCollectionChangedEventArgs
                 System.Collections.Specialized.NotifyCollectionChangedEventArgs args = e;
                 
@@ -391,7 +408,7 @@ namespace ICSharpCode.ILSpy.Controls
                 {
                     foreach (var newItem in args.NewItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>())
                     {
-                        var menuItem = CreateTabPageMenuItem(newItem, dockWorkspace);
+                        var menuItem = CreateTabPageMenuItem(newItem, dockWorkspace, _windowMenuTabPageUpdaters);
                         tabPageMenuItems.Add(menuItem);
                         
                         // Add separator before first tab page if not already present
@@ -413,6 +430,7 @@ namespace ICSharpCode.ILSpy.Controls
                     {
                         windowMenuItem.Items.Remove(item);
                         tabPageMenuItems.Remove(item);
+                        _windowMenuTabPageUpdaters.Remove(item);
                     }
                     
                     // Remove separator if no tab pages left
@@ -422,6 +440,7 @@ namespace ICSharpCode.ILSpy.Controls
                     }
                 }
             };
+            MessageBus<TabPagesCollectionChangedEventArgs>.Subscribers += _windowMenuTabPagesChangedHandler;
 
             // Add default items (Close All Documents, Reset Layout)
             foreach (var item in defaultItems)
@@ -490,7 +509,7 @@ namespace ICSharpCode.ILSpy.Controls
             return menuItem;
         }
 
-        static MenuItem CreateTabPageMenuItem(ICSharpCode.ILSpy.ViewModels.TabPageModel tabPage, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
+        static MenuItem CreateTabPageMenuItem(ICSharpCode.ILSpy.ViewModels.TabPageModel tabPage, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace, IDictionary<MenuItem, Action> tabPageMenuItemUpdaters)
         {
             var header = new TextBlock
             {
@@ -508,31 +527,52 @@ namespace ICSharpCode.ILSpy.Controls
             {
                 Header = header,
                 Tag = tabPage,
-                Command = new ICSharpCode.ILSpy.Commands.TabPageCommand(tabPage, dockWorkspace)
+                Command = new ICSharpCode.ILSpy.Commands.TabPageCommand(tabPage, dockWorkspace),
+
             };
+            // remember the checkmark icon key so RefreshMenuIcons can reload it when theme changes
+            menuItem.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
 
             // Update menu item when active tab changes
             dockWorkspace.PropertyChanged += (_, e) => {
                 if (e.PropertyName == nameof(dockWorkspace.ActiveTabPage))
                 {
-                    // In Avalonia, we can use visual indicators like font weight or color
-                    if (dockWorkspace.ActiveTabPage == tabPage)
-                    {
-                        header.FontWeight = FontWeight.Bold;
-                    }
-                    else
-                    {
-                        header.FontWeight = FontWeight.Normal;
-                    }
+                    UpdateState();
                 }
             };
 
             // Set initial state
-            if (dockWorkspace.ActiveTabPage == tabPage)
+            UpdateState();
+
+            void UpdateState()
             {
-                header.FontWeight = FontWeight.Bold;
+                var isActive = dockWorkspace.ActiveTabPage == tabPage;
+                header.FontWeight = isActive ? FontWeight.Bold : FontWeight.Normal;
+                menuItem.IsChecked = isActive;
+                if (isActive)
+                {
+                    var iconSource = Images.LoadImage(TabPageMenuIconPath);
+                    if (iconSource != null)
+                    {
+                        menuItem.Icon = new Avalonia.Controls.Image
+                        {
+                            Width = 16,
+                            Height = 16,
+                            Source = iconSource
+                        };
+                    }
+                    else
+                    {
+                        menuItem.Icon = null;
+                    }
+                }
+                else
+                {
+                    menuItem.Icon = null;
+                }
             }
 
+            tabPageMenuItemUpdaters[menuItem] = UpdateState;
             return menuItem;
         }
     }
