@@ -63,6 +63,9 @@
     <ProjectReference Include="..\ILSpy\ICSharpCode.ILSpyX\ICSharpCode.ILSpyX.csproj" />
     <ProjectReference Include="..\Dock.Model.TomsToolbox\Dock.Model.TomsToolbox.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\ProjectRover.Shims\ProjectRover.Shims.csproj" />
+  </ItemGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Debug' AND '$(OS)' == 'Windows_NT'">
     <PackageReference Include="Microsoft.DiaSymReader.Converter.Xml" />
     <PackageReference Include="Microsoft.DiaSymReader" />
@@ -276,6 +279,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Commands\SaveCodeContextMenuEntry.cs">
       <Link>Commands\SaveCodeContextMenuEntry.cs</Link>
     </Compile>
+    <!-- SystemWindows shim moved to ProjectRover.Shims project -->
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Commands\SaveCommand.cs">
       <Link>Commands\SaveCommand.cs</Link>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Rely on central package management from parent project; do not specify Version here. -->
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Labs.CommandManager" />
+  </ItemGroup>
+</Project>

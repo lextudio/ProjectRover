@@ -154,7 +154,7 @@ namespace Microsoft.Win32
         public string Filter { get; set; } = string.Empty;
         public string InitialDirectory { get; set; } = string.Empty;
         public string Title { get; set; }
-		public string DefaultExt { get; internal set; }
+		public string DefaultExt { get; set; }
         public int FilterIndex { get; internal set; } // TODO: how to implement this?
 
         public bool? ShowDialog()
@@ -196,7 +196,7 @@ namespace Microsoft.Win32
             return false;
         }
 
-        internal FileStream OpenFile()
+        public FileStream OpenFile()
         {
             return File.Open(FileName, FileMode.Create, FileAccess.Write);
         }

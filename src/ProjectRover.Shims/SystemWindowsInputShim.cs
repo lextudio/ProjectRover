@@ -35,9 +35,9 @@ namespace System.Windows.Input
 
     public class FocusedElement
     {
-        internal IDisposable PreserveFocus() => PreserveFocus(true);
+        public IDisposable PreserveFocus() => PreserveFocus(true);
 
-        internal IDisposable PreserveFocus(bool preserve)
+        public IDisposable PreserveFocus(bool preserve)
         {
             if (!preserve)
                 return new DummyDisposable();
