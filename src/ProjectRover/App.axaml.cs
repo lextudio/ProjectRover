@@ -220,7 +220,6 @@ public partial class App : Application
 
     private static IServiceCollection CreateServiceCollection() =>
         new ServiceCollection()
-            .ConfigureOptions()
             .ConfigureLogging()
             .AddViews()
             .AddViewModels()

@@ -17,7 +17,6 @@
     along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
 */
 
-using ProjectRover.Options;
 using ProjectRover.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,15 +27,6 @@ namespace ProjectRover.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection ConfigureOptions(this IServiceCollection services)
-    {
-        var configuration = GetConfiguration();
-
-        return services
-            .Configure<MatomoAnalyticsOptions>(configuration.GetSection(MatomoAnalyticsOptions.Key))
-            .Configure<AppInformationProviderOptions>(configuration.GetSection(AppInformationProviderOptions.Key));
-    }
-
     public static IServiceCollection ConfigureLogging(this IServiceCollection services)
     {
         services.AddLogging(builder => 
