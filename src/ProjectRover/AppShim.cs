@@ -17,6 +17,11 @@ namespace ProjectRover
         }
 
         public Window MainWindow { get; set; } // TODO: proper shim
+
+        public static void UnhandledException(Exception exception)
+        {
+            // TODO:
+        }
     }
 }
 

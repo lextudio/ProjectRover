@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-
+using Avalonia.Controls.Documents;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.ILSpy.Util;
@@ -68,92 +68,16 @@ namespace ICSharpCode.ILSpy
 				.GetTypeSystemOrNull(DecompilerTypeSystem.GetOptions(decompilerSettings));
 		}
 	}
-}
 
-namespace ICSharpCode.ILSpy.Properties
-{
-
-}
-
-namespace ICSharpCode.ILSpy.Analyzers
-{
-
-}
-
-namespace ICSharpCode.ILSpy.Search
-{
-
-}
-
-namespace System.Windows.Controls
-{
-    
-}
-
-namespace System.Windows.Controls.Primitives
-{
-
-}
-
-namespace System.Windows.Data
-{
-    
-}
-
-namespace System.Windows.Media
-{
-    
-}
-
-namespace System.Windows.Navigation
-{
-
-}
-
-namespace System.Windows.Documents
-{
-    
-}
-
-namespace System.Windows.Media.Animation
-{
-    
-}
-
-namespace ICSharpCode.AvalonEdit.Highlighting
-{}
-
-namespace ICSharpCode.AvalonEdit.Document
-{
-    
-}
-
-namespace ICSharpCode.AvalonEdit.Editing
-{
-    
-}
-
-namespace ICSharpCode.AvalonEdit.Folding
-{
-    
-}
-
-namespace ICSharpCode.AvalonEdit.Rendering
-{
-    
-}
-
-namespace ICSharpCode.AvalonEdit.Utils
-{
-    
-}
-
-namespace TomsToolbox.Wpf.Composition
-{
-
-}
-
-namespace TomsToolbox.Wpf.Interactivity
-{
-    
+    public static class BoldExtensions
+    {
+        extension(Bold bold)
+        {
+            public Bold Add(Inline inline)
+            {
+                bold.Inlines.Add(inline);
+                return bold;
+            }
+        }
+    }
 }

@@ -352,6 +352,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Images\AccessOverlayIcon.cs">
       <Link>Images\AccessOverlayIcon.cs</Link>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Controls\TreeView\WpfWindowsDataObject.cs">
+      <Link>Controls\TreeView\WpfWindowsDataObject.cs</Link>
+    </Compile>
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Images\MemberIcon.cs">
       <Link>Images\MemberIcon.cs</Link>
@@ -399,6 +402,9 @@
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Languages\LanguageService.cs">
       <Link>Languages\LanguageService.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\AssemblyTreeNode.cs">
+      <Link>TreeNodes\AssemblyTreeNode.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ResourceNodes\ResourcesFileTreeNode.cs">
       <Link>TreeNodes\ResourceNodes\ResourcesFileTreeNode.cs</Link>

@@ -89,3 +89,6 @@ global using DataGridSelectionUnit = Avalonia.Controls.DataGridSelectionUnit;
 global using BindingMode = Avalonia.Data.BindingMode;
 global using ControlTemplate = Avalonia.Markup.Xaml.Templates.ControlTemplate;
 global using Style = Avalonia.Styling.Style;
+global using Run = Avalonia.Controls.Documents.Run;
+global using Bold = Avalonia.Controls.Documents.Bold;
+global using LineBreak = Avalonia.Controls.Documents.LineBreak;

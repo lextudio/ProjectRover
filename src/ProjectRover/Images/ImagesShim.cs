@@ -196,6 +196,11 @@ namespace ICSharpCode.ILSpy
 
 		public static object SubTypes => "SubTypesIcon"; // Missing in App.axaml?
 
+		// Back-compat mappings for icons referenced by the original ILSpy code
+		public static object NuGet => "Package";
+		public static object ProgramDebugDatabase => "PDBFile";
+		public static object WebAssemblyFile => "WebFile";
+
 		public static object ListFolder => "ResourcesIconClosed";
 		public static object ListFolderOpen => "ResourcesIconOpen";
 
