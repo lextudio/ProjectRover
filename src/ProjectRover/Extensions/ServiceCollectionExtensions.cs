@@ -69,8 +69,7 @@ public static class ServiceCollectionExtensions
                 sp.GetRequiredService<ICSharpCode.ILSpy.Util.SettingsService>(),
                 sp.GetRequiredService<ICSharpCode.ILSpy.LanguageService>(),
                 ProjectRover.App.ExportProvider
-            ))
-            .AddSingleton<IDockLayoutDescriptorProvider, DefaultDockLayoutDescriptorProvider>();
+            ));
 
     private static IConfigurationRoot GetConfiguration() =>
         new ConfigurationBuilder()
