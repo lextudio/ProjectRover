@@ -76,6 +76,9 @@
                     <SolidColorBrush x:Key="GrayTextBrush" Color="#717171" />
                     <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#000000" />
                     <SolidColorBrush x:Key="ThemeForegroundLowBrush" Color="#DFDFDF" />
+                    <SolidColorBrush x:Key="ThemeWarningBackgroundBrush" Color="#FFF9E6" />
+                    <SolidColorBrush x:Key="ThemeWarningBorderBrush" Color="#F3D378" />
+                    <SolidColorBrush x:Key="ThemeWarningForegroundBrush" Color="#674500" />
 
                     <x:String x:Key="AssemblyIcon">/Assets/Assembly.svg</x:String>
                     <x:String x:Key="SearchIcon">/Assets/Search.svg</x:String>
@@ -190,6 +193,9 @@
                     <SolidColorBrush x:Key="GrayTextBrush" Color="#999999" />
                     <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="ThemeForegroundLowBrush" Color="#3A3A3A" />
+                    <SolidColorBrush x:Key="ThemeWarningBackgroundBrush" Color="#362E18" />
+                    <SolidColorBrush x:Key="ThemeWarningBorderBrush" Color="#5C4C27" />
+                    <SolidColorBrush x:Key="ThemeWarningForegroundBrush" Color="#F6E8B8" />
 
                     <x:String x:Key="AssemblyIcon">/Assets/Dark/Assembly.svg</x:String>
                     <x:String x:Key="SearchIcon">/Assets/Dark/Search.svg</x:String>

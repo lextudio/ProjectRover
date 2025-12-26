@@ -1153,4 +1153,10 @@ Do you want to continue?</value>
   <data name="_Window" xml:space="preserve">
     <value>_Window</value>
   </data>
+  <data name="DockLayoutPersistenceNotice" xml:space="preserve">
+    <value>Dock layout persistence is disabled by default while we finalize the Rover-specific save/load support. Uncheck the option below to let Rover remember your custom layout once it is stable.</value>
+  </data>
+  <data name="DockLayoutPersistenceSettingLabel" xml:space="preserve">
+    <value>Disable dock layout persistence and always use the default layout</value>
+  </data>
 </root>

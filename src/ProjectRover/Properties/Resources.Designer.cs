@@ -3150,5 +3150,23 @@ namespace ICSharpCode.ILSpy.Properties {
                 return ResourceManager.GetString("Window_ResetLayout", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dock layout persistence is disabled by default while we finalize the Rover-specific save/load support. Uncheck the option below to let Rover remember your custom layout once it is stable.
+        /// </summary>
+        public static string DockLayoutPersistenceNotice {
+            get {
+                return ResourceManager.GetString("DockLayoutPersistenceNotice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Disable dock layout persistence and always use the default layout.
+        /// </summary>
+        public static string DockLayoutPersistenceSettingLabel {
+            get {
+                return ResourceManager.GetString("DockLayoutPersistenceSettingLabel", resourceCulture);
+            }
+        }
     }
 }

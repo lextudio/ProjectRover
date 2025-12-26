@@ -9,6 +9,7 @@
              xmlns:prsettings="clr-namespace:ProjectRover.Settings;assembly=ProjectRover">
   <UserControl.Resources>
     <prsettings:DisplayMacSettingsViewModel x:Key="DisplayMacSettings" />
+    <prsettings:DockLayoutSettingsViewModel x:Key="DockLayoutSettings" />
     <options:FontSizeConverter x:Key="FontSizeConverter" />
   </UserControl.Resources>
   <StackPanel Orientation="Vertical" Margin="6">
@@ -138,10 +139,24 @@
       </StackPanel>
     </controls:GroupBox>
 
-    <!-- macOS specific options -->
-    <controls:GroupBox Header="macOS" IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}">
+    <!-- Rover-only options -->
+    <controls:GroupBox Header="Rover only">
       <StackPanel Margin="12">
-        <CheckBox IsChecked="{Binding Source={StaticResource DisplayMacSettings}, Path=ShowAvaloniaMainMenuOnMac, Mode=TwoWay}"
+        <Border Background="{DynamicResource ThemeWarningBackgroundBrush}"
+                BorderBrush="{DynamicResource ThemeWarningBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="8"
+                Margin="0,0,0,6">
+          <TextBlock Text="{x:Static properties:Resources.DockLayoutPersistenceNotice}"
+                     TextWrapping="Wrap"
+                     Foreground="{DynamicResource ThemeWarningForegroundBrush}" />
+        </Border>
+        <CheckBox Content="{x:Static properties:Resources.DockLayoutPersistenceSettingLabel}"
+                  IsChecked="{Binding Source={StaticResource DockLayoutSettings}, Path=UseDefaultDockLayoutOnly, Mode=TwoWay}"
+                  Margin="0,0,0,8" />
+        <CheckBox IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}"
+                  IsChecked="{Binding Source={StaticResource DisplayMacSettings}, Path=ShowAvaloniaMainMenuOnMac, Mode=TwoWay}"
                   Content="Keep main menu visible on macOS (takes effect after restart)" />
       </StackPanel>
     </controls:GroupBox>

@@ -79,7 +79,8 @@ namespace ICSharpCode.ILSpy.Docking
              return;
         }
 
-        if (TryRestoreLayout(dockHost))
+        var roverSettings = GetRoverSettings();
+        if (!roverSettings.UseDefaultDockLayoutOnly && TryRestoreLayout(dockHost))
         {
           return;
         }
@@ -108,6 +109,12 @@ namespace ICSharpCode.ILSpy.Docking
             Proportion = 0.3
         };
 
+        toolDock.VisibleDockables.Add(assemblyTreeModel);
+        toolDock.ActiveDockable = assemblyTreeModel;
+        toolDock.DefaultDockable = assemblyTreeModel;
+
+        searchPaneModel.IsVisible = false;
+        searchPaneModel.IsActive = false;
         this.RegisterTool(searchPaneModel);
 
         var searchDock = new ToolDock
@@ -117,7 +124,8 @@ namespace ICSharpCode.ILSpy.Docking
             Alignment = Alignment.Top,
             VisibleDockables = new ObservableCollection<IDockable>(),
             CanCloseLastDockable = true,
-            Proportion = 0.5
+            Proportion = 0.5,
+            IsVisible = false
         };
         this.RegisterDockable(searchDock);
 
@@ -130,6 +138,8 @@ namespace ICSharpCode.ILSpy.Docking
             Orientation = Dock.Model.Core.Orientation.Vertical,
             VisibleDockables = new ObservableCollection<IDockable>
             {
+                searchDock,
+                searchSplitter,
                 documentDock
             },
             ActiveDockable = documentDock
@@ -179,6 +189,12 @@ namespace ICSharpCode.ILSpy.Docking
     {
       if (dockHost?.Layout is not IRootDock rootLayout)
         return;
+
+      if (GetRoverSettings().UseDefaultDockLayoutOnly)
+      {
+        Console.WriteLine("DockWorkspace.SaveLayout: Skipped because Rover uses the default layout only.");
+        return;
+      }
 
       try
       {
@@ -932,21 +948,19 @@ namespace ICSharpCode.ILSpy.Docking
                         }
                     }
 
-                    if (targetDock is IToolDock toolDock)
+                    if (targetDock is ToolDock toolDock)
                     {
                         factory.AddDockable(toolDock, registeredTool);
+                        toolDock.IsVisible = true;
                         factory.SetActiveDockable(registeredTool);
                         factory.SetFocusedDockable(layout, registeredTool);
-                        Console.WriteLine($"DockWorkspace: Restored and activated tool {contentId} in {targetDockId}");
                         return;
                     }
                 }
-                Console.WriteLine($"DockWorkspace: Tool {contentId} not found for activation");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"DockWorkspace: Error activating tool {contentId}: {ex}");
         }
     }
 
@@ -972,6 +986,25 @@ namespace ICSharpCode.ILSpy.Docking
       if (root.Id == id)
         return root;
 
+      if (root is RootDock rootDock)
+      {
+        var hidden = FindDockableById(rootDock.HiddenDockables, id);
+        if (hidden != null)
+          return hidden;
+        hidden = FindDockableById(rootDock.LeftPinnedDockables, id);
+        if (hidden != null)
+          return hidden;
+        hidden = FindDockableById(rootDock.RightPinnedDockables, id);
+        if (hidden != null)
+          return hidden;
+        hidden = FindDockableById(rootDock.TopPinnedDockables, id);
+        if (hidden != null)
+          return hidden;
+        hidden = FindDockableById(rootDock.BottomPinnedDockables, id);
+        if (hidden != null)
+          return hidden;
+      }
+
       if (root is IDock dock && dock.VisibleDockables != null)
       {
         foreach (var dockable in dock.VisibleDockables)
@@ -984,21 +1017,55 @@ namespace ICSharpCode.ILSpy.Docking
       return null;
     }
 
+    private static IDockable? FindDockableById(IList<IDockable>? dockables, string id)
+    {
+      if (dockables == null)
+        return null;
+
+      foreach (var dockable in dockables)
+      {
+        var found = FindDockableById(dockable, id);
+        if (found != null)
+          return found;
+      }
+      return null;
+    }
+
     private static IDock? FindDockById(IDockable root, string id)
     {
       if (root is IDock dock)
       {
-          if (dock.Id == id) return dock;
-          
-          if (dock.VisibleDockables != null)
+        if (dock.Id == id)
+          return dock;
+
+        if (root is RootDock rootDock)
+        {
+          var hidden = FindDockableById(rootDock.HiddenDockables, id) as IDock;
+          if (hidden != null)
+            return hidden;
+          hidden = FindDockableById(rootDock.LeftPinnedDockables, id) as IDock;
+          if (hidden != null)
+            return hidden;
+          hidden = FindDockableById(rootDock.RightPinnedDockables, id) as IDock;
+          if (hidden != null)
+            return hidden;
+          hidden = FindDockableById(rootDock.TopPinnedDockables, id) as IDock;
+          if (hidden != null)
+            return hidden;
+          hidden = FindDockableById(rootDock.BottomPinnedDockables, id) as IDock;
+          if (hidden != null)
+            return hidden;
+        }
+
+        if (dock.VisibleDockables != null)
+        {
+          foreach (var dockable in dock.VisibleDockables)
           {
-            foreach (var dockable in dock.VisibleDockables)
-            {
-              var found = FindDockById(dockable, id);
-              if (found != null)
-                return found;
-            }
+            var found = FindDockById(dockable, id);
+            if (found != null)
+              return found;
           }
+        }
       }
       return null;
     }

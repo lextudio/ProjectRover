@@ -11,6 +11,7 @@ namespace ProjectRover.Settings
     {
         private bool showAvaloniaMainMenuOnMac;
         private string? dockLayout;
+        private bool useDefaultDockLayoutOnly = true;
 
         public XName SectionName => "ProjectRover";
 
@@ -18,6 +19,12 @@ namespace ProjectRover.Settings
         {
             get => showAvaloniaMainMenuOnMac;
             set => SetProperty(ref showAvaloniaMainMenuOnMac, value);
+        }
+
+        public bool UseDefaultDockLayoutOnly
+        {
+            get => useDefaultDockLayoutOnly;
+            set => SetProperty(ref useDefaultDockLayoutOnly, value);
         }
 
         public string? DockLayout
@@ -29,6 +36,7 @@ namespace ProjectRover.Settings
         public void LoadFromXml(XElement section)
         {
             ShowAvaloniaMainMenuOnMac = (bool?)section.Attribute(nameof(ShowAvaloniaMainMenuOnMac)) ?? false;
+            UseDefaultDockLayoutOnly = (bool?)section.Attribute(nameof(UseDefaultDockLayoutOnly)) ?? true;
             var dockLayoutElement = section.Element(nameof(DockLayout));
             if (dockLayoutElement != null)
             {
@@ -47,6 +55,7 @@ namespace ProjectRover.Settings
         {
             var element = new XElement(SectionName);
             element.SetAttributeValue(nameof(ShowAvaloniaMainMenuOnMac), ShowAvaloniaMainMenuOnMac);
+            element.SetAttributeValue(nameof(UseDefaultDockLayoutOnly), UseDefaultDockLayoutOnly);
             if (!string.IsNullOrWhiteSpace(DockLayout))
             {
                 try
