@@ -11,6 +11,9 @@ using ICSharpCode.ILSpy.Commands;
 using System.Windows.Input;
 using ICSharpCode.ILSpy.Themes;
 using System.ComponentModel;
+using ICSharpCode.ILSpy.ViewModels;
+using Avalonia.Media;
+using TomsToolbox.Essentials;
 
 namespace ICSharpCode.ILSpy.Controls
 {
@@ -32,6 +35,17 @@ namespace ICSharpCode.ILSpy.Controls
                     // Delay to ensure visual tree is fully constructed and attached to a TopLevel
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => {
                         InitMainMenu(Menu, exportProvider);
+                        
+                        // Initialize Window menu with tool panes and tab pages
+                        var windowMenu = Menu.Items.OfType<MenuItem>().FirstOrDefault(m => (m.Tag as string) == "_Window");
+                        if (windowMenu != null)
+                        {
+                            var dockWorkspace = exportProvider.GetExportedValue<ICSharpCode.ILSpy.Docking.DockWorkspace>();
+                            if (dockWorkspace != null)
+                            {
+                                InitWindowMenu(windowMenu, dockWorkspace);
+                            }
+                        }
                     });
                 }
             };
@@ -347,6 +361,179 @@ namespace ICSharpCode.ILSpy.Controls
                 }
             }
             return parentMenuItem;
+        }
+
+        static void InitWindowMenu(MenuItem windowMenuItem, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
+        {
+            // Store default items (MEF-exported items like Close All Documents, Reset Layout)
+            var defaultItems = windowMenuItem.Items.OfType<Control>().ToList();
+            windowMenuItem.Items.Clear();
+
+            // Create menu items for tool panes (Assemblies, Analyze, Search, etc.)
+            var toolItems = dockWorkspace.ToolPanes.Select(toolPane => CreateToolPaneMenuItem(toolPane, dockWorkspace)).ToArray();
+            
+            // Create list for tab pages (open documents) with live updates
+            var tabPageMenuItems = new List<MenuItem>();
+            var separatorBeforeTabPages = new Separator();
+            var initialTabPageCount = dockWorkspace.TabPages.Count;
+            
+            foreach (var tabPage in dockWorkspace.TabPages)
+            {
+                tabPageMenuItems.Add(CreateTabPageMenuItem(tabPage, dockWorkspace));
+            }
+
+            // Listen to tab page collection changes via MessageBus to keep menu in sync
+            ICSharpCode.ILSpy.Util.MessageBus<ICSharpCode.ILSpy.Util.TabPagesCollectionChangedEventArgs>.Subscribers += (_, e) => {
+                // Convert wrapped event args to NotifyCollectionChangedEventArgs
+                System.Collections.Specialized.NotifyCollectionChangedEventArgs args = e;
+                
+                if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && args.NewItems != null)
+                {
+                    foreach (var newItem in args.NewItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>())
+                    {
+                        var menuItem = CreateTabPageMenuItem(newItem, dockWorkspace);
+                        tabPageMenuItems.Add(menuItem);
+                        
+                        // Add separator before first tab page if not already present
+                        if (tabPageMenuItems.Count == 1 && separatorBeforeTabPages.Parent == null)
+                        {
+                            windowMenuItem.Items.Add(separatorBeforeTabPages);
+                        }
+                        windowMenuItem.Items.Add(menuItem);
+                    }
+                }
+                else if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove && args.OldItems != null)
+                {
+                    var toRemove = windowMenuItem.Items.OfType<MenuItem>().Where(mi => {
+                        var tabPage = (ICSharpCode.ILSpy.ViewModels.TabPageModel?)mi.Tag;
+                        return args.OldItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>().Any(tp => tp == tabPage);
+                    }).ToArray();
+                    
+                    foreach (var item in toRemove)
+                    {
+                        windowMenuItem.Items.Remove(item);
+                        tabPageMenuItems.Remove(item);
+                    }
+                    
+                    // Remove separator if no tab pages left
+                    if (tabPageMenuItems.Count == 0 && windowMenuItem.Items.Contains(separatorBeforeTabPages))
+                    {
+                        windowMenuItem.Items.Remove(separatorBeforeTabPages);
+                    }
+                }
+            };
+
+            // Add default items (Close All Documents, Reset Layout)
+            foreach (var item in defaultItems)
+            {
+                windowMenuItem.Items.Add(item);
+            }
+
+            // Add separator before tool panes if there are any
+            if (toolItems.Length > 0 && windowMenuItem.Items.Count > 0)
+            {
+                windowMenuItem.Items.Add(new Separator());
+            }
+
+            // Add tool pane items (Assemblies, Analyze, Search, etc.)
+            foreach (var item in toolItems)
+            {
+                windowMenuItem.Items.Add(item);
+            }
+
+            // Add separator before tab pages and initial tab page items
+            if (initialTabPageCount > 0 && windowMenuItem.Items.Count > 0)
+            {
+                windowMenuItem.Items.Add(separatorBeforeTabPages);
+            }
+
+            // Add initial tab page items (open documents)
+            foreach (var item in tabPageMenuItems)
+            {
+                windowMenuItem.Items.Add(item);
+            }
+        }
+
+        static MenuItem CreateToolPaneMenuItem(ICSharpCode.ILSpy.ViewModels.ToolPaneModel toolPane, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
+        {
+            var menuItem = new MenuItem
+            {
+                Header = toolPane.Title,
+                Tag = toolPane.ContentId,
+                Command = toolPane.AssociatedCommand ?? new ICSharpCode.ILSpy.Commands.ToolPaneCommand(toolPane.ContentId, dockWorkspace)
+            };
+
+            // Add icon if available
+            if (!string.IsNullOrEmpty(toolPane.Icon))
+            {
+                try
+                {
+                    var imgSource = Images.LoadImage(toolPane.Icon);
+                    if (imgSource != null)
+                    {
+                        menuItem.Icon = new Avalonia.Controls.Image
+                        {
+                            Width = 16,
+                            Height = 16,
+                            Source = imgSource
+                        };
+                        // Remember icon key for theme reload
+                        menuItem.SetValue(MenuIconKeyProperty, toolPane.Icon);
+                    }
+                }
+                catch
+                {
+                    // Ignore icon loading errors
+                }
+            }
+
+            return menuItem;
+        }
+
+        static MenuItem CreateTabPageMenuItem(ICSharpCode.ILSpy.ViewModels.TabPageModel tabPage, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
+        {
+            var header = new TextBlock
+            {
+                MaxWidth = 200,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            
+            // Bind header to tab page title
+            header.SetBinding(TextBlock.TextProperty, new Avalonia.Data.Binding(nameof(tabPage.Title))
+            {
+                Source = tabPage
+            });
+
+            var menuItem = new MenuItem
+            {
+                Header = header,
+                Tag = tabPage,
+                Command = new ICSharpCode.ILSpy.Commands.TabPageCommand(tabPage, dockWorkspace)
+            };
+
+            // Update menu item when active tab changes
+            dockWorkspace.PropertyChanged += (_, e) => {
+                if (e.PropertyName == nameof(dockWorkspace.ActiveTabPage))
+                {
+                    // In Avalonia, we can use visual indicators like font weight or color
+                    if (dockWorkspace.ActiveTabPage == tabPage)
+                    {
+                        header.FontWeight = FontWeight.Bold;
+                    }
+                    else
+                    {
+                        header.FontWeight = FontWeight.Normal;
+                    }
+                }
+            };
+
+            // Set initial state
+            if (dockWorkspace.ActiveTabPage == tabPage)
+            {
+                header.FontWeight = FontWeight.Bold;
+            }
+
+            return menuItem;
         }
     }
 

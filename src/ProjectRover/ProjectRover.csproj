@@ -248,6 +248,10 @@
       <Link>Commands\ExportCommandAttribute.cs</Link>
     </Compile>
 
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Docking\CloseAllDocumentsCommand.cs">
+      <Link>Docking\CloseAllDocumentsCommand.cs</Link>
+    </Compile>
+
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Commands\ExtractPackageEntryContextMenuEntry.cs">
       <Link>Commands\ExtractPackageEntryContextMenuEntry.cs</Link>
     </Compile>
