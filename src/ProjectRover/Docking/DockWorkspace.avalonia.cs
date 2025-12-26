@@ -100,77 +100,20 @@ namespace ICSharpCode.ILSpy.Docking
 
         this.RegisterTool(assemblyTreeModel);
 
-        var toolDock = new ToolDock
-        {
-            Id = "LeftDock",
-            Title = "LeftDock",
-            Alignment = Alignment.Left,
-            VisibleDockables = new ObservableCollection<IDockable>(),
-            Proportion = 0.3
-        };
-
-        toolDock.VisibleDockables.Add(assemblyTreeModel);
-        toolDock.ActiveDockable = assemblyTreeModel;
-        toolDock.DefaultDockable = assemblyTreeModel;
-
         searchPaneModel.IsVisible = false;
         searchPaneModel.IsActive = false;
         this.RegisterTool(searchPaneModel);
 
-        var searchDock = new ToolDock
-        {
-            Id = "SearchDock",
-            Title = "Search",
-            Alignment = Alignment.Top,
-            VisibleDockables = new ObservableCollection<IDockable>(),
-            CanCloseLastDockable = true,
-            Proportion = 0.5,
-            IsVisible = false
-        };
-        this.RegisterDockable(searchDock);
-
-        var searchSplitter = new ProportionalDockSplitter { Id = "SearchSplitter", CanResize = true };
-        this.RegisterDockable(searchSplitter);
-
-        var rightDock = new ProportionalDock
-        {
-            Id = "RightDock",
-            Orientation = Dock.Model.Core.Orientation.Vertical,
-            VisibleDockables = new ObservableCollection<IDockable>
-            {
-                searchDock,
-                searchSplitter,
-                documentDock
-            },
-            ActiveDockable = documentDock
-        };
-
-        var mainLayout = new ProportionalDock
-        {
-            Id = "MainLayout",
-            Orientation = Dock.Model.Core.Orientation.Horizontal,
-            VisibleDockables = new ObservableCollection<IDockable>
-            {
-                toolDock,
-                new ProportionalDockSplitter { CanResize = true },
-                rightDock
-            },
-            ActiveDockable = rightDock
-        };
-
-        var rootDock = new RootDock
-        {
-            Id = "Root",
-            Title = "Root",
-            VisibleDockables = new ObservableCollection<IDockable> { mainLayout },
-            ActiveDockable = mainLayout
-        };
+        var layout = DefaultDockLayoutBuilder.Build(assemblyTreeModel, searchPaneModel, documentDock);
+        documentDock = layout.DocumentDock;
+        this.RegisterDockable(layout.SearchDock);
+        this.RegisterDockable(layout.SearchSplitter);
 
         var factory = new Factory();
         dockHost.Factory = factory;
         dockHost.InitializeFactory = true;
         dockHost.InitializeLayout = true;
-        dockHost.Layout = rootDock;
+        dockHost.Layout = layout.Root;
 
         AttachToDockHost(dockHost, factory, documentDock);
         HookUpToolListeners(dockHost);

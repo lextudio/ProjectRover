@@ -31,6 +31,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9DC0A7AA-2AA
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Controls.DataGrid", "thirdparty\Avalonia.Controls.DataGrid\src\Avalonia.Controls.DataGrid\Avalonia.Controls.DataGrid.csproj", "{0E7AC722-ED0F-4777-B94A-A6B392236487}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectRover.Core.Tests", "tests\ProjectRover.Core.Tests\ProjectRover.Core.Tests.csproj", "{03B787FA-BEEA-4B30-823A-2A6C2E736E18}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -161,6 +163,18 @@ Global
 		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Release|x64.Build.0 = Release|Any CPU
 		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Release|x86.ActiveCfg = Release|Any CPU
 		{0E7AC722-ED0F-4777-B94A-A6B392236487}.Release|x86.Build.0 = Release|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Debug|x64.Build.0 = Debug|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Debug|x86.Build.0 = Debug|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Release|x64.ActiveCfg = Release|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Release|x64.Build.0 = Release|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Release|x86.ActiveCfg = Release|Any CPU
+		{03B787FA-BEEA-4B30-823A-2A6C2E736E18}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
