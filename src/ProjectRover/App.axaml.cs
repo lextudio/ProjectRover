@@ -37,6 +37,7 @@ using ICSharpCode.ILSpy.Views;
 using ICSharpCode.ILSpy.AppEnv;
 using ICSharpCode.ILSpyX.TreeView;
 using ICSharpCode.ILSpy.Themes;
+using TomsToolbox.Wpf.Composition;
 
 namespace ProjectRover;
 
@@ -93,11 +94,38 @@ public partial class App : Application
             Console.WriteLine("Creating ExportProviderAdapter...");
             ExportProvider = new ExportProviderAdapter(serviceProvider);
 
+            // Register the export provider as a global fallback and make it
+            // available via the attached property on the visual tree.
+            try
+            {
+                if (ExportProvider != null)
+                {
+                    ExportProviderLocator.Register(ExportProvider);
+                    Console.WriteLine("ExportProviderLocator registered.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to register ExportProviderLocator: " + ex);
+            }
+
             Console.WriteLine($"ExportProvider initialized: {ExportProvider != null}");
 
 			Console.WriteLine("Creating MainWindow...");
 			desktop.MainWindow = Services.GetRequiredService<ICSharpCode.ILSpy.MainWindow>();
 			Console.WriteLine("MainWindow created.");
+
+            // Attach the export provider to the MainWindow so that inheritable
+            // attached property lookup works for all visual children.
+            try
+            {
+                ExportProviderLocator.SetExportProvider(desktop.MainWindow, ExportProvider);
+                Console.WriteLine("ExportProvider attached to MainWindow.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to attach ExportProvider to MainWindow: " + ex);
+            }
 
 			desktop.MainWindow.Opened += (_, _) => {
 				ThemeManager.Current.ApplyTheme(desiredTheme);

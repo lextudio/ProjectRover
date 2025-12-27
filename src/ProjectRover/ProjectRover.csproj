@@ -62,6 +62,7 @@
     <ProjectReference Include="..\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
     <ProjectReference Include="..\ILSpy\ICSharpCode.ILSpyX\ICSharpCode.ILSpyX.csproj" />
     <ProjectReference Include="..\Dock.Model.TomsToolbox\Dock.Model.TomsToolbox.csproj" />
+    <ProjectReference Include="..\..\thirdparty\TomsToolbox\src\TomsToolbox.Avalonia.Composition\TomsToolbox.Avalonia.Composition.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\ProjectRover.Shims\ProjectRover.Shims.csproj" />

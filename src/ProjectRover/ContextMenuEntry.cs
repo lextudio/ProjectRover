@@ -92,7 +92,7 @@ namespace ICSharpCode.ILSpy
 		/// </summary>
 		public AvaloniaObject OriginalSource { get; private set; }
 
-		public static TextViewContext Create(ContextRequestedEventArgs eventArgs, TreeView treeView = null, DecompilerTextView textView = null, ListBox listBox = null, DataGrid dataGrid = null)
+		public static TextViewContext Create(EventArgs eventArgs, TreeView treeView = null, DecompilerTextView textView = null, ListBox listBox = null, DataGrid dataGrid = null)
 		{
 			ReferenceSegment reference;
 
@@ -109,6 +109,13 @@ namespace ICSharpCode.ILSpy
 				};
 			}
 
+			object originalSource = eventArgs switch
+			{
+				ContextRequestedEventArgs contextRequestedEventArgs => contextRequestedEventArgs.Source,
+				DataGridContextMenuEventArgs dataGridContextMenuEventArgs => dataGridContextMenuEventArgs.OriginalSource,
+				_ => null
+			};
+
 			var position = textView?.GetPositionFromMousePosition(new TextViewPosition());
 			var selectedTreeNodes = treeView?.GetTopLevelSelection().ToArray();
 
@@ -120,8 +127,8 @@ namespace ICSharpCode.ILSpy
 				SelectedTreeNodes = selectedTreeNodes,
 				Reference = reference,
 				Position = position,
-				OriginalSource = eventArgs.Source as AvaloniaObject
-			};
+				OriginalSource = originalSource as DependencyObject
+            };
 		}
 	}
 
@@ -211,7 +218,7 @@ namespace ICSharpCode.ILSpy
 		public static void Add(DataGrid dataGrid)
 		{
 			var provider = new ContextMenuProvider(dataGrid);
-			//dataGrid.ContextMenuOpening += provider.dataGrid_ContextMenuOpening;
+			dataGrid.ContextMenuOpening += provider.dataGrid_ContextMenuOpening;
 			dataGrid.ContextMenu = new ContextMenu();
 		}
 
@@ -224,7 +231,7 @@ namespace ICSharpCode.ILSpy
 
 		private ContextMenuProvider(Control control)
 		{
-			//entries = control.GetExportProvider().GetExports<IContextMenuEntry, IContextMenuEntryMetadata>().ToArray();
+			entries = control.GetExportProvider().GetExports<IContextMenuEntry, IContextMenuEntryMetadata>().ToArray();
 
 			this.control = control;
 		}
@@ -289,7 +296,7 @@ namespace ICSharpCode.ILSpy
 				e.Handled = true;
 		}
 
-		void dataGrid_ContextMenuOpening(object sender, ContextRequestedEventArgs e)
+		void dataGrid_ContextMenuOpening(object sender, DataGridContextMenuEventArgs e)
 		{
 			var context = TextViewContext.Create(e, dataGrid: dataGrid);
 			if (ShowContextMenu(context, out var menu))
