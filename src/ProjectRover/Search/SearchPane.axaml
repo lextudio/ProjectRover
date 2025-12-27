@@ -41,7 +41,7 @@
           <ComboBox.ItemTemplate>
             <DataTemplate DataType="vm:SearchModeModel">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <Image Width="16" Height="16" Source="{Binding Image, Converter={StaticResource IconToImageConverter}}" />
+                <Image Width="16" Height="16" controls:ThemeAware.Icon="{Binding Image}" />
                 <TextBlock Text="{Binding Name}" />
               </StackPanel>
             </DataTemplate>
@@ -74,7 +74,7 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate x:DataType="search:SearchResult">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <Image Width="16" Height="16" Source="{Binding Image, Converter={StaticResource IconToImageConverter}}" />
+                <Image Width="16" Height="16" controls:ThemeAware.Icon="{Binding Image}" />
                 <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>
@@ -84,7 +84,7 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate x:DataType="search:SearchResult">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <Image Width="16" Height="16" Source="{Binding LocationImage, Converter={StaticResource IconToImageConverter}}" />
+                <Image Width="16" Height="16" controls:ThemeAware.Icon="{Binding LocationImage}" />
                 <TextBlock Text="{Binding Location}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Location}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>
@@ -94,7 +94,7 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate x:DataType="search:SearchResult">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <Image Width="16" Height="16" Source="{Binding AssemblyImage, Converter={StaticResource IconToImageConverter}}" />
+                <Image Width="16" Height="16" controls:ThemeAware.Icon="{Binding AssemblyImage}" />
                 <TextBlock Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Assembly}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>
