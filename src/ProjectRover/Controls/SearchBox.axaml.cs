@@ -38,11 +38,8 @@ namespace ICSharpCode.ILSpy.Controls
                 if (textBox != null)
                 {
                     textSubscription = textBox.GetObservable(TextBox.TextProperty).Subscribe(new ActionObserver<string>(_ => OnLocalTextChanged()));
-                    // forward text events
-                    textBox.GetObservable(TextBox.TextProperty).Subscribe(new ActionObserver<string>(_ => {
-                        RaiseTextChanged();
-                        TextChanged?.Invoke(this, new RoutedEventArgs());
-                    }));
+                    // forward text events (call RaiseTextChanged which will invoke the forwarded event)
+                    textBox.GetObservable(TextBox.TextProperty).Subscribe(new ActionObserver<string>(_ => RaiseTextChanged()));
                     // forward key events
                     textBox.KeyDown += TextBox_KeyDown;
                 }
@@ -71,9 +68,8 @@ namespace ICSharpCode.ILSpy.Controls
 
         private void RaiseTextChanged()
         {
-            // Raise a classic RoutedEvent-like TextChanged by using a RoutedEventArgs
-            var args = new RoutedEventArgs();
-            RaiseEvent(args);
+            // Invoke forwarded TextChanged event instead of raising an Avalonia RoutedEvent (RoutedEvent would be null here).
+            TextChanged?.Invoke(this, new RoutedEventArgs());
         }
 
         private void OnLocalTextChanged()
