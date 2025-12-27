@@ -204,6 +204,9 @@ namespace ICSharpCode.ILSpy
 		public static object ListFolder => "ResourcesIconClosed";
 		public static object ListFolderOpen => "ResourcesIconOpen";
 
+		// DirectoryTable mapping for Data Directory / Debug Directory nodes
+		public static object DirectoryTable => "DirectoryTableIcon";
+
 		public static object Header => "HeaderIcon";
 		public static object MetadataTableGroup => "TablesIcon";
 		public static object Library => "AssemblyIcon";
