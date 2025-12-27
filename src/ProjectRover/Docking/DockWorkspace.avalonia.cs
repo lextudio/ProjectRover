@@ -17,6 +17,7 @@ using Dock.Model.TomsToolbox.Controls;
 using Dock.Model.TomsToolbox;
 using Dock.Model.TomsToolbox.Core;
 using ProjectRover.Settings;
+using System.Windows.Threading;
 
 namespace ICSharpCode.ILSpy.Docking
 {
@@ -75,8 +76,8 @@ namespace ICSharpCode.ILSpy.Docking
         var viewModel = mainWindow.DataContext as MainWindowViewModel;
         if (viewModel == null)
         {
-             Console.WriteLine("DockWorkspace.InitializeLayout: ViewModel is null, cannot initialize specific layout.");
-             return;
+          Console.WriteLine("DockWorkspace.InitializeLayout: ViewModel is null, cannot initialize specific layout.");
+          return;
         }
 
         var roverSettings = GetRoverSettings();
@@ -93,9 +94,9 @@ namespace ICSharpCode.ILSpy.Docking
         // Create Dock Structure
         var documentDock = this.CreateDocumentDock() ?? new DocumentDock
         {
-            Id = "DocumentDock",
-            Title = "DocumentDock",
-            VisibleDockables = new ObservableCollection<IDockable>()
+          Id = "DocumentDock",
+          Title = "DocumentDock",
+          VisibleDockables = new ObservableCollection<IDockable>()
         };
 
         this.RegisterTool(assemblyTreeModel);
@@ -104,10 +105,8 @@ namespace ICSharpCode.ILSpy.Docking
         searchPaneModel.IsActive = false;
         this.RegisterTool(searchPaneModel);
 
-        var layout = DefaultDockLayoutBuilder.Build(assemblyTreeModel, searchPaneModel, documentDock);
+        var layout = DefaultDockLayoutBuilder.Build(assemblyTreeModel, documentDock);
         documentDock = layout.DocumentDock;
-        this.RegisterDockable(layout.SearchDock);
-        this.RegisterDockable(layout.SearchSplitter);
 
         var factory = new Factory();
         dockHost.Factory = factory;
@@ -184,19 +183,19 @@ namespace ICSharpCode.ILSpy.Docking
 
         if (FindDockableById(layout, "SearchDock") is IDockable searchDock)
         {
-            if (searchDock.Proportion > 0.9)
-            {
-                searchDock.Proportion = 0.33;
-            }
+          if (searchDock.Proportion > 0.9)
+          {
+            searchDock.Proportion = 0.33;
+          }
         }
 
         if (FindDockableById(layout, "DocumentDock") is IDockable foundDocDock)
         {
-             if (double.IsNaN(foundDocDock.Proportion) || foundDocDock.Proportion < 0.1)
-             {
-                 foundDocDock.Proportion = 0.66;
-             }
-             foundDocDock.IsCollapsable = false;
+          if (double.IsNaN(foundDocDock.Proportion) || foundDocDock.Proportion < 0.1)
+          {
+            foundDocDock.Proportion = 0.66;
+          }
+          foundDocDock.IsCollapsable = false;
         }
 
         RegisterDockablesForActivation(layout);
@@ -239,22 +238,30 @@ namespace ICSharpCode.ILSpy.Docking
       Console.WriteLine($"[DockWorkspace] RegisterDockablesForActivation: SearchDock found in layout: {searchDock != null}");
       if (searchDock == null)
       {
-          searchDock = new ToolDock
-          {
-              Id = "SearchDock",
-              Title = "Search",
-              Alignment = Alignment.Top,
-              VisibleDockables = new ObservableCollection<IDockable>(),
-              CanCloseLastDockable = true,
-              Proportion = 0.5
-          };
+        searchDock = new ToolDock
+        {
+          Id = "SearchDock",
+          Title = "Search",
+          Alignment = Alignment.Top,
+          VisibleDockables = new ObservableCollection<IDockable>(),
+          CanCloseLastDockable = true,
+          Proportion = 0.5
+        };
+
+        // If SearchDock wasn't in the layout, ensure all search tools are marked invisible
+        var searchPane = ToolPanes.FirstOrDefault(t => t.ContentId == SearchPaneModel.PaneContentId);
+        if (searchPane != null && searchPane.IsVisible)
+        {
+          Console.WriteLine($"[DockWorkspace] SearchDock missing, resetting searchPane.IsVisible to false");
+          searchPane.IsVisible = false;
+        }
       }
       RegisterDockable(searchDock);
 
       var searchSplitter = FindDockableById(layout, "SearchSplitter") as ProportionalDockSplitter;
       if (searchSplitter == null)
       {
-          searchSplitter = new ProportionalDockSplitter { Id = "SearchSplitter", CanResize = true };
+        searchSplitter = new ProportionalDockSplitter { Id = "SearchSplitter", CanResize = true };
       }
       RegisterDockable(searchSplitter);
     }
@@ -520,63 +527,67 @@ namespace ICSharpCode.ILSpy.Docking
 
     private void HookUpToolListeners(DockControl dockHost)
     {
-        HookUpFactoryListeners(dockHost.Factory);
+      Console.WriteLine($"[DockWorkspace] HookUpToolListeners called, ToolPanes count: {ToolPanes.Count}");
+      HookUpFactoryListeners(dockHost.Factory);
 
-        foreach (var toolModel in this.ToolPanes)
+      foreach (var toolModel in this.ToolPanes)
+      {
+        Console.WriteLine($"[DockWorkspace] Hooking up PropertyChanged for tool: {toolModel.ContentId}, IsVisible={toolModel.IsVisible}");
+        // Note: We are not unsubscribing here because we don't have the previous handler instance.
+        // Assuming InitializeLayout is called once or we accept multiple subscriptions (which is bad).
+        // Ideally we should track subscriptions.
+
+        toolModel.PropertyChanged += (s, e) =>
         {
-            // Note: We are not unsubscribing here because we don't have the previous handler instance.
-            // Assuming InitializeLayout is called once or we accept multiple subscriptions (which is bad).
-            // Ideally we should track subscriptions.
-            
-            toolModel.PropertyChanged += (s, e) => 
+          if (e.PropertyName == nameof(ToolPaneModel.IsVisible))
+          {
+            var tm = (ToolPaneModel)s;
+            Console.WriteLine($"[DockWorkspace] ToolModel '{tm.ContentId}' IsVisible changed to {tm.IsVisible}");
+            if (tm.IsVisible)
             {
-                if (e.PropertyName == nameof(ToolPaneModel.IsVisible))
-                {
-                    var tm = (ToolPaneModel)s;
-                    if (tm.IsVisible)
-                    {
-                        ActivateTool(dockHost, tm.ContentId);
-                    }
-                }
-            };
-        }
+              Console.WriteLine($"[DockWorkspace] Calling ActivateTool for '{tm.ContentId}'");
+              ActivateTool(dockHost, tm.ContentId);
+            }
+          }
+        };
+      }
     }
 
     private void HookUpFactoryListeners(IFactory? factory)
     {
-        if (ReferenceEquals(currentFactory, factory))
-            return;
+      if (ReferenceEquals(currentFactory, factory))
+        return;
 
-        if (currentFactory != null)
-        {
-            currentFactory.DockableClosed -= OnDockableClosed;
-        }
+      if (currentFactory != null)
+      {
+        currentFactory.DockableClosed -= OnDockableClosed;
+      }
 
-        currentFactory = factory;
+      currentFactory = factory;
 
-        if (currentFactory != null)
-        {
-            currentFactory.DockableClosed += OnDockableClosed;
-        }
+      if (currentFactory != null)
+      {
+        currentFactory.DockableClosed += OnDockableClosed;
+      }
     }
 
     private void OnDockableClosed(object? sender, DockableClosedEventArgs e)
     {
-        var pane = e?.Dockable?.Id is { } dockableId
-            ? this.ToolPanes.FirstOrDefault(p => p.ContentId == dockableId)
-            : null;
+      var pane = e?.Dockable?.Id is { } dockableId
+          ? this.ToolPanes.FirstOrDefault(p => p.ContentId == dockableId)
+          : null;
 
-        if (pane != null)
-        {
-            pane.IsVisible = false;
-            return;
-        }
+      if (pane != null)
+      {
+        pane.IsVisible = false;
+        return;
+      }
 
-        // Closing documents should remove the corresponding tab page.
-        if (e?.Dockable is TabPageModel doc)
-        {
-            tabPages.Remove(doc);
-        }
+      // Closing documents should remove the corresponding tab page.
+      if (e?.Dockable is TabPageModel doc)
+      {
+        tabPages.Remove(doc);
+      }
     }
 
     private Dictionary<string, ITool> _registeredTools = new();
@@ -584,18 +595,18 @@ namespace ICSharpCode.ILSpy.Docking
 
     public void RegisterTool(ITool tool)
     {
-        if (tool.Id != null)
-        {
-            _registeredTools[tool.Id] = tool;
-        }
+      if (tool.Id != null)
+      {
+        _registeredTools[tool.Id] = tool;
+      }
     }
 
     public void RegisterDockable(IDockable dockable)
     {
-        if (dockable.Id != null)
-        {
-            _registeredDockables[dockable.Id] = dockable;
-        }
+      if (dockable.Id != null)
+      {
+        _registeredDockables[dockable.Id] = dockable;
+      }
     }
 
     /// <summary>
@@ -603,27 +614,27 @@ namespace ICSharpCode.ILSpy.Docking
     /// </summary>
     public DocumentDock CreateDocumentDock()
     {
-        Console.WriteLine("[DockWorkspace.Avalonia] CreateDocumentDock called");
-        EnsureTabPage();
+      Console.WriteLine("[DockWorkspace.Avalonia] CreateDocumentDock called");
+      EnsureTabPage();
 
-        var docDock = new DocumentDock
-        {
-            Id = "DocumentDock",
-            Title = "Documents",
-            VisibleDockables = new ObservableCollection<IDockable>()
-        };
+      var docDock = new DocumentDock
+      {
+        Id = "DocumentDock",
+        Title = "Documents",
+        VisibleDockables = new ObservableCollection<IDockable>()
+      };
 
-        foreach (var tab in tabPages)
-        {
-            docDock.VisibleDockables.Add(CreateDocument(tab));
-        }
+      foreach (var tab in tabPages)
+      {
+        docDock.VisibleDockables.Add(CreateDocument(tab));
+      }
 
-        docDock.ActiveDockable = docDock.VisibleDockables.FirstOrDefault();
-        documentDock = docDock;
-        SyncActiveDocument();
-        HookTabPageCollection();
+      docDock.ActiveDockable = docDock.VisibleDockables.FirstOrDefault();
+      documentDock = docDock;
+      SyncActiveDocument();
+      HookTabPageCollection();
 
-        return docDock;
+      return docDock;
     }
 
     /// <summary>
@@ -631,280 +642,345 @@ namespace ICSharpCode.ILSpy.Docking
     /// </summary>
     public void AttachToDockHost(DockControl host, IFactory factory, IDocumentDock? docDock)
     {
-        dockHost = host;
-        this.factory = factory;
-        documentDock = docDock;
+      dockHost = host;
+      this.factory = factory;
+      documentDock = docDock;
 
-        HookUpFactoryListeners(factory);
-        HookTabPageCollection();
+      HookUpFactoryListeners(factory);
+      HookTabPageCollection();
 
-        if (documentDock != null)
+      if (documentDock != null)
+      {
+        HookDocumentDockListeners(documentDock);
+        if (documentDock.VisibleDockables == null || documentDock.VisibleDockables.Count == 0)
         {
-            HookDocumentDockListeners(documentDock);
-            if (documentDock.VisibleDockables == null || documentDock.VisibleDockables.Count == 0)
-            {
-                PopulateDocuments();
-            }
-
-            SyncActiveDocument();
+          PopulateDocuments();
         }
+
+        SyncActiveDocument();
+      }
     }
 
     private void HookTabPageCollection()
     {
-        tabPages.CollectionChanged -= TabPages_CollectionChangedForDock;
-        tabPages.CollectionChanged += TabPages_CollectionChangedForDock;
+      tabPages.CollectionChanged -= TabPages_CollectionChangedForDock;
+      tabPages.CollectionChanged += TabPages_CollectionChangedForDock;
 
-        this.PropertyChanged -= DockWorkspace_PropertyChanged;
-        this.PropertyChanged += DockWorkspace_PropertyChanged;
+      this.PropertyChanged -= DockWorkspace_PropertyChanged;
+      this.PropertyChanged += DockWorkspace_PropertyChanged;
     }
 
     private void DockWorkspace_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ActiveTabPage))
-        {
-            SyncActiveDocument();
-        }
+      if (e.PropertyName == nameof(ActiveTabPage))
+      {
+        SyncActiveDocument();
+      }
     }
 
     private void TabPages_CollectionChangedForDock(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (documentDock?.VisibleDockables == null)
-            return;
+      if (documentDock?.VisibleDockables == null)
+        return;
 
-        if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
+      if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
+      {
+        int insertIndex = e.NewStartingIndex >= 0 ? e.NewStartingIndex : documentDock.VisibleDockables.Count;
+        foreach (TabPageModel tab in e.NewItems)
         {
-            int insertIndex = e.NewStartingIndex >= 0 ? e.NewStartingIndex : documentDock.VisibleDockables.Count;
-            foreach (TabPageModel tab in e.NewItems)
-            {
-                var doc = CreateDocument(tab);
-                documentDock.VisibleDockables.Insert(insertIndex++, doc);
-            }
+          var doc = CreateDocument(tab);
+          documentDock.VisibleDockables.Insert(insertIndex++, doc);
         }
-        else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
+      }
+      else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
+      {
+        foreach (TabPageModel tab in e.OldItems)
         {
-            foreach (TabPageModel tab in e.OldItems)
-            {
-                RemoveDocument(tab);
-            }
+          RemoveDocument(tab);
         }
-        else if (e.Action == NotifyCollectionChangedAction.Reset)
-        {
-            PopulateDocuments();
-        }
+      }
+      else if (e.Action == NotifyCollectionChangedAction.Reset)
+      {
+        PopulateDocuments();
+      }
 
-        SyncActiveDocument();
+      SyncActiveDocument();
     }
 
     private void PopulateDocuments()
     {
-        if (documentDock?.VisibleDockables == null)
-            return;
+      if (documentDock?.VisibleDockables == null)
+        return;
 
-        documentDock.VisibleDockables.Clear();
-        EnsureTabPage();
+      documentDock.VisibleDockables.Clear();
+      EnsureTabPage();
 
-        foreach (var tab in tabPages)
-        {
-            if (documentDock.VisibleDockables.Contains(tab))
-                continue;
-            documentDock.VisibleDockables.Add(CreateDocument(tab));
-        }
+      foreach (var tab in tabPages)
+      {
+        if (documentDock.VisibleDockables.Contains(tab))
+          continue;
+        documentDock.VisibleDockables.Add(CreateDocument(tab));
+      }
     }
 
     private Document CreateDocument(TabPageModel tabPage)
     {
-        // Preserve arbitrary content: if tabPage.Content is a Control (or other UI element)
-        // ensure its DataContext is set so it can bind to the TabPageModel.
-        object? content = tabPage.Content;
-        if (content is DecompilerTextView dtv)
-        {
-            if (dtv.DataContext == null)
-                dtv.DataContext = tabPage;
-        }
-        else if (content is Control ctrl)
-        {
-            if (ctrl.DataContext == null)
-                ctrl.DataContext = tabPage;
-        }
-        else if (content == null)
-        {
-            // Fallback to providing a DecompilerTextView when no content is set.
-            var textView = new DecompilerTextView(tabPage.ExportProvider);
-            textView.DataContext = tabPage;
-            content = textView;
-            tabPage.Content = content;
-        }
+      // Preserve arbitrary content: if tabPage.Content is a Control (or other UI element)
+      // ensure its DataContext is set so it can bind to the TabPageModel.
+      object? content = tabPage.Content;
+      if (content is DecompilerTextView dtv)
+      {
+        if (dtv.DataContext == null)
+          dtv.DataContext = tabPage;
+      }
+      else if (content is Control ctrl)
+      {
+        if (ctrl.DataContext == null)
+          ctrl.DataContext = tabPage;
+      }
+      else if (content == null)
+      {
+        // Fallback to providing a DecompilerTextView when no content is set.
+        var textView = new DecompilerTextView(tabPage.ExportProvider);
+        textView.DataContext = tabPage;
+        content = textView;
+        tabPage.Content = content;
+      }
 
-        tabPage.Id = tabPage.ContentId ?? $"Tab{TabPages.Count + 1}";
-        tabPage.CanFloat = false;
-        tabPage.CanPin = false;
-        return tabPage;
+      tabPage.Id = tabPage.ContentId ?? $"Tab{TabPages.Count + 1}";
+      tabPage.CanFloat = false;
+      tabPage.CanPin = false;
+      return tabPage;
     }
 
     private void RemoveDocument(TabPageModel tabPage)
     {
-        documentDock?.VisibleDockables?.Remove(tabPage);
+      documentDock?.VisibleDockables?.Remove(tabPage);
     }
 
     private void HookDocumentDockListeners(IDocumentDock docDock)
     {
-        if (docDock is INotifyPropertyChanged inpc)
-        {
-            inpc.PropertyChanged -= DocumentDock_PropertyChanged;
-            inpc.PropertyChanged += DocumentDock_PropertyChanged;
-        }
+      if (docDock is INotifyPropertyChanged inpc)
+      {
+        inpc.PropertyChanged -= DocumentDock_PropertyChanged;
+        inpc.PropertyChanged += DocumentDock_PropertyChanged;
+      }
     }
 
     private void DocumentDock_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(IDock.ActiveDockable) && sender is IDock dock)
+      if (e.PropertyName == nameof(IDock.ActiveDockable) && sender is IDock dock)
+      {
+        if (dock.ActiveDockable is TabPageModel doc)
         {
-            if (dock.ActiveDockable is TabPageModel doc)
-            {
-                if (!ReferenceEquals(ActiveTabPage, doc))
-                {
-                    ActiveTabPage = doc;
-                }
-            }
+          if (!ReferenceEquals(ActiveTabPage, doc))
+          {
+            ActiveTabPage = doc;
+          }
         }
+      }
     }
 
     private void SyncActiveDocument()
     {
-        if (documentDock == null || factory == null)
-            return;
+      if (documentDock == null || factory == null)
+        return;
 
-        var targetTab = ActiveTabPage ?? tabPages.FirstOrDefault();
-        if (targetTab == null)
-            return;
+      var targetTab = ActiveTabPage ?? tabPages.FirstOrDefault();
+      if (targetTab == null)
+        return;
 
-        documentDock.ActiveDockable = targetTab;
-        factory.SetActiveDockable(targetTab);
-        factory.SetFocusedDockable(documentDock, targetTab);
+      documentDock.ActiveDockable = targetTab;
+      factory.SetActiveDockable(targetTab);
+      factory.SetFocusedDockable(documentDock, targetTab);
     }
 
     private void EnsureTabPage()
     {
-        if (!tabPages.Any())
-        {
-            AddTabPage();
-        }
+      if (!tabPages.Any())
+      {
+        AddTabPage();
+      }
     }
 
     private void ActivateTool(DockControl dockHost, string contentId)
     {
-        try
+      try
+      {
+        Console.WriteLine($"[DockWorkspace] ActivateTool called for contentId: {contentId}");
+        var factory = dockHost.Factory;
+        var layout = dockHost.Layout;
+        if (factory == null || layout == null)
         {
-            var factory = dockHost.Factory;
-            var layout = dockHost.Layout;
-            if (factory == null || layout == null) return;
+          Console.WriteLine($"[DockWorkspace] ActivateTool: factory or layout is null");
+          return;
+        }
 
-            var tool = FindToolById(layout, contentId);
-            if (tool != null)
+        var tool = FindToolById(layout, contentId);
+        if (tool != null)
+        {
+          Console.WriteLine($"[DockWorkspace] ActivateTool: Found tool '{tool.Id}', Owner={tool.Owner?.GetType().Name}");
+          // Make the containing dock visible
+          if (tool.Owner is IDock parentDock)
+          {
+            Console.WriteLine($"[DockWorkspace] ActivateTool: Parent dock ID={parentDock.Id}");
+            if (parentDock is DockableBase dockableBase)
             {
-                factory.SetActiveDockable(tool);
-                factory.SetFocusedDockable(layout, tool);
+              Console.WriteLine($"[DockWorkspace] ActivateTool: Setting parent dock IsVisible=true (was {dockableBase.IsVisible})");
+              dockableBase.IsVisible = true;
+              Console.WriteLine($"[DockWorkspace] ActivateTool: Parent dock IsVisible is now {dockableBase.IsVisible}");
             }
-            else
+          }
+
+          factory.SetActiveDockable(tool);
+          factory.SetFocusedDockable(layout, tool);
+          Console.WriteLine($"[DockWorkspace] ActivateTool: Activated and focused tool '{contentId}'");
+          return;
+        }
+        else
+        {
+          Console.WriteLine($"[DockWorkspace] ActivateTool: Tool '{contentId}' not found in layout, checking registered tools");
+        }
+        {
+          // Try to find in registered tools
+          if (_registeredTools.TryGetValue(contentId, out var registeredTool))
+          {
+            Console.WriteLine($"[DockWorkspace] ActivateTool: Found registered tool '{contentId}'");
+            // Determine target dock
+            string targetDockId = contentId == SearchPaneModel.PaneContentId ? "SearchDock" : "LeftDock";
+            var targetDock = FindDockById(layout, targetDockId);
+            Console.WriteLine($"[DockWorkspace] ActivateTool: Looking for targetDock '{targetDockId}', found={targetDock != null}");
+
+            // If target dock not found in layout, try to find in registered dockables and insert it
+            if (targetDock == null && targetDockId == "SearchDock")
             {
-                // Try to find in registered tools
-                if (_registeredTools.TryGetValue(contentId, out var registeredTool))
+              Console.WriteLine($"[DockWorkspace] ActivateTool: SearchDock not in layout, will create and insert it");
+              var docDock = FindDockById(layout, "DocumentDock");
+              Console.WriteLine($"[DockWorkspace] ActivateTool: DocumentDock found={docDock != null}, Owner={docDock?.Owner?.GetType().Name}, Owner.Id={docDock?.Owner?.Id}");
+              if (docDock != null && docDock.Owner is IDock docOwner && docOwner.VisibleDockables != null)
+              {
+                Console.WriteLine($"[DockWorkspace] ActivateTool: DocOwner is {docOwner.GetType().Name}, Orientation={(docOwner as IProportionalDock)?.Orientation}");
+                // If the owner is horizontal (e.g. MainLayout), we need to wrap DocumentDock in a vertical dock
+                if (docOwner is IProportionalDock propDock && propDock.Orientation == Dock.Model.Core.Orientation.Horizontal)
                 {
-                    // Determine target dock
-                    string targetDockId = contentId == SearchPaneModel.PaneContentId ? "SearchDock" : "LeftDock";
-                    var targetDock = FindDockById(layout, targetDockId);
-                    
-                    // If target dock not found in layout, try to find in registered dockables and insert it
-                    if (targetDock == null && targetDockId == "SearchDock")
+                  var newVerticalDock = new ProportionalDock
+                  {
+                    Id = "RightDock",
+                    Orientation = Dock.Model.Core.Orientation.Vertical,
+                    Proportion = double.IsNaN(docDock.Proportion) ? 1.0 : docDock.Proportion,
+                    VisibleDockables = new ObservableCollection<IDockable>()
+                  };
+
+                  int index = docOwner.VisibleDockables.IndexOf(docDock);
+                  if (index >= 0)
+                  {
+                    docOwner.VisibleDockables.RemoveAt(index);
+                    docOwner.VisibleDockables.Insert(index, newVerticalDock);
+                    newVerticalDock.Owner = docOwner;
+                    newVerticalDock.Factory = factory;
+
+                    if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is IToolDock sd)
                     {
-                        var docDock = FindDockById(layout, "DocumentDock");
-                        if (docDock != null && docDock.Owner is IDock docOwner && docOwner.VisibleDockables != null)
-                        {
-                            // If the owner is horizontal (e.g. MainLayout), we need to wrap DocumentDock in a vertical dock
-                            if (docOwner is IProportionalDock propDock && propDock.Orientation == Dock.Model.Core.Orientation.Horizontal)
-                            {
-                                var newVerticalDock = new ProportionalDock
-                                {
-                                    Id = "RightDock",
-                                    Orientation = Dock.Model.Core.Orientation.Vertical,
-                                    Proportion = double.IsNaN(docDock.Proportion) ? 1.0 : docDock.Proportion,
-                                    VisibleDockables = new ObservableCollection<IDockable>()
-                                };
+                      sd.Owner = newVerticalDock;
+                      sd.Factory = factory;
+                      newVerticalDock.VisibleDockables.Add(sd);
+                      targetDock = sd;
 
-                                int index = docOwner.VisibleDockables.IndexOf(docDock);
-                                if (index >= 0)
-                                {
-                                    docOwner.VisibleDockables.RemoveAt(index);
-                                    docOwner.VisibleDockables.Insert(index, newVerticalDock);
-                                    newVerticalDock.Owner = docOwner;
-                                    newVerticalDock.Factory = factory;
-
-                                    if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is IToolDock sd)
-                                    {
-                                        sd.Owner = newVerticalDock;
-                                        sd.Factory = factory;
-                                        newVerticalDock.VisibleDockables.Add(sd);
-                                        targetDock = sd;
-
-                                        if (_registeredDockables.TryGetValue("SearchSplitter", out var splitter))
-                                        {
-                                            splitter.Owner = newVerticalDock;
-                                            splitter.Factory = factory;
-                                            newVerticalDock.VisibleDockables.Add(splitter);
-                                        }
-                                    }
-
-                                    docDock.Owner = newVerticalDock;
-                                    newVerticalDock.VisibleDockables.Add(docDock);
-                                    newVerticalDock.ActiveDockable = docDock;
-                                }
-                            }
-                            else
-                            {
-                                // Owner is likely vertical (or we assume it is safe to insert), just insert at top
-                                if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is IToolDock sd)
-                                {
-                                    if (!docOwner.VisibleDockables.Contains(sd))
-                                    {
-                                        sd.Owner = docOwner;
-                                        sd.Factory = factory;
-                                        docOwner.VisibleDockables.Insert(0, sd);
-                                        targetDock = sd;
-
-                                        if (_registeredDockables.TryGetValue("SearchSplitter", out var splitter))
-                                        {
-                                            if (!docOwner.VisibleDockables.Contains(splitter))
-                                            {
-                                                splitter.Owner = docOwner;
-                                                splitter.Factory = factory;
-                                                docOwner.VisibleDockables.Insert(1, splitter);
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        targetDock = sd;
-                                    }
-                                }
-                            }
-                        }
+                      if (_registeredDockables.TryGetValue("SearchSplitter", out var splitter))
+                      {
+                        splitter.Owner = newVerticalDock;
+                        splitter.Factory = factory;
+                        newVerticalDock.VisibleDockables.Add(splitter);
+                      }
                     }
 
-                    if (targetDock is ToolDock toolDock)
-                    {
-                        factory.AddDockable(toolDock, registeredTool);
-                        toolDock.IsVisible = true;
-                        factory.SetActiveDockable(registeredTool);
-                        factory.SetFocusedDockable(layout, registeredTool);
-                        return;
-                    }
+                    docDock.Owner = newVerticalDock;
+                    newVerticalDock.VisibleDockables.Add(docDock);
+                    newVerticalDock.ActiveDockable = docDock;
+                  }
                 }
+                else
+                {
+                  Console.WriteLine($"[DockWorkspace] ActivateTool: RightDock is vertical, will insert SearchDock at top");
+                  // Owner is likely vertical (or we assume it is safe to insert), just insert at top
+                  if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is IToolDock sd)
+                  {
+                    Console.WriteLine($"[DockWorkspace] ActivateTool: Found SearchDock in registered dockables");
+                    if (!docOwner.VisibleDockables.Contains(sd))
+                    {
+                      Console.WriteLine($"[DockWorkspace] ActivateTool: Inserting SearchDock into RightDock");
+                      sd.Owner = docOwner;
+                      sd.Factory = factory;
+                      docOwner.VisibleDockables.Insert(0, sd);
+                      targetDock = sd;
+
+                      if (_registeredDockables.TryGetValue("SearchSplitter", out var splitter))
+                      {
+                        if (!docOwner.VisibleDockables.Contains(splitter))
+                        {
+                          splitter.Owner = docOwner;
+                          splitter.Factory = factory;
+                          docOwner.VisibleDockables.Insert(1, splitter);
+                          Console.WriteLine($"[DockWorkspace] ActivateTool: Inserted SearchSplitter");
+                        }
+                      }
+                    }
+                    else
+                    {
+                      Console.WriteLine($"[DockWorkspace] ActivateTool: SearchDock already in RightDock");
+                      targetDock = sd;
+                    }
+                  }
+                  else
+                  {
+                    Console.WriteLine($"[DockWorkspace] ActivateTool: SearchDock NOT found in registered dockables, creating new one");
+                    // Create SearchDock if not registered
+                    var newSearchDock = new ToolDock
+                    {
+                      Id = "SearchDock",
+                      Title = "Search",
+                      Alignment = Alignment.Top,
+                      VisibleDockables = new ObservableCollection<IDockable>(),
+                      CanCloseLastDockable = true,
+                      Proportion = 0.33,
+                      Owner = docOwner,
+                      Factory = factory
+                    };
+
+                    docOwner.VisibleDockables.Insert(0, newSearchDock);
+                    RegisterDockable(newSearchDock);
+                    targetDock = newSearchDock;
+
+                    // Also create and insert splitter
+                    var newSplitter = new ProportionalDockSplitter
+                    {
+                      Id = "SearchSplitter",
+                      CanResize = true,
+                      Owner = docOwner,
+                      Factory = factory
+                    };
+                    docOwner.VisibleDockables.Insert(1, newSplitter);
+                    RegisterDockable(newSplitter);
+                    Console.WriteLine($"[DockWorkspace] ActivateTool: Created and inserted new SearchDock and splitter");
+                  }
+                }
+              }
             }
+
+            if (targetDock is ToolDock toolDock)
+            {
+              factory.AddDockable(toolDock, registeredTool);
+              toolDock.IsVisible = true;
+              factory.SetActiveDockable(registeredTool);
+              factory.SetFocusedDockable(layout, registeredTool);
+              return;
+            }
+          }
         }
-        catch (Exception ex)
-        {
-        }
+      }
+      catch (Exception ex)
+      {
+      }
     }
 
     private static ITool? FindToolById(IDockable root, string id)
@@ -1011,6 +1087,45 @@ namespace ICSharpCode.ILSpy.Docking
         }
       }
       return null;
+    }
+
+    internal void ResetLayout()
+    {
+      foreach (var pane in ToolPanes)
+      {
+        pane.IsVisible = false;
+      }
+      CloseAllTabs();
+      ResetLayoutPlatformSpecific();
+      InitializeLayout();
+
+      App.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, () => MessageBus.Send(this, new ResetLayoutEventArgs()));
+    }
+
+    void ResetLayoutPlatformSpecific()
+    {
+      try
+      {
+        Console.WriteLine("[DockWorkspace] ResetLayoutPlatformSpecific called");
+
+        // Clear the current dockHost layout so InitializeLayout will create a new one
+        if (dockHost != null)
+        {
+          dockHost.Layout = null;
+          dockHost.Factory = null;
+          Console.WriteLine("[DockWorkspace] Cleared dockHost Layout and Factory");
+        }
+
+        // Clear saved layout in Avalonia settings
+        var roverSettings = GetRoverSettings();
+        roverSettings.DockLayout = null;
+
+        Console.WriteLine("[DockWorkspace] Cleared DockLayout setting");
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"[DockWorkspace] ResetLayoutPlatformSpecific error: {ex}");
+      }
     }
   }
 }

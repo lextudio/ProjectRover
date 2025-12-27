@@ -8,13 +8,11 @@ namespace ICSharpCode.ILSpy.Docking;
 public sealed record DefaultDockLayout(
     RootDock Root,
     ToolDock ToolDock,
-    ToolDock SearchDock,
-    DocumentDock DocumentDock,
-    ProportionalDockSplitter SearchSplitter);
+    DocumentDock DocumentDock);
 
 public static class DefaultDockLayoutBuilder
 {
-    public static DefaultDockLayout Build(IDockable leftTool, IDockable searchTool, DocumentDock? documentDock = null)
+    public static DefaultDockLayout Build(IDockable leftTool, DocumentDock? documentDock = null)
     {
         var document = documentDock ?? new DocumentDock
         {
@@ -34,33 +32,14 @@ public static class DefaultDockLayoutBuilder
             Proportion = 0.3
         };
 
-        var searchDock = new ToolDock
-        {
-            Id = "SearchDock",
-            Title = "Search",
-            Alignment = Alignment.Top,
-            VisibleDockables = new ObservableCollection<IDockable> { searchTool },
-            ActiveDockable = searchTool,
-            DefaultDockable = searchTool,
-            CanCloseLastDockable = true,
-            Proportion = 0.5,
-            IsVisible = false
-        };
-
-        var searchSplitter = new ProportionalDockSplitter
-        {
-            Id = "SearchSplitter",
-            CanResize = true
-        };
-
         var rightDock = new ProportionalDock
         {
             Id = "RightDock",
             Orientation = DockOrientation.Vertical,
             VisibleDockables = new ObservableCollection<IDockable>
             {
-                searchDock,
-                searchSplitter,
+                //searchDock,
+                // searchSplitter,
                 document
             },
             ActiveDockable = document
@@ -87,6 +66,6 @@ public static class DefaultDockLayoutBuilder
             ActiveDockable = mainLayout
         };
 
-        return new DefaultDockLayout(rootDock, toolDock, searchDock, document, searchSplitter);
+        return new DefaultDockLayout(rootDock, toolDock, document);
     }
 }
