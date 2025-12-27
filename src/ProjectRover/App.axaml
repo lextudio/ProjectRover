@@ -32,7 +32,7 @@
         <dockThemes:DockFluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-        <StyleInclude Source="avares://ProjectRover/Controls/GroupBox.xaml" />
+        <StyleInclude Source="avares://ProjectRover/Controls/GroupBox.axaml" />
         <StyleInclude Source="avares://ProjectRover/Styles/MenuStyles.axaml" />
         
         <Style Selector="TreeViewItem">
