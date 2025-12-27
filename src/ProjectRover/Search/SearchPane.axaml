@@ -13,36 +13,23 @@
   </UserControl.Resources>
   <DockPanel>
     <Grid DockPanel.Dock="Top"
-          Height="2">
-      <ProgressBar IsVisible="{Binding #SearchPaneControl.IsSearching}"
-                   IsIndeterminate="True"
-                   Height="2"
-                   MinHeight="2"
-                   Background="Transparent"
-                   CornerRadius="0" />
+        Height="2">
+      <ProgressBar x:Name="searchProgressBar"
+             IsIndeterminate="False"
+             Height="2"
+             MinHeight="2"
+             Background="Transparent"
+             CornerRadius="0" />
     </Grid>
     <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="5">
-      <TextBox x:Name="SearchTextBox"
-               Watermark="{x:Static properties:Resources.WatermarkText}"
-               Text="{Binding SearchTerm}"
-               Margin="0,0,8,0">
-        <TextBox.InnerRightContent>
-          <Panel Margin="0,0,5,0">
-            <Button Background="Transparent"
-                    BorderBrush="{x:Null}"
-                    Padding="2"
-                    Click="OnClearSearchClick"
-                    IsVisible="{Binding SearchTerm, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
-                    Cursor="Hand">
-              <Svg Path="{DynamicResource CloseIcon}" Width="14" Height="14" />
-            </Button>
-            <Svg Path="{DynamicResource SearchIcon}"
-                 Width="14"
-                 Height="14"
-                 IsVisible="{Binding SearchTerm, Converter={x:Static converters:StringConverters.IsNullOrEmpty}}" />
-          </Panel>
-        </TextBox.InnerRightContent>
-      </TextBox>
+      <controls:SearchBox x:Name="SearchBox"
+              WatermarkText="{x:Static properties:Resources.WatermarkText}"
+              Text="{Binding SearchTerm, Mode=TwoWay}"
+              DebouncedText="{Binding SearchTerm, Mode=TwoWay}"
+              UpdateDelay="0:0:0.1"
+              Margin="0,0,8,0"
+              PreviewKeyDown="SearchBox_PreviewKeyDown"
+              TextChanged="SearchBox_TextChanged" />
       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
         <TextBlock Text="Search for:" VerticalAlignment="Center" />
         <ComboBox Width="140"
@@ -60,12 +47,6 @@
         </ComboBox>
       </StackPanel>
     </Grid>
-    <TextBlock DockPanel.Dock="Top"
-               Text="{Binding #SearchPaneControl.NumberOfResultsText}"
-               IsVisible="{Binding #SearchPaneControl.NumberOfResultsText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
-               Margin="10 5 0 5"
-               Foreground="#919191"
-               FontSize="12"/>
     <Grid x:Name="HeaderGrid" DockPanel.Dock="Top" Margin="5,0,5,0">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="220" />
@@ -86,12 +67,11 @@
       <Rectangle Grid.Column="5" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
       <GridSplitter Grid.Column="5" Background="{DynamicResource ThemeForegroundLowBrush}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
     </Grid>
-    <ListBox ItemsSource="{Binding #SearchPaneControl.Results}"
-             SelectedItem="{Binding #SearchPaneControl.SelectedSearchResult}"
-             Background="Transparent"
-             BorderThickness="0"
-             Margin="5,0,5,0"
-             DoubleTapped="OnSearchResultDoubleTapped">
+        <ListBox x:Name="listBox" ItemsSource="{Binding Results, ElementName=SearchPaneControl}"
+          Background="Transparent"
+          BorderThickness="0"
+          Margin="5,0,5,0"
+          DoubleTapped="ListBox_MouseDoubleClick">
       <ListBox.Styles>
         <Style Selector="ListBoxItem">
           <Setter Property="HorizontalContentAlignment" Value="Stretch" />
