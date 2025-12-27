@@ -32,10 +32,12 @@
               TextChanged="SearchBox_TextChanged" />
       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
         <TextBlock Text="Search for:" VerticalAlignment="Center" />
-        <ComboBox Width="140"
+        <ComboBox x:Name="searchModeComboBox"
+                  Width="160"
                   ItemsSource="{Binding SearchModes}"
                   SelectedItem="{Binding SelectedSearchMode}"
-                  VerticalAlignment="Center">
+                  VerticalAlignment="Center"
+                  SelectionChanged="SearchModeComboBox_SelectionChanged">
           <ComboBox.ItemTemplate>
             <DataTemplate DataType="vm:SearchModeModel">
               <StackPanel Orientation="Horizontal" Spacing="6">
@@ -47,68 +49,58 @@
         </ComboBox>
       </StackPanel>
     </Grid>
-    <Grid x:Name="HeaderGrid" DockPanel.Dock="Top" Margin="5,0,5,0">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="220" />
-        <ColumnDefinition Width="4" />
-        <ColumnDefinition Width="220" />
-        <ColumnDefinition Width="4" />
-        <ColumnDefinition Width="150" />
-        <ColumnDefinition Width="4" />
-        <ColumnDefinition Width="*" />
-      </Grid.ColumnDefinitions>
-      <TextBlock Grid.Column="0" Text="Name" FontWeight="Bold" HorizontalAlignment="Center" />
-      <Rectangle Grid.Column="1" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
-      <GridSplitter Grid.Column="1" Background="{DynamicResource ThemeForegroundLowBrush}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
-      <TextBlock Grid.Column="2" Text="Location" FontWeight="Bold" HorizontalAlignment="Center" />
-      <Rectangle Grid.Column="3" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
-      <GridSplitter Grid.Column="3" Background="{DynamicResource ThemeForegroundLowBrush}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
-      <TextBlock Grid.Column="4" Text="Assembly" FontWeight="Bold" HorizontalAlignment="Center" />
-      <Rectangle Grid.Column="5" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
-      <GridSplitter Grid.Column="5" Background="{DynamicResource ThemeForegroundLowBrush}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
-    </Grid>
-        <ListBox x:Name="listBox" ItemsSource="{Binding Results, ElementName=SearchPaneControl}"
-          Background="Transparent"
-          BorderThickness="0"
-          Margin="5,0,5,0"
-          DoubleTapped="ListBox_MouseDoubleClick">
-      <ListBox.Styles>
-        <Style Selector="ListBoxItem">
-          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          <Setter Property="Padding" Value="0" />
-          <Setter Property="Margin" Value="0" />
-        </Style>
-      </ListBox.Styles>
-      <ListBox.ItemTemplate>
-        <DataTemplate DataType="search:SearchResult">
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[0].Width}" />
-              <ColumnDefinition Width="4" />
-              <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[2].Width}" />
-              <ColumnDefinition Width="4" />
-              <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[4].Width}" />
-              <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[5].Width}" />
-              <ColumnDefinition Width="{Binding #HeaderGrid.ColumnDefinitions[6].Width}" />
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0" ColumnDefinitions="Auto,*">
-               <Image Width="16" Height="16" Source="{Binding Image, Converter={StaticResource IconToImageConverter}}" Margin="0,0,6,0" />
-               <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" VerticalAlignment="Center" />
-            </Grid>
-            <Rectangle Grid.Column="1" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
-            <Grid Grid.Column="2" ColumnDefinitions="Auto,*">
-               <Image Width="16" Height="16" Source="{Binding LocationImage, Converter={StaticResource IconToImageConverter}}" Margin="0,0,6,0" />
-               <TextBlock Grid.Column="1" Text="{Binding Location}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Location}" VerticalAlignment="Center" />
-            </Grid>
-            <Rectangle Grid.Column="3" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
-            <Grid Grid.Column="4" ColumnDefinitions="Auto,*">
-               <Image Width="16" Height="16" Source="{Binding AssemblyImage, Converter={StaticResource IconToImageConverter}}" Margin="0,0,6,0" />
-               <TextBlock Grid.Column="1" Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Assembly}" VerticalAlignment="Center" />
-            </Grid>
-            <Rectangle Grid.Column="5" Fill="{DynamicResource ThemeForegroundLowBrush}" Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" />
-          </Grid>
-        </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
+    <DataGrid x:Name="resultsGrid"
+              ItemsSource="{Binding Results, ElementName=SearchPaneControl}"
+              AutoGenerateColumns="False"
+              CanUserAddRows="False"
+              CanUserDeleteRows="False"
+              CanUserReorderColumns="True"
+              CanUserResizeColumns="True"
+              CanUserSortColumns="True"
+              HeadersVisibility="Column"
+              EnableColumnFilters="False"
+              IsReadOnly="True"
+              SelectionMode="Single"
+              GridLinesVisibility="Vertical"
+              Margin="5,0,5,0"
+              RowHeight="28"
+              Background="Transparent"
+              BorderThickness="0"
+              DoubleTapped="ResultsGrid_DoubleTapped"
+              KeyDown="ResultsGrid_KeyDown"
+              PointerReleased="ResultsGrid_PointerReleased">
+      <DataGrid.Columns>
+        <DataGridTemplateColumn Header="Name" Width="220" SortMemberPath="Name">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="search:SearchResult">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Width="16" Height="16" Source="{Binding Image, Converter={StaticResource IconToImageConverter}}" />
+                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Location" Width="220" SortMemberPath="Location">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="search:SearchResult">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Width="16" Height="16" Source="{Binding LocationImage, Converter={StaticResource IconToImageConverter}}" />
+                <TextBlock Text="{Binding Location}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Location}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Assembly" Width="150" SortMemberPath="Assembly">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="search:SearchResult">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Width="16" Height="16" Source="{Binding AssemblyImage, Converter={StaticResource IconToImageConverter}}" />
+                <TextBlock Text="{Binding Assembly}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Assembly}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
   </DockPanel>
 </UserControl>

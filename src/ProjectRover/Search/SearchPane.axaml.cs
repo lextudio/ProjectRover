@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -120,15 +121,16 @@ namespace ICSharpCode.ILSpy.Search
 
         void SearchBox_PreviewKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
         {
-            // Forward to existing logic: if down arrow, move focus to list
-            if (e.Key == Key.Down && this.FindControl<ListBox>("listBox")?.ItemCount > 0)
+            // Forward to existing logic: if down arrow, move focus to results grid
+            if (e.Key == Key.Down)
             {
-                e.Handled = true;
-                var lb = this.FindControl<ListBox>("listBox");
-                if (lb != null)
+                var grid = this.FindControl<DataGrid>("resultsGrid");
+                if (grid?.Items is IEnumerable enumerable && enumerable.Cast<object>().Any())
                 {
-                    lb.Focus();
-                    lb.SelectedIndex = 0;
+                    e.Handled = true;
+                    grid.SelectedIndex = grid.SelectedIndex < 0 ? 0 : grid.SelectedIndex;
+                    grid.Focus();
+                    grid.ScrollIntoView(grid.SelectedItem);
                 }
             }
         }
@@ -138,24 +140,13 @@ namespace ICSharpCode.ILSpy.Search
             StartSearch(this.SearchTerm);
         }
 
-        void ListBox_MouseDoubleClick(object? sender, PointerPressedEventArgs e)
-        {
-            // double-click handling is wired in XAML to OnSearchResultDoubleTapped which we map to Tapped; keep stub
-        }
-
-        // Match Avalonia double-tap/tapped signature for XAML
-        void ListBox_MouseDoubleClick(object? sender, Avalonia.Input.TappedEventArgs e)
+        void ResultsGrid_DoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
         {
             JumpToSelectedItem();
             e.Handled = true;
         }
 
-        void ListBox_MouseDown(object? sender, PointerPressedEventArgs e)
-        {
-            // Not implemented — Avalonia selection logic differs; leave for future enhancement
-        }
-
-        void ListBox_MouseUp(object? sender, PointerReleasedEventArgs e)
+        void ResultsGrid_PointerReleased(object? sender, PointerReleasedEventArgs e)
         {
             // Middle-click handling
             if (e.InitialPressMouseButton == MouseButton.Middle)
@@ -166,22 +157,19 @@ namespace ICSharpCode.ILSpy.Search
             }
         }
 
-        void ListBox_KeyDown(object? sender, KeyEventArgs e)
+        void ResultsGrid_KeyDown(object? sender, KeyEventArgs e)
         {
+            var grid = sender as DataGrid ?? this.FindControl<DataGrid>("resultsGrid");
             if (e.Key == Key.Enter)
             {
                 e.Handled = true;
                 JumpToSelectedItem((e.KeyModifiers & KeyModifiers.Control) != 0);
             }
-            else if (e.Key == Key.Up && this.FindControl<ListBox>("listBox")?.SelectedIndex == 0)
+            else if (e.Key == Key.Up && grid?.SelectedIndex == 0)
             {
                 e.Handled = true;
-                var lb = this.FindControl<ListBox>("listBox");
-                if (lb != null)
-                {
-                    lb.SelectedIndex = -1;
-                    FocusSearchBox();
-                }
+                grid.SelectedIndex = -1;
+                FocusSearchBox();
             }
         }
 
@@ -246,8 +234,8 @@ namespace ICSharpCode.ILSpy.Search
 
         void JumpToSelectedItem(bool inNewTabPage = false)
         {
-            var lb = this.FindControl<ListBox>("listBox");
-            if (lb?.SelectedItem is SearchResult result)
+            var grid = this.FindControl<DataGrid>("resultsGrid");
+            if (grid?.SelectedItem is SearchResult result)
             {
                 MessageBus.Send(this, new NavigateToReferenceEventArgs(result.Reference, inNewTabPage));
             }
