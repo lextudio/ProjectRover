@@ -34,12 +34,12 @@ namespace ICSharpCode.ILSpy.Updates
 
 		public static async Task<AvailableVersionInfo> GetLatestVersionAsync()
 		{
-			Console.WriteLine("[UpdateService] GetLatestVersionAsync called");
+					   ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[UpdateService] GetLatestVersionAsync called");
 			var client = new GitHubClient(ProductHeader);
 			var releaseInfo = await GetLatestReleaseAsync(client).ConfigureAwait(false);
 			if (releaseInfo.Release == null || releaseInfo.Version == null)
 			{
-				Console.WriteLine("[UpdateService] No release info found; returning current version");
+							   ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[UpdateService] No release info found; returning current version");
 				LatestAvailableSemanticVersion = AppUpdateService.CurrentVersion;
 				LatestAvailableVersion = new AvailableVersionInfo {
 					Version = AppUpdateService.CurrentVersion,
@@ -57,7 +57,7 @@ namespace ICSharpCode.ILSpy.Updates
 				Version = releaseInfo.Version,
 				DownloadUrl = url
 			};
-			Console.WriteLine($"[UpdateService] Found latest release: {LatestAvailableVersion.Version} (semantic {LatestAvailableSemanticVersion}) url={LatestAvailableVersion.DownloadUrl}");
+					   ICSharpCode.ILSpy.Util.RoverLog.Log.Information("[UpdateService] Found latest release: {Version} (semantic {Semantic}) url={Url}", LatestAvailableVersion.Version, LatestAvailableSemanticVersion, LatestAvailableVersion.DownloadUrl);
 			return LatestAvailableVersion;
 		}
 

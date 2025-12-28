@@ -34,7 +34,7 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        Console.WriteLine("[ProjectRover] Main started. Console output is working.");
+        ICSharpCode.ILSpy.Util.RoverLog.Log.Information("[ProjectRover] Main started. Console output is working.");
 
         // Configure Serilog (console + file) - settings can be controlled via configuration later.
         Log.Logger = new LoggerConfiguration()
@@ -54,7 +54,7 @@ sealed class Program
             if (UnhandledException != null)
                 UnhandledException.Invoke(null, e);
             else
-                Console.WriteLine(e);
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Error(e, "Unhandled exception in Main");
         }
     }
 

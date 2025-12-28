@@ -18,7 +18,7 @@ namespace ICSharpCode.ILSpy
             var dockHost = this.FindControl<DockControl>("DockHost");
 #if DEBUG
             this.AttachDevTools();
-            Console.WriteLine("[Log][MainWindow] DevTools attached.");
+            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[Log][MainWindow] DevTools attached.");
 #endif
 
             // Set the window title to include ProjectRover version (major.minor)
@@ -100,7 +100,7 @@ namespace ICSharpCode.ILSpy
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Failed mapping window bounds/state: {ex}");
+                                ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "Failed mapping window bounds/state");
                         }
 
                         // Let interested components write their session state (e.g. selected tree node)
@@ -112,14 +112,14 @@ namespace ICSharpCode.ILSpy
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Failed saving session settings on close: {ex}");
+                            ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "Failed saving session settings on close");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed applying session settings on close: {ex}");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "Failed applying session settings on close");
             }
 
             viewModel?.Workspace.SaveLayout();

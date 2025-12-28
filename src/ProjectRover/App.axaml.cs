@@ -71,27 +71,27 @@ public partial class App : Application
 
             // Bind exports from assemblies
             // ILSpyX
-            Console.WriteLine("Binding exports from ILSpyX...");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Information("Binding exports from ILSpyX...");
             services.BindExports(typeof(IAnalyzer).Assembly);
             // ILSpy (Original)
             // NOTE: Do not bind the original ILSpy assembly here. Many ILSpy source files
             // are linked into the shim (executing) assembly; binding both the original
             // ILSpy assembly and the shim causes duplicate MEF exports and duplicate
             // menu entries. The shim's executing assembly is bound below.
-            Console.WriteLine("Skipping binding of the original ILSpy assembly to avoid duplicate exports.");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Information("Skipping binding of the original ILSpy assembly to avoid duplicate exports.");
             // ILSpy.Shims (Rover)
-            Console.WriteLine("Binding exports from ILSpy.Shims...");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Information("Binding exports from ILSpy.Shims...");
             services.BindExports(Assembly.GetExecutingAssembly());
 
             // Add the export provider (circular dependency resolution via factory)
             services.AddSingleton<IExportProvider>(sp => ExportProvider!);
 
-            Console.WriteLine("Building ServiceProvider...");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Information("Building ServiceProvider...");
             var serviceProvider = services.BuildServiceProvider();
             Services = serviceProvider;
 
             // Create the adapter
-            Console.WriteLine("Creating ExportProviderAdapter...");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Information("Creating ExportProviderAdapter...");
             ExportProvider = new ExportProviderAdapter(serviceProvider);
 
             // Register the export provider as a global fallback and make it
@@ -101,30 +101,30 @@ public partial class App : Application
                 if (ExportProvider != null)
                 {
                     ExportProviderLocator.Register(ExportProvider);
-                    Console.WriteLine("ExportProviderLocator registered.");
+                        ICSharpCode.ILSpy.Util.RoverLog.Log.Information("ExportProviderLocator registered.");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Failed to register ExportProviderLocator: " + ex);
+                    ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "Failed to register ExportProviderLocator");
             }
 
-            Console.WriteLine($"ExportProvider initialized: {ExportProvider != null}");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Information("ExportProvider initialized: {HasProvider}", ExportProvider != null);
 
-            Console.WriteLine("Creating MainWindow...");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Information("Creating MainWindow...");
             desktop.MainWindow = Services.GetRequiredService<ICSharpCode.ILSpy.MainWindow>();
-            Console.WriteLine("MainWindow created.");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Information("MainWindow created.");
 
             // Attach the export provider to the MainWindow so that inheritable
             // attached property lookup works for all visual children.
             try
             {
                 ExportProviderLocator.SetExportProvider(desktop.MainWindow, ExportProvider);
-                Console.WriteLine("ExportProvider attached to MainWindow.");
+                    ICSharpCode.ILSpy.Util.RoverLog.Log.Information("ExportProvider attached to MainWindow.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Failed to attach ExportProvider to MainWindow: " + ex);
+                    ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "Failed to attach ExportProvider to MainWindow");
             }
 
             desktop.MainWindow.Opened += async (_, _) =>

@@ -38,13 +38,13 @@ namespace ICSharpCode.ILSpy.Updates
 			var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
 			// First prefer AssemblyInformationalVersion (may include prerelease/build metadata)
 			var info = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-			Console.WriteLine($"[AppUpdateService] Assembly InformationalVersion attribute: '{info}'");
+					ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[AppUpdateService] Assembly InformationalVersion attribute: {Info}", info);
 			if (TryParseVersionString(info, out var semanticVersion))
 				return semanticVersion;
 
 			// If InformationalVersion is not set, prefer AssemblyFileVersionAttribute
 			var fileVer = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
-			Console.WriteLine($"[AppUpdateService] Assembly FileVersion attribute: '{fileVer}'");
+					ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[AppUpdateService] Assembly FileVersion attribute: {FileVer}", fileVer);
 			if (TryParseVersionString(fileVer, out var fileVersion))
 				return fileVersion;
 

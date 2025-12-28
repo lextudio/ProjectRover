@@ -64,7 +64,7 @@ namespace ICSharpCode.ILSpy.Themes
 		{
 			var normalized = NormalizeTheme(themeName);
 			var same = string.Equals(normalized, currentTheme, StringComparison.OrdinalIgnoreCase);
-			Console.WriteLine($"[ThemeManager] ApplyTheme requested='{themeName}' normalized='{normalized}' sameAsCurrent={same}");
+					 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[ThemeManager] ApplyTheme requested='{Requested}' normalized='{Normalized}' sameAsCurrent={Same}", themeName, normalized, same);
 			if (same)
 				return;
 
@@ -74,14 +74,14 @@ namespace ICSharpCode.ILSpy.Themes
 			if (Application.Current != null)
 			{
 				Application.Current.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
-				Console.WriteLine($"[ThemeManager] RequestedThemeVariant set to {Application.Current.RequestedThemeVariant}, Actual={Application.Current.ActualThemeVariant}");
+							 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[ThemeManager] RequestedThemeVariant set to {Requested}, Actual={Actual}", Application.Current.RequestedThemeVariant, Application.Current.ActualThemeVariant);
 
 				if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
 				{
 					foreach (var window in desktopLifetime.Windows)
 					{
 						window.RequestedThemeVariant = Application.Current.RequestedThemeVariant;
-						Console.WriteLine($"[ThemeManager] Window '{window.Title}' RequestedThemeVariant => {window.RequestedThemeVariant}");
+											 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[ThemeManager] Window '{Title}' RequestedThemeVariant => {Requested}", window.Title, window.RequestedThemeVariant);
 					}
                 }
 
@@ -92,7 +92,7 @@ namespace ICSharpCode.ILSpy.Themes
 				}
 				catch (Exception ex)
 				{
-					Console.WriteLine("[ThemeManager] Failed to send ThemeChanged message: " + ex.Message);
+									 ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[ThemeManager] Failed to send ThemeChanged message");
 				}
 
 				// Diagnostic: inspect windows for TextEditor and presence of TextMate transformer
@@ -113,18 +113,18 @@ namespace ICSharpCode.ILSpy.Themes
 									if (hasTransformer) installedCount++;
 								}
 							}
-							Console.WriteLine($"[ThemeManager] Window '{w.Title}': TextEditors={editorCount}, TextMateInstalled={installedCount}");
+												ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[ThemeManager] Window '{Title}': TextEditors={Count}, TextMateInstalled={Installed}", w.Title, editorCount, installedCount);
 						}
 					}
 				}
 				catch (Exception ex)
 				{
-					Console.WriteLine("[ThemeManager] Diagnostics failed: " + ex.Message);
+									ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[ThemeManager] Diagnostics failed");
 				}
             }
 			else
 			{
-				Console.WriteLine("[ThemeManager] Application.Current is null; cannot set RequestedThemeVariant");
+							ICSharpCode.ILSpy.Util.RoverLog.Log.Warning("[ThemeManager] Application.Current is null; cannot set RequestedThemeVariant");
 			}
 		}
 

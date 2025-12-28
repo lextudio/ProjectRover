@@ -46,27 +46,27 @@ namespace ICSharpCode.ILSpy
 
 		protected CommandWrapper(ICommand wrappedCommand)
 		{
-			Console.WriteLine($"CommandWrapper created for {wrappedCommand}. targetWindow is {(targetWindow == null ? "null" : "set")}");
+					 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("CommandWrapper created for {Cmd}. targetWindow is {State}", wrappedCommand, (targetWindow == null ? "null" : "set"));
 			this.wrappedCommand = wrappedCommand;
 			var binding = new CommandBinding(wrappedCommand, OnExecute, OnCanExecute);
 			commandBindings.Add(binding);
 
 			if (targetWindow != null)
 			{
-				Console.WriteLine($"Late registering binding for {wrappedCommand}");
+							 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Late registering binding for {Cmd}", wrappedCommand);
 				var windowBindings = Avalonia.Labs.Input.CommandManager.GetCommandBindings(targetWindow);
 				windowBindings.Add(binding);
 			}
             else
             {
-                Console.WriteLine("WARNING: targetWindow is null, binding not registered!");
+				ICSharpCode.ILSpy.Util.RoverLog.Log.Warning("WARNING: targetWindow is null, binding not registered!");
             }
 		}
 
 		public static void RegisterBindings(Window window)
 		{
 			targetWindow = window;
-			Console.WriteLine($"Registering {commandBindings.Count} bindings to window {window.GetHashCode()}");
+					 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Registering {Count} bindings to window {Hash}", commandBindings.Count, window.GetHashCode());
 			var windowBindings = Avalonia.Labs.Input.CommandManager.GetCommandBindings(window);
 			foreach (var binding in commandBindings)
 			{
@@ -92,10 +92,10 @@ namespace ICSharpCode.ILSpy
 
 		public void Execute(object parameter)
 		{
-			Console.WriteLine($"CommandWrapper.Execute called for {wrappedCommand}");
+					 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("CommandWrapper.Execute called for {Cmd}", wrappedCommand);
 			if (targetWindow != null && wrappedCommand is Avalonia.Labs.Input.RoutedCommand rc)
 			{
-				Console.WriteLine($"Executing with targetWindow: {targetWindow}");
+							 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Executing with targetWindow: {Target}", targetWindow);
 				rc.Execute(parameter, targetWindow);
 				return;
 			}

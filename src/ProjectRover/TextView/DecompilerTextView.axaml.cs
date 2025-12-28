@@ -142,12 +142,12 @@ namespace ICSharpCode.ILSpy.TextView
 				}
 				catch (Exception ex)
 				{
-					Console.WriteLine("[DecompilerTextView] ApplyThemeColorsToEditor failed: " + ex.Message);
+								  ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[DecompilerTextView] ApplyThemeColorsToEditor failed");
 				}
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("[DecompilerTextView] Failed to apply TextMate theme: " + ex.Message);
+						  ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[DecompilerTextView] Failed to apply TextMate theme");
 			}
 		}
 
@@ -195,12 +195,12 @@ namespace ICSharpCode.ILSpy.TextView
 		#region Constructor
 		public DecompilerTextView() : this(ProjectRover.App.ExportProvider!)
 		{
-			System.Console.WriteLine($"DecompilerTextView parameterless ctor called. App.ExportProvider is {(ProjectRover.App.ExportProvider == null ? "null" : "set")}");
+				  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DecompilerTextView parameterless ctor called. App.ExportProvider is {State}", ProjectRover.App.ExportProvider == null ? "null" : "set");
 		}
 
 		public DecompilerTextView(IExportProvider exportProvider)
 		{
-			System.Console.WriteLine($"DecompilerTextView ctor called with exportProvider: {(exportProvider == null ? "null" : "set")}");
+				  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DecompilerTextView ctor called with exportProvider: {State}", exportProvider == null ? "null" : "set");
 			this.exportProvider = exportProvider;
 			settingsService = exportProvider.GetExportedValue<SettingsService>();
 			languageService = exportProvider.GetExportedValue<LanguageService>();
@@ -227,7 +227,7 @@ namespace ICSharpCode.ILSpy.TextView
 			{
 				MessageBus<ThemeChangedEventArgs>.Subscribers += (s, e) =>
 				{
-					Console.WriteLine($"[DecompilerTextView] Received ThemeChanged message: {e.ThemeName}");
+								  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[DecompilerTextView] Received ThemeChanged message: {Theme}", e.ThemeName);
 				};
 			}
 			catch { }
@@ -238,7 +238,7 @@ namespace ICSharpCode.ILSpy.TextView
 				var textMateTheme = ResolveTextMateTheme(null);
 				var registryOptions = new RegistryOptions(textMateTheme);
 				var textMateInstallation = textEditor.InstallTextMate(registryOptions);
-				Console.WriteLine("[DecompilerTextView] Installed TextMate for editor.");
+						  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[DecompilerTextView] Installed TextMate for editor.");
 
 				ApplyTextMateTheme(textMateInstallation, registryOptions, textMateTheme, textEditor);
 				// ensure GUI brushes are also applied whenever the installation signals it applied a theme
@@ -252,7 +252,7 @@ namespace ICSharpCode.ILSpy.TextView
 						}
 						catch (Exception ex)
 						{
-							Console.WriteLine("[DecompilerTextView] AppliedTheme handler failed: " + ex.Message);
+									  ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[DecompilerTextView] AppliedTheme handler failed");
 						}
 					};
 				}
@@ -262,12 +262,12 @@ namespace ICSharpCode.ILSpy.TextView
 				{
 					var nextTheme = ResolveTextMateTheme(e.ThemeName);
 					ApplyTextMateTheme(textMateInstallation, registryOptions, nextTheme, textEditor);
-					Console.WriteLine("[DecompilerTextView] Applied TextMate theme on ThemeChanged: " + e.ThemeName);
+						  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[DecompilerTextView] Applied TextMate theme on ThemeChanged: {Theme}", e.ThemeName);
 				};
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("[DecompilerTextView] TextMate wiring skipped: " + ex.Message);
+						  ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[DecompilerTextView] TextMate wiring skipped");
 			}
 			textEditor.TextArea.TextView.ElementGenerators.Add(referenceElementGenerator);
 			this.uiElementGenerator = new UIElementGenerator();
@@ -1608,7 +1608,7 @@ namespace ICSharpCode.ILSpy.TextView
 
 			if (resourceStream != null)
 			{
-				Console.WriteLine("Loading highlighting definition for " + name);
+						 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Loading highlighting definition for {Name}", name);
 				IHighlightingDefinition highlightingDefinition;
 
 				using (resourceStream)

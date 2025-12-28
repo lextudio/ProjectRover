@@ -101,14 +101,14 @@ namespace ICSharpCode.ILSpy
 						// Try cache first
 						if (imageCache.TryGetValue(p, out var cached))
 						{
-							Console.WriteLine($"Images.LoadImage: cache hit for {p}");
+												  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Images.LoadImage: cache hit for {Path}", p);
 							return cached;
 						}
 						var svg = SvgSource.Load(p, null);
 						if (svg != null)
 						{
 							var svgImage = new SvgImage { Source = svg };
-							Console.WriteLine($"Images.LoadImage: loaded svg for {p}");
+												  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Images.LoadImage: loaded svg for {Path}", p);
 							// Add to cache and return the cached instance
 							return imageCache.GetOrAdd(p, svgImage);
 						}
