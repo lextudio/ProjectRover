@@ -17,20 +17,26 @@
     <MenuItem Header="File" Tag="_File" />
     <MenuItem Header="{x:Static properties:Resources._View}" Tag="_View">
       <MenuItem Header="{x:Static properties:Resources.Show_publiconlyTypesMembers}"
+                Tag="ApiVisPublicOnly"
                 IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicOnly, Mode=TwoWay}" />
       <MenuItem Header="{x:Static properties:Resources.Show_internalTypesMembers}"
+                Tag="ApiVisPublicAndInternal"
                 IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicAndInternal, Mode=TwoWay}" />
       <MenuItem Header="{x:Static properties:Resources.Show_allTypesAndMembers}"
+                Tag="ApiVisAll"
                 IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisAll, Mode=TwoWay}" />
       <Separator />
       <MenuItem Header="{x:Static properties:Resources.Theme}" Tag="_Theme" />
       <MenuItem Header="{x:Static properties:Resources.UILanguage}">
         <MenuItem Header="{x:Static properties:Resources.UILanguage_System}"
-            IsChecked="{Binding SessionSettings.CurrentCulture, Converter={StaticResource CultureSelectionConverter}, ConverterParameter={x:Null}}" />
+                  Tag="Language:null"
+                  IsChecked="{Binding SessionSettings.CurrentCulture, Mode=TwoWay, Converter={StaticResource CultureSelectionConverter}, ConverterParameter={x:Null}}" />
         <MenuItem Header="English"
-            IsChecked="{Binding SessionSettings.CurrentCulture, Converter={StaticResource CultureSelectionConverter}, ConverterParameter=en-US}" />
+                  Tag="Language:en-US"
+                  IsChecked="{Binding SessionSettings.CurrentCulture, Mode=TwoWay, Converter={StaticResource CultureSelectionConverter}, ConverterParameter=en-US}" />
         <MenuItem Header="中文"
-            IsChecked="{Binding SessionSettings.CurrentCulture, Converter={StaticResource CultureSelectionConverter}, ConverterParameter=zh-Hans}" />
+                  Tag="Language:zh-Hans"
+                  IsChecked="{Binding SessionSettings.CurrentCulture, Mode=TwoWay, Converter={StaticResource CultureSelectionConverter}, ConverterParameter=zh-Hans}" />
       </MenuItem>
     </MenuItem>
     <MenuItem Header="Window" Tag="_Window" />

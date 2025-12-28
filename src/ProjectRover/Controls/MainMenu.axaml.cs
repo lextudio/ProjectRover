@@ -13,7 +13,11 @@ using ICSharpCode.ILSpy.Themes;
 using System.ComponentModel;
 using ICSharpCode.ILSpy.ViewModels;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using TomsToolbox.Essentials;
+using System.Reflection;
+using Avalonia.Svg.Skia;
 
 namespace ICSharpCode.ILSpy.Controls
 {
@@ -27,6 +31,9 @@ namespace ICSharpCode.ILSpy.Controls
         private EventHandler<TabPagesCollectionChangedEventArgs>? _windowMenuTabPagesChangedHandler;
         private readonly Dictionary<MenuItem, Action> _windowMenuTabPageUpdaters = new();
         private EventHandler<ThemeChangedEventArgs>? _windowMenuThemeChangedHandler;
+        private readonly List<MenuItem> _themeMenuItems = new();
+        private List<NativeMenuItem> _nativeThemeMenuItems = new();
+        private SettingsService? _settingsService;
         private const string TabPageMenuIconPath = "/Assets/Checkmark.svg";
 
         public MainMenu()
@@ -49,6 +56,10 @@ namespace ICSharpCode.ILSpy.Controls
                             if (dockWorkspace != null)
                             {
                                 InitWindowMenu(windowMenu, dockWorkspace);
+                                if (OperatingSystem.IsMacOS())
+                                {
+                                    BuildNativeMenu(Menu);
+                                }
                             }
                         }
                     });
@@ -56,16 +67,16 @@ namespace ICSharpCode.ILSpy.Controls
             };
         }
 
-        static void InitMainMenu(Menu mainMenu, IExportProvider exportProvider)
+        void InitMainMenu(Menu mainMenu, IExportProvider exportProvider)
         {
             // Get all main menu commands exported with contract "MainMenuCommand"
             var mainMenuCommands = exportProvider.GetExports<ICommand, IMainMenuCommandMetadata>("MainMenuCommand").ToArray();
             var settingsService = exportProvider.GetExportedValue<SettingsService>();
+            _settingsService = settingsService;
 
             var parentMenuItems = new Dictionary<string, MenuItem>();
             var menuGroups = mainMenuCommands.OrderBy(c => c.Metadata?.MenuOrder).GroupBy(c => c.Metadata?.ParentMenuID).ToArray();
-            var themeMenuItems = new List<MenuItem>();
-            var nativeThemeItems = new List<NativeMenuItem>();
+            _themeMenuItems.Clear();
 
             foreach (var menu in menuGroups)
             {
@@ -128,23 +139,27 @@ namespace ICSharpCode.ILSpy.Controls
                                             Source = imgSource
                                         };
                                         menuItem.Icon = img;
-                                        // Remember the key so we can reload when theme changes
-                                        menuItem.SetValue(MenuIconKeyProperty, entry.Metadata.MenuIcon);
-                                    }
-                                }
-                                catch { }
+                                // Remember the key so we can reload when theme changes
+                                menuItem.SetValue(MenuIconKeyProperty, entry.Metadata.MenuIcon);
+                            }
+                        }
+                        catch { }
                             }
                             if (string.Equals(entry.Metadata?.ParentMenuID, "_Theme", StringComparison.OrdinalIgnoreCase))
                             {
-                                menuItem.ToggleType = MenuItemToggleType.Radio;
                                 menuItem.IsChecked = string.Equals(ThemeManager.Current.Theme, headerText ?? entry.Metadata?.Header, StringComparison.OrdinalIgnoreCase);
                                 menuItem.Click += (_, _) => MainMenuThemeHelpers.ApplyThemeFromHeader(menuItem.Header?.ToString(), settingsService);
-                                themeMenuItems.Add(menuItem);
+                                _themeMenuItems.Add(menuItem);
                             }
-                            parentMenuItem.Items.Add(menuItem);
+                        if (string.Equals(entry.Metadata?.ParentMenuID, "_Help", StringComparison.OrdinalIgnoreCase) && menuItem.Icon == null)
+                        {
+                            // Reserve icon column width so Help menu width matches other menus
+                            menuItem.Icon = new Border { Width = 16, Height = 16, Opacity = 0 };
                         }
+                        parentMenuItem.Items.Add(menuItem);
                     }
                 }
+            }
             }
 
             foreach (var item in parentMenuItems.Values.Where(i => i.Parent == null))
@@ -153,10 +168,11 @@ namespace ICSharpCode.ILSpy.Controls
                     mainMenu.Items.Add(item);
             }
 
-            if (themeMenuItems.Count > 0)
+            if (_themeMenuItems.Count > 0)
             {
-                MainMenuThemeHelpers.UpdateThemeChecks(themeMenuItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
-                MainMenuThemeHelpers.UpdateNativeThemeChecks(nativeThemeItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
+                MainMenuThemeHelpers.UpdateThemeChecks(_themeMenuItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
+                MainMenuThemeHelpers.UpdateNativeThemeChecks(_nativeThemeMenuItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
+                SetupThemeMenuCheckIcons(_themeMenuItems);
 
                 var sessionSettings = settingsService?.SessionSettings;
                 if (sessionSettings != null)
@@ -164,8 +180,8 @@ namespace ICSharpCode.ILSpy.Controls
                     sessionSettings.PropertyChanged += (_, e) => {
                         if (e.PropertyName == nameof(sessionSettings.Theme))
                         {
-                            MainMenuThemeHelpers.UpdateThemeChecks(themeMenuItems, sessionSettings.Theme);
-                            MainMenuThemeHelpers.UpdateNativeThemeChecks(nativeThemeItems, sessionSettings.Theme);
+                            MainMenuThemeHelpers.UpdateThemeChecks(_themeMenuItems, sessionSettings.Theme);
+                            MainMenuThemeHelpers.UpdateNativeThemeChecks(_nativeThemeMenuItems, sessionSettings.Theme);
                             // When the theme stored in SessionSettings changes, the application theme
                             // will be applied via ThemeManager and MessageBus. Also refresh menu icons
                             // to pick up themed variants (Assets/Dark/...)
@@ -187,98 +203,10 @@ namespace ICSharpCode.ILSpy.Controls
                 // Ignore if MessageBus is unavailable for any reason.
             }
 
-            // On macOS, default behavior is to hide the Avalonia menu and mirror it to the native menu bar.
-            // Respect the Rover-level preference if present: when the user opted to "Keep main menu visible on macOS",
-            // do not perform the native mirroring and ensure the Avalonia menu stays visible.
-            if (OperatingSystem.IsMacOS())
-            {
-                try
-                {
-                    var roverSettings = settingsService?.GetSettings<ProjectRoverSettingsSection>();
-                    var keepAvaloniaMenu = roverSettings?.ShowAvaloniaMainMenuOnMac ?? false;
+            SetupVisibilityMenuCheckIcons(mainMenu, settingsService);
+            SetupLanguageMenuCheckIcons(mainMenu, settingsService);
 
-                    var visualRoot = TopLevel.GetTopLevel(mainMenu) ?? mainMenu.GetVisualRoot();
-                    var rootObj = visualRoot as AvaloniaObject;
-
-                    mainMenu.IsVisible = keepAvaloniaMenu;
-                    
-                    var nativeRoot = new NativeMenu();
-
-                    NativeMenuItem Convert(MenuItem m)
-                    {
-                        var header = m.Header?.ToString() ?? (m.Tag as string) ?? string.Empty;
-                        var native = new NativeMenuItem { Header = header };
-
-                    if (m.Command != null)
-                    {
-                        native.Command = m.Command;
-                        native.CommandParameter = m.CommandParameter;
-                    }
-
-                        if (m.ToggleType != MenuItemToggleType.None)
-                        {
-                            native.ToggleType = (NativeMenuItemToggleType)m.ToggleType;
-                            native.IsChecked = m.IsChecked == true;
-                        }
-
-                        if (string.Equals(header, "Light", StringComparison.OrdinalIgnoreCase) || string.Equals(header, "Dark", StringComparison.OrdinalIgnoreCase))
-                        {
-                            nativeThemeItems.Add(native);
-                        }
-
-                        native.Click += (_, _) => {
-                            MainMenuThemeHelpers.ApplyThemeFromHeader(header, settingsService);
-                            MainMenuThemeHelpers.UpdateThemeChecks(themeMenuItems, ThemeManager.Current.Theme);
-                            MainMenuThemeHelpers.UpdateNativeThemeChecks(nativeThemeItems, ThemeManager.Current.Theme);
-                        };
-
-                        if (m.Items != null && m.Items.Count > 0)
-                        {
-                            var sub = new NativeMenu();
-                            foreach (var child in m.Items)
-                            {
-                                switch (child)
-                                {
-                                    case Separator:
-                                        sub.Items.Add(new NativeMenuItemSeparator());
-                                        break;
-                                    case MenuItem childMi:
-                                        sub.Items.Add(Convert(childMi));
-                                        break;
-                                }
-                            }
-                            native.Menu = sub;
-                        }
-
-                        if (m.Command is ICommand cmd)
-                        {
-                            try { native.IsEnabled = cmd.CanExecute(null); } catch { }
-                            cmd.CanExecuteChanged += (_, __) => { try { native.IsEnabled = cmd.CanExecute(null); } catch { } };
-                        }
-
-                        return native;
-                    }
-
-                    foreach (var item in mainMenu.Items)
-                    {
-                        if (item is MenuItem mi)
-                        {
-                            nativeRoot.Items.Add(Convert(mi));
-                        }
-                    }
-
-                    // Always set a fresh native menu; avoid reusing existing items to prevent parent conflicts.
-                    if (rootObj != null)
-                        NativeMenu.SetMenu(rootObj, nativeRoot);
-                    
-                    if (Application.Current != null)
-                        NativeMenu.SetMenu(Application.Current, nativeRoot);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"InitMainMenu: native menu integration failed: {ex}");
-                }
-            }
+            // Note: Native menu will be built after InitWindowMenu completes (when all dynamic items are added)
         }
 
         static void RefreshMenuIcons(Menu mainMenu)
@@ -418,6 +346,10 @@ namespace ICSharpCode.ILSpy.Controls
                         }
                         windowMenuItem.Items.Add(menuItem);
                     }
+                    if (OperatingSystem.IsMacOS())
+                    {
+                        BuildNativeMenu(Menu);
+                    }
                 }
                 else if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove && args.OldItems != null)
                 {
@@ -437,6 +369,11 @@ namespace ICSharpCode.ILSpy.Controls
                     if (tabPageMenuItems.Count == 0 && windowMenuItem.Items.Contains(separatorBeforeTabPages))
                     {
                         windowMenuItem.Items.Remove(separatorBeforeTabPages);
+                    }
+
+                    if (OperatingSystem.IsMacOS())
+                    {
+                        BuildNativeMenu(Menu);
                     }
                 }
             };
@@ -471,6 +408,8 @@ namespace ICSharpCode.ILSpy.Controls
             {
                 windowMenuItem.Items.Add(item);
             }
+
+            // Note: Native menu will be built after this method completes in the AttachedToVisualTree handler
         }
 
         static MenuItem CreateToolPaneMenuItem(ICSharpCode.ILSpy.ViewModels.ToolPaneModel toolPane, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
@@ -574,6 +513,425 @@ namespace ICSharpCode.ILSpy.Controls
 
             tabPageMenuItemUpdaters[menuItem] = UpdateState;
             return menuItem;
+        }
+
+        static void SetupThemeMenuCheckIcons(IEnumerable<MenuItem> themeMenuItems)
+        {
+            foreach (var item in themeMenuItems)
+            {
+                void UpdateIcon()
+                {
+                    if (item.IsChecked == true)
+                    {
+                        var iconSource = Images.LoadImage(TabPageMenuIconPath);
+                        item.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
+                        item.Icon = iconSource == null ? null : new Avalonia.Controls.Image { Width = 16, Height = 16, Source = iconSource };
+                    }
+                    else
+                    {
+                        item.Icon = null;
+                    }
+                }
+
+                item.PropertyChanged += (_, e) => {
+                    if (e.Property == MenuItem.IsCheckedProperty)
+                    {
+                        UpdateIcon();
+                    }
+                };
+
+                UpdateIcon();
+            }
+        }
+
+        static void SetupVisibilityMenuCheckIcons(Menu mainMenu, SettingsService? settingsService)
+        {
+            if (settingsService == null)
+                return;
+
+            var viewMenu = mainMenu.Items.OfType<MenuItem>().FirstOrDefault(mi => string.Equals(mi.Tag as string, "_View", StringComparison.Ordinal));
+            if (viewMenu == null)
+                return;
+
+            var langSettings = settingsService.SessionSettings?.LanguageSettings;
+            if (langSettings == null)
+                return;
+
+            foreach (var item in viewMenu.Items.OfType<MenuItem>())
+            {
+                var tag = item.Tag as string;
+                if (!IsApiVisibilityMenuItem(item))
+                    continue;
+
+                void UpdateIcon()
+                {
+                    if (item.IsChecked == true)
+                    {
+                        var iconSource = Images.LoadImage(TabPageMenuIconPath);
+                        item.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
+                        item.Icon = iconSource == null ? null : new Avalonia.Controls.Image { Width = 16, Height = 16, Source = iconSource };
+                    }
+                    else
+                    {
+                        item.Icon = null;
+                    }
+                }
+
+                item.PropertyChanged += (_, e) => {
+                    if (e.Property == MenuItem.IsCheckedProperty)
+                    {
+                        UpdateIcon();
+                    }
+                };
+
+                item.Click += (_, _) => ApplyApiVisibilitySelection(settingsService, tag);
+                UpdateIcon();
+            }
+        }
+
+        static bool IsApiVisibilityMenuItem(MenuItem menuItem)
+        {
+            return string.Equals(menuItem.Tag as string, "ApiVisPublicOnly", StringComparison.Ordinal)
+                || string.Equals(menuItem.Tag as string, "ApiVisPublicAndInternal", StringComparison.Ordinal)
+                || string.Equals(menuItem.Tag as string, "ApiVisAll", StringComparison.Ordinal);
+        }
+
+        static bool IsLanguageMenuItem(MenuItem menuItem)
+        {
+            var tag = menuItem.Tag as string;
+            return tag != null && tag.StartsWith("Language:", StringComparison.Ordinal);
+        }
+
+        static void ApplyApiVisibilitySelection(SettingsService? settingsService, string? tag)
+        {
+            if (settingsService?.SessionSettings?.LanguageSettings == null)
+                return;
+
+            var lang = settingsService.SessionSettings.LanguageSettings;
+            switch (tag)
+            {
+                case "ApiVisPublicOnly":
+                    lang.ApiVisPublicOnly = true;
+                    break;
+                case "ApiVisPublicAndInternal":
+                    lang.ApiVisPublicAndInternal = true;
+                    break;
+                case "ApiVisAll":
+                    lang.ApiVisAll = true;
+                    break;
+            }
+        }
+
+        static void TryApplyNativeMenuIcon(NativeMenuItem native, MenuItem menuItem)
+        {
+            var src = LoadNativeMenuImage(menuItem);
+
+            if (src == null)
+                return;
+
+            try
+            {
+                var iconProp = native.GetType().GetProperty("Icon", BindingFlags.Public | BindingFlags.Instance);
+                if (iconProp == null || !iconProp.CanWrite)
+                    return;
+
+                var targetType = iconProp.PropertyType;
+                if (!targetType.IsInstanceOfType(src))
+                {
+                    // Native menus usually expect a bitmap; rasterize vector images (e.g., SvgImage).
+                    src = RasterizeImage(src, 16, 16) ?? src;
+                }
+
+                if (targetType.IsInstanceOfType(src))
+                {
+                    iconProp.SetValue(native, src);
+                }
+                else
+                {
+                    Console.WriteLine($"[MainMenu] Native menu icon skipped: source={src.GetType().FullName}, target={targetType.FullName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[MainMenu] Applying native menu icon failed: {ex}");
+            }
+        }
+
+        static IImage? RasterizeImage(IImage image, int width, int height)
+        {
+            try
+            {
+                var pixelSize = new PixelSize(Math.Max(1, width), Math.Max(1, height));
+                var rtb = new RenderTargetBitmap(pixelSize, new Vector(96, 96));
+                using (var ctx = rtb.CreateDrawingContext())
+                {
+                    ctx.DrawImage(image, new Rect(image.Size), new Rect(new Point(0, 0), new Size(width, height)));
+                }
+                return rtb;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[MainMenu] RasterizeImage failed: {ex}");
+                return null;
+            }
+        }
+
+        static void ApplyLanguageSelection(SettingsService? settingsService, string? tag)
+        {
+            if (settingsService?.SessionSettings == null)
+                return;
+
+            if (string.IsNullOrWhiteSpace(tag) || !tag.StartsWith("Language:", StringComparison.Ordinal))
+                return;
+
+            var culture = tag.Substring("Language:".Length);
+            if (culture == "null")
+                culture = null;
+
+            settingsService.SessionSettings.CurrentCulture = culture;
+        }
+
+        static IImage? LoadNativeMenuImage(MenuItem menuItem)
+        {
+            // Prefer a theme-neutral load using platform theme (system) rather than app theme.
+            string? iconKey = menuItem.GetValue(MenuIconKeyProperty);
+            if (string.IsNullOrEmpty(iconKey))
+            {
+                if (menuItem.Icon is Avalonia.Controls.Image { Source: { } imgSrc })
+                    return imgSrc;
+                return null;
+            }
+
+            var platformTheme = Application.Current?.PlatformSettings?.GetColorValues()?.ThemeVariant;
+            var preferDark = string.Equals(platformTheme?.ToString(), "Dark", StringComparison.OrdinalIgnoreCase);
+
+            string? path = Images.ResolveIcon(iconKey);
+            if (path == null)
+                return null;
+
+            // Normalize to avares://
+            if (path.StartsWith("/"))
+                path = $"avares://ProjectRover{path}";
+            else if (!path.Contains("://"))
+                path = $"avares://ProjectRover/Assets/{path}";
+
+            if (!path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+                return Images.LoadImage(iconKey); // fallback
+
+            var candidates = new List<string>();
+            if (preferDark && path.Contains("/Assets/") && !path.Contains("/Assets/Dark/"))
+            {
+                var darkPath = path.Replace("/Assets/", "/Assets/Dark/", StringComparison.Ordinal);
+                candidates.Add(darkPath);
+            }
+            candidates.Add(path);
+
+            foreach (var candidate in candidates)
+            {
+                try
+                {
+                    var svg = SvgSource.Load(candidate, null);
+                    if (svg != null)
+                        return new SvgImage { Source = svg };
+                }
+                catch
+                {
+                    // try next
+                }
+            }
+
+            return null;
+        }
+
+        static void SetupLanguageMenuCheckIcons(Menu mainMenu, SettingsService? settingsService)
+        {
+            if (settingsService == null)
+                return;
+
+            var viewMenu = mainMenu.Items.OfType<MenuItem>().FirstOrDefault(mi => string.Equals(mi.Tag as string, "_View", StringComparison.Ordinal));
+            if (viewMenu == null)
+                return;
+
+            foreach (var item in viewMenu.Items.OfType<MenuItem>().SelectMany(i => i.Items.OfType<MenuItem>()))
+            {
+                if (!IsLanguageMenuItem(item))
+                    continue;
+
+                void UpdateIcon()
+                {
+                    if (item.IsChecked == true)
+                    {
+                        var iconSource = Images.LoadImage(TabPageMenuIconPath);
+                        item.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
+                        item.Icon = iconSource == null ? null : new Avalonia.Controls.Image { Width = 16, Height = 16, Source = iconSource };
+                        item.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
+                    }
+                    else
+                    {
+                        item.Icon = null;
+                    }
+                }
+
+                item.PropertyChanged += (_, e) => {
+                    if (e.Property == MenuItem.IsCheckedProperty)
+                    {
+                        UpdateIcon();
+                    }
+                };
+
+                item.Click += (_, _) => ApplyLanguageSelection(settingsService, item.Tag as string);
+                UpdateIcon();
+            }
+        }
+
+        void BuildNativeMenu(Menu mainMenu)
+        {
+            if (!OperatingSystem.IsMacOS())
+                return;
+
+            try
+            {
+                var settingsService = _settingsService;
+                var roverSettings = settingsService?.GetSettings<ProjectRoverSettingsSection>();
+                var keepAvaloniaMenu = roverSettings?.ShowAvaloniaMainMenuOnMac ?? false;
+
+                var visualRoot = TopLevel.GetTopLevel(mainMenu) ?? mainMenu.GetVisualRoot();
+                var rootObj = visualRoot as AvaloniaObject;
+
+                mainMenu.IsVisible = keepAvaloniaMenu;
+
+                _nativeThemeMenuItems = new List<NativeMenuItem>();
+
+                var nativeRoot = new NativeMenu();
+
+                NativeMenuItem Convert(MenuItem m)
+                {
+                    var header = ResolveMenuHeader(m);
+                    var isThemeMenuItem = _themeMenuItems.Contains(m);
+                    var native = new NativeMenuItem { Header = header };
+                    var isApiVisibilityItem = IsApiVisibilityMenuItem(m);
+                    var isLanguageMenuItem = IsLanguageMenuItem(m);
+                    var suppressNativeToggle = isThemeMenuItem || isApiVisibilityItem || isLanguageMenuItem;
+
+                    if (m.Command != null)
+                    {
+                        native.Command = m.Command;
+                        native.CommandParameter = m.CommandParameter;
+                    }
+
+                    TryApplyNativeMenuIcon(native, m);
+
+                    if (!suppressNativeToggle && m.ToggleType != MenuItemToggleType.None)
+                    {
+                        native.ToggleType = (NativeMenuItemToggleType)m.ToggleType;
+                        native.IsChecked = m.IsChecked == true;
+
+                        m.PropertyChanged += (_, e) => {
+                            if (e.Property == MenuItem.IsCheckedProperty)
+                            {
+                                native.IsChecked = m.IsChecked == true;
+                            }
+                        };
+                    }
+
+                    if (string.Equals(header, "Light", StringComparison.OrdinalIgnoreCase) || string.Equals(header, "Dark", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _nativeThemeMenuItems.Add(native);
+                    }
+
+                    if (isThemeMenuItem)
+                    {
+                        native.Click += (_, _) => {
+                            MainMenuThemeHelpers.ApplyThemeFromHeader(header, settingsService);
+                            MainMenuThemeHelpers.UpdateThemeChecks(_themeMenuItems, ThemeManager.Current.Theme);
+                            MainMenuThemeHelpers.UpdateNativeThemeChecks(_nativeThemeMenuItems, ThemeManager.Current.Theme);
+                        };
+                    }
+                    else if (isApiVisibilityItem)
+                    {
+                        native.Click += (_, _) => ApplyApiVisibilitySelection(settingsService, m.Tag as string);
+                    }
+                    else if (isLanguageMenuItem)
+                    {
+                        native.Click += (_, _) => ApplyLanguageSelection(settingsService, m.Tag as string);
+                    }
+                    else if (m.ToggleType != MenuItemToggleType.None && m.Command == null)
+                    {
+                        native.Click += (_, _) => {
+                            m.IsChecked = m.ToggleType == MenuItemToggleType.Radio ? true : !m.IsChecked;
+                        };
+                    }
+
+                    if (m.Items != null && m.Items.Count > 0)
+                    {
+                        var sub = new NativeMenu();
+                        foreach (var child in m.Items)
+                        {
+                            switch (child)
+                            {
+                                case Separator:
+                                    sub.Items.Add(new NativeMenuItemSeparator());
+                                    break;
+                                case MenuItem childMi:
+                                    sub.Items.Add(Convert(childMi));
+                                    break;
+                            }
+                        }
+                        native.Menu = sub;
+                    }
+
+                    if (m.Command is ICommand cmd)
+                    {
+                        try { native.IsEnabled = cmd.CanExecute(null); } catch { }
+                        cmd.CanExecuteChanged += (_, __) => { try { native.IsEnabled = cmd.CanExecute(null); } catch { } };
+                    }
+
+                    return native;
+                }
+
+                foreach (var item in mainMenu.Items)
+                {
+                    if (item is MenuItem mi)
+                    {
+                        nativeRoot.Items.Add(Convert(mi));
+                    }
+                }
+
+                // Always set a fresh native menu; avoid reusing existing items to prevent parent conflicts.
+                if (rootObj != null)
+                    NativeMenu.SetMenu(rootObj, nativeRoot);
+
+                if (Application.Current != null)
+                    NativeMenu.SetMenu(Application.Current, nativeRoot);
+
+                MainMenuThemeHelpers.UpdateNativeThemeChecks(_nativeThemeMenuItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"InitMainMenu: native menu integration failed: {ex}");
+            }
+        }
+        
+        static string ResolveMenuHeader(MenuItem m)
+        {
+            // For dynamic items (tab pages, tool panes), prefer getting the title from the Tag model
+            // since TextBlock bindings may not be evaluated yet when native menu is built
+            if (m.Tag is ICSharpCode.ILSpy.ViewModels.TabPageModel tp && !string.IsNullOrWhiteSpace(tp.Title))
+                return tp.Title;
+            
+            // For tool panes, the Header is already a string (toolPane.Title)
+            if (m.Header is string hs)
+                return hs;
+                
+            // For TextBlock headers, try to get the text
+            if (m.Header is TextBlock tb && !string.IsNullOrWhiteSpace(tb.Text))
+                return tb.Text;
+            
+            // Fallback to Tag if it's a string
+            if (m.Tag is string ts)
+                return ts;
+                
+            return m.Header?.ToString() ?? string.Empty;
         }
     }
 
