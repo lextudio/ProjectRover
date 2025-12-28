@@ -65,6 +65,8 @@ Recommended generated manifest filenames (cached under `tools/ApiDiff/manifests/
 - For Avalonia DataGrid (match the build you export):
   - `tools/ApiDiff/manifests/Avalonia.Controls.DataGrid.debug_net8.0.api.json` (generated from `thirdparty/Avalonia.Controls.DataGrid/artifacts/bin/Avalonia.Controls.DataGrid/debug_net8.0/Avalonia.Controls.DataGrid.dll`)
 
+  IMPORTANT: always export from the actual built assembly artifact (the DLL produced by your build) before running a compare. If you edit the source but do not rebuild the project or if you accidentally compare against an older manifest file in `tools/ApiDiff/manifests/`, the reports will reflect the manifest you compared, not the current repository source. To avoid this mistake, follow the example workflow below every time you change visibility in source.
+
 Caching note: these manifests are the canonical, reusable snapshots of the public API surface. Generate them once per build/target and keep them in `tools/ApiDiff/manifests/` so subsequent comparisons are fast and reproducible.
 
 ## Mapping config

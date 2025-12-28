@@ -64,10 +64,10 @@ public partial class App : Application
             ProjectRover.Settings.RectTypeConverterRegistration.Ensure();
             var services = CreateServiceCollection();
 
-			// Initialize SettingsService
-			var settingsService = new ICSharpCode.ILSpy.Util.SettingsService();
-			var desiredTheme = settingsService.SessionSettings.Theme;
-			services.AddSingleton(settingsService);
+            // Initialize SettingsService
+            var settingsService = new ICSharpCode.ILSpy.Util.SettingsService();
+            var desiredTheme = settingsService.SessionSettings.Theme;
+            services.AddSingleton(settingsService);
 
             // Bind exports from assemblies
             // ILSpyX
@@ -111,9 +111,9 @@ public partial class App : Application
 
             Console.WriteLine($"ExportProvider initialized: {ExportProvider != null}");
 
-			Console.WriteLine("Creating MainWindow...");
-			desktop.MainWindow = Services.GetRequiredService<ICSharpCode.ILSpy.MainWindow>();
-			Console.WriteLine("MainWindow created.");
+            Console.WriteLine("Creating MainWindow...");
+            desktop.MainWindow = Services.GetRequiredService<ICSharpCode.ILSpy.MainWindow>();
+            Console.WriteLine("MainWindow created.");
 
             // Attach the export provider to the MainWindow so that inheritable
             // attached property lookup works for all visual children.
@@ -127,9 +127,18 @@ public partial class App : Application
                 Console.WriteLine("Failed to attach ExportProvider to MainWindow: " + ex);
             }
 
-			desktop.MainWindow.Opened += (_, _) => {
-				ThemeManager.Current.ApplyTheme(desiredTheme);
-			};
+            desktop.MainWindow.Opened += async (_, _) =>
+            {
+                ThemeManager.Current.ApplyTheme(desiredTheme);
+                try
+                {
+                    await ShowWarningIfILSpyRunning(desktop.MainWindow);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Warning dialog failed: " + ex);
+                }
+            };
 
             // Register command bindings
             ICSharpCode.ILSpy.CommandWrapper.RegisterBindings(desktop.MainWindow);
@@ -143,7 +152,10 @@ public partial class App : Application
             {
                 System.Diagnostics.Debug.WriteLine("[Startup] Failed to start assembly diagnostics: " + ex);
             }
+
+            // Theme application and ILSpy-warning will run in the Opened handler above.
         }
+
         base.OnFrameworkInitializationCompleted();
     }
 
@@ -171,11 +183,64 @@ public partial class App : Application
         System.Diagnostics.Debug.WriteLine("[Startup] AssemblyTreeModel export not found after polling.");
     }
 
+    // Show a modal warning dialog if ILSpy (WPF) is detected running on Windows
+    private static async System.Threading.Tasks.Task ShowWarningIfILSpyRunning(Window owner)
+    {
+        await System.Threading.Tasks.Task.Yield(); // ensure we yield back to dispatcher so window is shown
+
+        try
+        {
+            if (!OperatingSystem.IsWindows())
+                return;
+
+            var processes = System.Diagnostics.Process.GetProcessesByName("ILSpy");
+            if (processes == null || processes.Length == 0)
+                return;
+
+            var warning = new Window
+            {
+                Title = "Warning",
+                Width = 520,
+                Height = 180,
+                WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner
+            };
+
+            var panel = new Avalonia.Controls.StackPanel
+            {
+                Margin = new Avalonia.Thickness(12)
+            };
+
+            panel.Children.Add(new TextBlock
+            {
+                Text = "ILSpy (WPF) appears to be running. ProjectRover reads and writes the same ILSpy settings file; running both at the same time may cause settings conflicts.\n\nIt is recommended to close the other ILSpy instance or proceed with caution.",
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap
+            });
+
+            var okButton = new Avalonia.Controls.Button
+            {
+                Content = "OK",
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                Margin = new Avalonia.Thickness(0, 12, 0, 0)
+            };
+            okButton.Click += (_, _) => warning.Close();
+            panel.Children.Add(okButton);
+
+            warning.Content = panel;
+
+            await warning.ShowDialog(owner);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("ShowWarningIfILSpyRunning failed: " + ex);
+        }
+    }
+
     private static void AttachModelDiagnostics(ICSharpCode.ILSpy.AssemblyTree.AssemblyTreeModel model)
     {
         try
         {
-            model.PropertyChanged += (s, e) => {
+            model.PropertyChanged += (s, e) =>
+            {
                 if (e.PropertyName == "Root")
                 {
                     System.Diagnostics.Debug.WriteLine("[Startup] AssemblyTreeModel.Root changed.");
@@ -204,7 +269,8 @@ public partial class App : Application
             System.Diagnostics.Debug.WriteLine($"[Startup] Root has {root.Children.Count} children.");
             if (root.Children is System.Collections.Specialized.INotifyCollectionChanged incc)
             {
-                incc.CollectionChanged += (s, e) => {
+                incc.CollectionChanged += (s, e) =>
+                {
                     System.Diagnostics.Debug.WriteLine($"[Startup] Root.Children changed: action={e.Action}, newCount={root.Children.Count}");
                     if (e.NewItems != null)
                     {
