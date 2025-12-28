@@ -77,6 +77,32 @@ namespace ICSharpCode.ILSpy
                         var snapshot = settingsService.CreateSnapshot();
                         var sessionSettings = snapshot.GetSettings<ICSharpCode.ILSpy.SessionSettings>();
 
+                        // Map Avalonia window bounds/state into SessionSettings so window position persists like WPF
+                        try
+                        {
+                            // Avalonia.Bounds is a Rect with position and size
+                            var b = this.Bounds;
+                            sessionSettings.WindowBounds = new System.Windows.Rect(b.X, b.Y, b.Width, b.Height);
+
+                            // Map Avalonia WindowState to System.Windows.WindowState
+                            switch (this.WindowState)
+                            {
+                                case WindowState.Maximized:
+                                    sessionSettings.WindowState = System.Windows.WindowState.Maximized;
+                                    break;
+                                case WindowState.Minimized:
+                                    sessionSettings.WindowState = System.Windows.WindowState.Minimized;
+                                    break;
+                                default:
+                                    sessionSettings.WindowState = System.Windows.WindowState.Normal;
+                                    break;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed mapping window bounds/state: {ex}");
+                        }
+
                         // Let interested components write their session state (e.g. selected tree node)
                         ICSharpCode.ILSpy.Util.MessageBus.Send(this, new ICSharpCode.ILSpy.Util.ApplySessionSettingsEventArgs(sessionSettings));
 
