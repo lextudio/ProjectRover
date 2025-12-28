@@ -44,31 +44,34 @@ namespace ICSharpCode.ILSpy.Controls
         {
             InitializeComponent();
 
-            this.AttachedToVisualTree += (_, _) => {
-                var exportProvider = ProjectRover.App.ExportProvider;
-                if (exportProvider != null)
+            this.AttachedToVisualTree += HandleAttachedToVisualTree;
+        }
+
+        private void HandleAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+        {
+            var exportProvider = ProjectRover.App.ExportProvider;
+            if (exportProvider == null)
+                return;
+
+            // Delay to ensure visual tree is fully constructed and attached to a TopLevel
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                InitMainMenu(Menu, exportProvider);
+
+                // Initialize Window menu with tool panes and tab pages
+                var windowMenu = Menu.Items.OfType<MenuItem>().FirstOrDefault(m => (m.Tag as string) == "_Window");
+                if (windowMenu != null)
                 {
-                    // Delay to ensure visual tree is fully constructed and attached to a TopLevel
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-                        InitMainMenu(Menu, exportProvider);
-                        
-                        // Initialize Window menu with tool panes and tab pages
-                        var windowMenu = Menu.Items.OfType<MenuItem>().FirstOrDefault(m => (m.Tag as string) == "_Window");
-                        if (windowMenu != null)
+                    var dockWorkspace = exportProvider.GetExportedValue<ICSharpCode.ILSpy.Docking.DockWorkspace>();
+                    if (dockWorkspace != null)
+                    {
+                        InitWindowMenu(windowMenu, dockWorkspace);
+                        if (OperatingSystem.IsMacOS())
                         {
-                            var dockWorkspace = exportProvider.GetExportedValue<ICSharpCode.ILSpy.Docking.DockWorkspace>();
-                            if (dockWorkspace != null)
-                            {
-                                InitWindowMenu(windowMenu, dockWorkspace);
-                                if (OperatingSystem.IsMacOS())
-                                {
-                                    BuildNativeMenu(Menu);
-                                }
-                            }
+                            BuildNativeMenu(Menu);
                         }
-                    });
+                    }
                 }
-            };
+            });
         }
 
         void InitMainMenu(Menu mainMenu, IExportProvider exportProvider)
@@ -499,16 +502,28 @@ namespace ICSharpCode.ILSpy.Controls
                                 // Update the native menu item's header
                                 if (_nativeTabPageItems.TryGetValue(tabPage, out var nativeItem))
                                 {
-                                    var headerProp = nativeItem.GetType().GetProperty("Header", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                                    if (headerProp != null && headerProp.CanWrite)
-                                    {
-                                        headerProp.SetValue(nativeItem, tabPage.Title);
-                                        Console.WriteLine($"[MainMenu] Updated native menu item header to: {tabPage.Title}");
-                                    }
+                                    TrySetNativeMenuItemHeader(nativeItem, tabPage.Title);
                                 }
                             });
                         }
                     };
+                }
+
+                static void TrySetNativeMenuItemHeader(NativeMenuItem nativeItem, string? header)
+                {
+                    try
+                    {
+                        var pi = nativeItem.GetType().GetProperty("Header", BindingFlags.Public | BindingFlags.Instance);
+                        if (pi != null && pi.CanWrite)
+                        {
+                            pi.SetValue(nativeItem, header);
+                            Console.WriteLine($"[MainMenu] Updated native menu item header to: {header}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[MainMenu] Failed to set native menu header: {ex.Message}");
+                    }
                 }
                 
                 // Hook existing tabs
