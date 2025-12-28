@@ -67,7 +67,7 @@ namespace ICSharpCode.ILSpy.Docking
         // If layout is already initialized, reuse it but hook listeners
         if (dockHost.Layout != null && dockHost.Factory != null)
         {
-          ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DockWorkspace.InitializeLayout: Layout already initialized, hooking listeners");
+          log.Debug("DockWorkspace.InitializeLayout: Layout already initialized, hooking listeners");
           var docDock1 = FindDockById(dockHost.Layout, "DocumentDock") as IDocumentDock;
           AttachToDockHost(dockHost, dockHost.Factory, docDock1);
           HookUpToolListeners(dockHost);
@@ -77,7 +77,7 @@ namespace ICSharpCode.ILSpy.Docking
         var viewModel = mainWindow.DataContext as MainWindowViewModel;
         if (viewModel == null)
         {
-          ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DockWorkspace.InitializeLayout: ViewModel is null, cannot initialize specific layout.");
+          log.Debug("DockWorkspace.InitializeLayout: ViewModel is null, cannot initialize specific layout.");
           return;
         }
 
@@ -87,7 +87,7 @@ namespace ICSharpCode.ILSpy.Docking
           return;
         }
 
-        ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DockWorkspace.InitializeLayout: Creating specific layout structure");
+        log.Debug("DockWorkspace.InitializeLayout: Creating specific layout structure");
 
         var assemblyTreeModel = viewModel.AssemblyTreeModel;
         var searchPaneModel = viewModel.SearchPaneModel;
@@ -120,11 +120,11 @@ namespace ICSharpCode.ILSpy.Docking
 
         dockHost.IsVisible = true;
 
-        ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DockWorkspace.InitializeLayout: Specific layout initialized successfully");
+        log.Debug("DockWorkspace.InitializeLayout: Specific layout initialized successfully");
       }
       catch (Exception ex)
       {
-        ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "DockWorkspace.InitializeLayout error");
+        log.Error(ex, "DockWorkspace.InitializeLayout error");
       }
     }
 
@@ -138,7 +138,7 @@ namespace ICSharpCode.ILSpy.Docking
 
         if (GetRoverSettings().UseDefaultDockLayoutOnly)
         {
-          ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DockWorkspace.SaveLayout: Skipped because Rover uses the default layout only.");
+          log.Debug("DockWorkspace.SaveLayout: Skipped because Rover uses the default layout only.");
           return;
         }
 
@@ -155,7 +155,7 @@ namespace ICSharpCode.ILSpy.Docking
       }
       catch (Exception ex)
       {
-        ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "DockWorkspace.SaveLayout error");
+        log.Error(ex, "DockWorkspace.SaveLayout error");
       }
     }
 

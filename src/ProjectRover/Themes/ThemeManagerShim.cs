@@ -20,6 +20,7 @@ namespace ICSharpCode.ILSpy.Themes
 	public class ThemeManager
 	{
 		private string currentTheme;
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("ThemeManager");
 
 		public static ThemeManager Current { get; } = new ThemeManager();
 
@@ -64,7 +65,7 @@ namespace ICSharpCode.ILSpy.Themes
 		{
 			var normalized = NormalizeTheme(themeName);
 			var same = string.Equals(normalized, currentTheme, StringComparison.OrdinalIgnoreCase);
-					 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[ThemeManager] ApplyTheme requested='{Requested}' normalized='{Normalized}' sameAsCurrent={Same}", themeName, normalized, same);
+					 log.Debug("ApplyTheme requested='{Requested}' normalized='{Normalized}' sameAsCurrent={Same}", themeName, normalized, same);
 			if (same)
 				return;
 
@@ -74,14 +75,14 @@ namespace ICSharpCode.ILSpy.Themes
 			if (Application.Current != null)
 			{
 				Application.Current.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
-							 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[ThemeManager] RequestedThemeVariant set to {Requested}, Actual={Actual}", Application.Current.RequestedThemeVariant, Application.Current.ActualThemeVariant);
+							 log.Debug("RequestedThemeVariant set to {Requested}, Actual={Actual}", Application.Current.RequestedThemeVariant, Application.Current.ActualThemeVariant);
 
 				if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
 				{
 					foreach (var window in desktopLifetime.Windows)
 					{
 						window.RequestedThemeVariant = Application.Current.RequestedThemeVariant;
-											 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[ThemeManager] Window '{Title}' RequestedThemeVariant => {Requested}", window.Title, window.RequestedThemeVariant);
+											 log.Debug("Window '{Title}' RequestedThemeVariant => {Requested}", window.Title, window.RequestedThemeVariant);
 					}
                 }
 
@@ -92,7 +93,7 @@ namespace ICSharpCode.ILSpy.Themes
 				}
 				catch (Exception ex)
 				{
-									 ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[ThemeManager] Failed to send ThemeChanged message");
+									 log.Error(ex, "Failed to send ThemeChanged message");
 				}
 
 				// Diagnostic: inspect windows for TextEditor and presence of TextMate transformer
@@ -113,18 +114,18 @@ namespace ICSharpCode.ILSpy.Themes
 									if (hasTransformer) installedCount++;
 								}
 							}
-												ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[ThemeManager] Window '{Title}': TextEditors={Count}, TextMateInstalled={Installed}", w.Title, editorCount, installedCount);
+												log.Debug("Window '{Title}': TextEditors={Count}, TextMateInstalled={Installed}", w.Title, editorCount, installedCount);
 						}
 					}
 				}
 				catch (Exception ex)
 				{
-									ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[ThemeManager] Diagnostics failed");
+									log.Error(ex, "Diagnostics failed");
 				}
             }
 			else
 			{
-							ICSharpCode.ILSpy.Util.RoverLog.Log.Warning("[ThemeManager] Application.Current is null; cannot set RequestedThemeVariant");
+							log.Warning("Application.Current is null; cannot set RequestedThemeVariant");
 			}
 		}
 

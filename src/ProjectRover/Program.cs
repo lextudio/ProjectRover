@@ -21,12 +21,14 @@ using Avalonia;
 using System;
 using Serilog;
 using Microsoft.Extensions.Logging;
+using ICSharpCode.ILSpy.Util;
 
 namespace ProjectRover;
 
 sealed class Program
 {
     public static event EventHandler<Exception>? UnhandledException;
+    private static readonly Serilog.ILogger log = LogCategory.For("App");
     
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
@@ -34,7 +36,7 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        ICSharpCode.ILSpy.Util.RoverLog.Log.Information("[ProjectRover] Main started. Console output is working.");
+        log.Information("Main started. Console output is working.");
 
         // Configure Serilog (console + file) - settings can be controlled via configuration later.
         Log.Logger = new LoggerConfiguration()
@@ -54,7 +56,7 @@ sealed class Program
             if (UnhandledException != null)
                 UnhandledException.Invoke(null, e);
             else
-                ICSharpCode.ILSpy.Util.RoverLog.Log.Error(e, "Unhandled exception in Main");
+                log.Error(e, "Unhandled exception in Main");
         }
     }
 

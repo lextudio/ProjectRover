@@ -28,18 +28,19 @@ namespace ICSharpCode.ILSpy.Updates
 		const string RepoName = "ProjectRover";
 
 		static readonly ProductHeaderValue ProductHeader = new ProductHeaderValue("ProjectRover");
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Updates");
 
 		public static AvailableVersionInfo LatestAvailableVersion { get; private set; }
 		public static Version? LatestAvailableSemanticVersion { get; private set; }
 
 		public static async Task<AvailableVersionInfo> GetLatestVersionAsync()
 		{
-					   ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[UpdateService] GetLatestVersionAsync called");
+					   log.Debug("GetLatestVersionAsync called");
 			var client = new GitHubClient(ProductHeader);
 			var releaseInfo = await GetLatestReleaseAsync(client).ConfigureAwait(false);
 			if (releaseInfo.Release == null || releaseInfo.Version == null)
 			{
-							   ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[UpdateService] No release info found; returning current version");
+							   log.Debug("No release info found; returning current version");
 				LatestAvailableSemanticVersion = AppUpdateService.CurrentVersion;
 				LatestAvailableVersion = new AvailableVersionInfo {
 					Version = AppUpdateService.CurrentVersion,
@@ -57,7 +58,7 @@ namespace ICSharpCode.ILSpy.Updates
 				Version = releaseInfo.Version,
 				DownloadUrl = url
 			};
-					   ICSharpCode.ILSpy.Util.RoverLog.Log.Information("[UpdateService] Found latest release: {Version} (semantic {Semantic}) url={Url}", LatestAvailableVersion.Version, LatestAvailableSemanticVersion, LatestAvailableVersion.DownloadUrl);
+					   log.Information("Found latest release: {Version} (semantic {Semantic}) url={Url}", LatestAvailableVersion.Version, LatestAvailableSemanticVersion, LatestAvailableVersion.DownloadUrl);
 			return LatestAvailableVersion;
 		}
 
@@ -97,7 +98,7 @@ namespace ICSharpCode.ILSpy.Updates
 		{
 			if (!settings.AutomaticUpdateCheckEnabled)
 			{
-				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("Automatic update check disabled in settings.");
+				log.Debug("Automatic update check disabled in settings.");
 				return null;
 			}
 
@@ -107,7 +108,7 @@ namespace ICSharpCode.ILSpy.Updates
 				|| settings.LastSuccessfulUpdateCheck < DateTime.UtcNow.AddDays(-7)
 				|| settings.LastSuccessfulUpdateCheck > DateTime.UtcNow)
 			{
-				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("Performing update check based on LastSuccessfulUpdateCheck.");
+				log.Debug("Performing update check based on LastSuccessfulUpdateCheck.");
 				return await CheckForUpdateInternal(settings).ConfigureAwait(false);
 			}
 
@@ -123,20 +124,20 @@ namespace ICSharpCode.ILSpy.Updates
 		{
 			try
 			{
-				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("CheckForUpdateInternal: calling GetLatestVersionAsync");
+				log.Debug("CheckForUpdateInternal: calling GetLatestVersionAsync");
 				var v = await GetLatestVersionAsync().ConfigureAwait(false);
 				settings.LastSuccessfulUpdateCheck = DateTime.UtcNow;
 				var latest = LatestAvailableSemanticVersion ?? v.Version;
-				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("LatestAvailableSemanticVersion={Latest} AppCurrent={Current}", LatestAvailableSemanticVersion, AppUpdateService.CurrentVersion);
+				log.Debug("LatestAvailableSemanticVersion={Latest} AppCurrent={Current}", LatestAvailableSemanticVersion, AppUpdateService.CurrentVersion);
 
 				// If the current app version couldn't be resolved (0.0.0), skip update notifications
 				if (AppUpdateService.IsUnset(AppUpdateService.CurrentVersion))
 				{
-					ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("Current application semantic version appears to be unset (0.0.0); skipping update check.");
+					log.Debug("Current application semantic version appears to be unset (0.0.0); skipping update check.");
 					return null;
 				}
 				bool isNewer = AppUpdateService.IsNewerThanCurrent(latest);
-				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("Is newer: {IsNewer}", isNewer);
+				log.Debug("Is newer: {IsNewer}", isNewer);
 				return isNewer ? v.DownloadUrl : null;
 			}
 			catch (Exception)

@@ -6,7 +6,11 @@ namespace ICSharpCode.ILSpy.Util
     {
         public static ILogger For(string category)
         {
-            return RoverLog.Log.ForContext("Category", category);
+            // Set both a friendly Category property and SourceContext so Serilog
+            // minimum-level overrides can match on the SourceContext name.
+            return RoverLog.Log
+                .ForContext("Category", category)
+                .ForContext("SourceContext", category);
         }
     }
 }

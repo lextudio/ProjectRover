@@ -22,6 +22,7 @@ namespace ICSharpCode.ILSpy.Util
                 var logger = new LoggerConfiguration()
                     .ReadFrom.Configuration(config)
                     .Enrich.FromLogContext()
+                    .Enrich.WithProperty("App", "ProjectRover")
                     .CreateLogger();
 
                 logger.Information("Rover logging initialized");
@@ -30,7 +31,12 @@ namespace ICSharpCode.ILSpy.Util
             catch (Exception ex)
             {
                 Console.Error.WriteLine("Failed to initialize Rover logging: " + ex);
-                return new LoggerConfiguration().WriteTo.Console().CreateLogger();
+                // Fallback: basic console logger if configuration-based initialization fails.
+                return new LoggerConfiguration()
+                    .Enrich.WithProperty("App", "ProjectRover")
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console()
+                    .CreateLogger();
             }
         }
     }

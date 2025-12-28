@@ -11,6 +11,7 @@ namespace ICSharpCode.ILSpy
 {
     internal static class Images
     {
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Images");
 		// Simple in-memory cache for loaded images keyed by the resolved asset URI.
 		// Key: absolute avares:// URI used to load the SvgSource
 		// Value: cached IImage (SvgImage) instance
@@ -101,14 +102,14 @@ namespace ICSharpCode.ILSpy
 						// Try cache first
 						if (imageCache.TryGetValue(p, out var cached))
 						{
-												  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Images.LoadImage: cache hit for {Path}", p);
+												  log.Debug("Images.LoadImage: cache hit for {Path}", p);
 							return cached;
 						}
 						var svg = SvgSource.Load(p, null);
 						if (svg != null)
 						{
 							var svgImage = new SvgImage { Source = svg };
-												  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Images.LoadImage: loaded svg for {Path}", p);
+												  log.Debug("Images.LoadImage: loaded svg for {Path}", p);
 							// Add to cache and return the cached instance
 							return imageCache.GetOrAdd(p, svgImage);
 						}

@@ -94,6 +94,7 @@ namespace ICSharpCode.ILSpy.TextView
 	/// </summary>
 	public sealed partial class DecompilerTextView : UserControl, IHaveState, IProgress<DecompilationProgress>
 	{
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("DecompilerTextView");
 		readonly IExportProvider exportProvider;
 		readonly SettingsService settingsService;
 		readonly LanguageService languageService;
@@ -142,12 +143,12 @@ namespace ICSharpCode.ILSpy.TextView
 				}
 				catch (Exception ex)
 				{
-								  ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[DecompilerTextView] ApplyThemeColorsToEditor failed");
+								  log.Error(ex, "ApplyThemeColorsToEditor failed");
 				}
 			}
 			catch (Exception ex)
 			{
-						  ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[DecompilerTextView] Failed to apply TextMate theme");
+						  log.Error(ex, "Failed to apply TextMate theme");
 			}
 		}
 
@@ -195,12 +196,12 @@ namespace ICSharpCode.ILSpy.TextView
 		#region Constructor
 		public DecompilerTextView() : this(ProjectRover.App.ExportProvider!)
 		{
-				  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DecompilerTextView parameterless ctor called. App.ExportProvider is {State}", ProjectRover.App.ExportProvider == null ? "null" : "set");
+				  log.Debug("DecompilerTextView parameterless ctor called. App.ExportProvider is {State}", ProjectRover.App.ExportProvider == null ? "null" : "set");
 		}
 
 		public DecompilerTextView(IExportProvider exportProvider)
 		{
-				  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DecompilerTextView ctor called with exportProvider: {State}", exportProvider == null ? "null" : "set");
+				  log.Debug("DecompilerTextView ctor called with exportProvider: {State}", exportProvider == null ? "null" : "set");
 			this.exportProvider = exportProvider;
 			settingsService = exportProvider.GetExportedValue<SettingsService>();
 			languageService = exportProvider.GetExportedValue<LanguageService>();
@@ -227,7 +228,7 @@ namespace ICSharpCode.ILSpy.TextView
 			{
 				MessageBus<ThemeChangedEventArgs>.Subscribers += (s, e) =>
 				{
-								  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[DecompilerTextView] Received ThemeChanged message: {Theme}", e.ThemeName);
+								  log.Debug("Received ThemeChanged message: {Theme}", e.ThemeName);
 				};
 			}
 			catch { }
@@ -238,7 +239,7 @@ namespace ICSharpCode.ILSpy.TextView
 				var textMateTheme = ResolveTextMateTheme(null);
 				var registryOptions = new RegistryOptions(textMateTheme);
 				var textMateInstallation = textEditor.InstallTextMate(registryOptions);
-						  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[DecompilerTextView] Installed TextMate for editor.");
+						  log.Debug("Installed TextMate for editor.");
 
 				ApplyTextMateTheme(textMateInstallation, registryOptions, textMateTheme, textEditor);
 				// ensure GUI brushes are also applied whenever the installation signals it applied a theme
@@ -252,7 +253,7 @@ namespace ICSharpCode.ILSpy.TextView
 						}
 						catch (Exception ex)
 						{
-									  ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[DecompilerTextView] AppliedTheme handler failed");
+									  log.Error(ex, "AppliedTheme handler failed");
 						}
 					};
 				}
@@ -262,12 +263,12 @@ namespace ICSharpCode.ILSpy.TextView
 				{
 					var nextTheme = ResolveTextMateTheme(e.ThemeName);
 					ApplyTextMateTheme(textMateInstallation, registryOptions, nextTheme, textEditor);
-						  ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[DecompilerTextView] Applied TextMate theme on ThemeChanged: {Theme}", e.ThemeName);
+						  log.Debug("Applied TextMate theme on ThemeChanged: {Theme}", e.ThemeName);
 				};
 			}
 			catch (Exception ex)
 			{
-						  ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "[DecompilerTextView] TextMate wiring skipped");
+						  log.Error(ex, "TextMate wiring skipped");
 			}
 			textEditor.TextArea.TextView.ElementGenerators.Add(referenceElementGenerator);
 			this.uiElementGenerator = new UIElementGenerator();
@@ -1597,6 +1598,8 @@ namespace ICSharpCode.ILSpy.TextView
 
 	static class ExtensionMethods
 	{
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("DecompilerTextView");
+
 		public static void RegisterHighlighting(
 			this HighlightingManager manager,
 			string name,
@@ -1608,7 +1611,7 @@ namespace ICSharpCode.ILSpy.TextView
 
 			if (resourceStream != null)
 			{
-						 ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Loading highlighting definition for {Name}", name);
+				log.Debug("Loading highlighting definition for {Name}", name);
 				IHighlightingDefinition highlightingDefinition;
 
 				using (resourceStream)

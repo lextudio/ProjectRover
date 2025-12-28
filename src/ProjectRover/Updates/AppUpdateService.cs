@@ -30,6 +30,7 @@ namespace ICSharpCode.ILSpy.Updates
 	internal static class AppUpdateService
 	{
 		public static readonly UpdateStrategy updateStrategy = UpdateStrategy.NotifyOfUpdates;
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Updates");
 
 		public static readonly Version CurrentVersion = ResolveCurrentVersion();
 
@@ -38,13 +39,13 @@ namespace ICSharpCode.ILSpy.Updates
 			var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
 			// First prefer AssemblyInformationalVersion (may include prerelease/build metadata)
 			var info = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-					ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[AppUpdateService] Assembly InformationalVersion attribute: {Info}", info);
+					log.Debug("Assembly InformationalVersion attribute: {Info}", info);
 			if (TryParseVersionString(info, out var semanticVersion))
 				return semanticVersion;
 
 			// If InformationalVersion is not set, prefer AssemblyFileVersionAttribute
 			var fileVer = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
-					ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("[AppUpdateService] Assembly FileVersion attribute: {FileVer}", fileVer);
+					log.Debug("Assembly FileVersion attribute: {FileVer}", fileVer);
 			if (TryParseVersionString(fileVer, out var fileVersion))
 				return fileVersion;
 
