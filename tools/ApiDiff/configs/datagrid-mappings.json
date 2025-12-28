@@ -1,0 +1,33 @@
+{
+  "namespaceMappings": [
+    "Avalonia.Controls=>System.Windows.Controls",
+  "Avalonia.Collections=>System.Windows.Controls",
+  "Avalonia.Controls.Primitives=>System.Windows.Controls.Primitives",
+  "Avalonia.Controls.Templates=>System.Windows.Controls",
+    "Avalonia.Controls.Automation.Peers=>System.Windows.Automation.Peers",
+    "DataGridExtensions=>System.Windows.Controls"
+  ],
+  "typeAliases": [
+    "Avalonia.Collections.DataGridCurrentChangingEventArgs=>System.ComponentModel.CancelEventArgs",
+    "Avalonia.Collections.PageChangingEventArgs=>System.EventArgs",
+    "Avalonia.Controls.DataGridLengthUnitType=>System.Windows.Controls.DataGridLengthUnitType"
+  ,"Avalonia.Controls.DataGridAutoGeneratingColumnEventArgs=>System.Windows.Controls.DataGridAutoGeneratingColumnEventArgs"
+  ,"Avalonia.Controls.DataGridBeginningEditEventArgs=>System.Windows.Controls.DataGridBeginningEditEventArgs"
+  ,"Avalonia.Controls.DataGridCellEditEndingEventArgs=>System.Windows.Controls.DataGridCellEditEndingEventArgs"
+  ,"Avalonia.Controls.DataGridPreparingCellForEditEventArgs=>System.Windows.Controls.DataGridPreparingCellForEditEventArgs"
+  ,"Avalonia.Controls.DataGridRowEventArgs=>System.Windows.Controls.DataGridRowEventArgs"
+  ,"Avalonia.Controls.DataGridRowClipboardEventArgs=>System.Windows.Controls.DataGridRowClipboardEventArgs"
+  ,"Avalonia.Controls.DataGridRowDetailsEventArgs=>System.Windows.Controls.DataGridRowDetailsEventArgs"
+  ,"Avalonia.Controls.DataGridRowEditEndingEventArgs=>System.Windows.Controls.DataGridRowEditEndingEventArgs"
+  ,"Avalonia.Controls.DataGridColumn=>System.Windows.Controls.DataGridColumn"
+  ,"Avalonia.Controls.DataGridColumnHeader=>System.Windows.Controls.Primitives.DataGridColumnHeader"
+  ,"Avalonia.Controls.DataGridCell=>System.Windows.Controls.DataGridCell"
+  ,"Avalonia.Controls.DataGridRow=>System.Windows.Controls.DataGridRow"
+  ,"Avalonia.Controls.Primitives.DataGridRowHeader=>System.Windows.Controls.Primitives.DataGridRowHeader"
+  ,"Avalonia.Controls.DataGridClipboardCellContent=>System.Windows.Controls.DataGridClipboardCellContent"
+  ,"Avalonia.Controls.DataGridTextColumn=>System.Windows.Controls.DataGridTextColumn"
+  ,"Avalonia.Controls.DataGridCheckBoxColumn=>System.Windows.Controls.DataGridCheckBoxColumn"
+  ,"Avalonia.Controls.DataGridBoundColumn=>System.Windows.Controls.DataGridBoundColumn"
+  ,"Avalonia.Controls.DataGridTemplateColumn=>System.Windows.Controls.DataGridTemplateColumn"
+  ]
+}
