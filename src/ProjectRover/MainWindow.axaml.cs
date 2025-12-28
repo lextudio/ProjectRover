@@ -66,6 +66,36 @@ namespace ICSharpCode.ILSpy
 
         protected override void OnClosing(WindowClosingEventArgs e)
         {
+            try
+            {
+                var exportProvider = ProjectRover.App.ExportProvider;
+                if (exportProvider != null)
+                {
+                    var settingsService = exportProvider.GetExportedValue<ICSharpCode.ILSpy.Util.SettingsService>();
+                    if (settingsService != null)
+                    {
+                        var snapshot = settingsService.CreateSnapshot();
+                        var sessionSettings = snapshot.GetSettings<ICSharpCode.ILSpy.SessionSettings>();
+
+                        // Let interested components write their session state (e.g. selected tree node)
+                        ICSharpCode.ILSpy.Util.MessageBus.Send(this, new ICSharpCode.ILSpy.Util.ApplySessionSettingsEventArgs(sessionSettings));
+
+                        try
+                        {
+                            snapshot.Save();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed saving session settings on close: {ex}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed applying session settings on close: {ex}");
+            }
+
             viewModel?.Workspace.SaveLayout();
             base.OnClosing(e);
         }
