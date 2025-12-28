@@ -35,6 +35,10 @@ namespace ICSharpCode.ILSpy.Controls
         private List<NativeMenuItem> _nativeThemeMenuItems = new();
         private SettingsService? _settingsService;
         private const string TabPageMenuIconPath = "/Assets/Checkmark.svg";
+        private NativeMenu? _nativeWindowSubmenu; // Track the Window submenu for dynamic updates
+        private readonly Dictionary<ICSharpCode.ILSpy.ViewModels.TabPageModel, NativeMenuItem> _nativeTabPageItems = new();
+        private NativeMenuItemSeparator? _nativeTabPageSeparator; // Separator before tab pages
+        private ICSharpCode.ILSpy.Docking.DockWorkspace? _dockWorkspace; // Track for active tab updates
 
         public MainMenu()
         {
@@ -298,6 +302,8 @@ namespace ICSharpCode.ILSpy.Controls
 
         void InitWindowMenu(MenuItem windowMenuItem, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
         {
+            _dockWorkspace = dockWorkspace;
+            
             // Store default items (MEF-exported items like Close All Documents, Reset Layout)
             var defaultItems = windowMenuItem.Items.OfType<Control>().ToList();
             windowMenuItem.Items.Clear();
@@ -334,8 +340,10 @@ namespace ICSharpCode.ILSpy.Controls
                 
                 if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && args.NewItems != null)
                 {
+                    Console.WriteLine($"[MainMenu] TabPages.Add event fired, count={args.NewItems.Count}");
                     foreach (var newItem in args.NewItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>())
                     {
+                        Console.WriteLine($"[MainMenu] Creating menu item for tab: {newItem.Title}");
                         var menuItem = CreateTabPageMenuItem(newItem, dockWorkspace, _windowMenuTabPageUpdaters);
                         tabPageMenuItems.Add(menuItem);
                         
@@ -345,14 +353,44 @@ namespace ICSharpCode.ILSpy.Controls
                             windowMenuItem.Items.Add(separatorBeforeTabPages);
                         }
                         windowMenuItem.Items.Add(menuItem);
+                        Console.WriteLine($"[MainMenu] Added menu item to Window menu, total items={windowMenuItem.Items.Count}");
                     }
                     if (OperatingSystem.IsMacOS())
                     {
-                        BuildNativeMenu(Menu);
+                        Console.WriteLine($"[MainMenu] Scheduling native menu tab add");
+                        // Instead of rebuilding the entire native menu, directly add items to the Window submenu
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                            System.Threading.Tasks.Task.Delay(50).ContinueWith(_ => {
+                                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                                    Console.WriteLine($"[MainMenu] Executing native tab add");
+                                    foreach (var newItem in args.NewItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>())
+                                    {
+                                        if (_nativeWindowSubmenu != null && !_nativeTabPageItems.ContainsKey(newItem))
+                                        {
+                                            // Add separator before first tab page
+                                            if (_nativeTabPageItems.Count == 0 && _nativeTabPageSeparator == null)
+                                            {
+                                                _nativeTabPageSeparator = new NativeMenuItemSeparator();
+                                                _nativeWindowSubmenu.Items.Add(_nativeTabPageSeparator);
+                                                Console.WriteLine($"[MainMenu] Added separator before tab pages");
+                                            }
+                                            
+                                            var nativeItem = CreateNativeTabPageMenuItem(newItem, dockWorkspace);
+                                            _nativeTabPageItems[newItem] = nativeItem;
+                                            _nativeWindowSubmenu.Items.Add(nativeItem);
+                                            Console.WriteLine($"[MainMenu] Added native tab item: {newItem.Title} (dictionary now has {_nativeTabPageItems.Count} items)");
+                                        }
+                                    }
+                                    // Update states immediately after adding to show checkmark on active tab
+                                    UpdateNativeTabPageStates();
+                                });
+                            });
+                        });
                     }
                 }
                 else if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove && args.OldItems != null)
                 {
+                    Console.WriteLine($"[MainMenu] TabPages.Remove event fired, count={args.OldItems.Count}");
                     var toRemove = windowMenuItem.Items.OfType<MenuItem>().Where(mi => {
                         var tabPage = (ICSharpCode.ILSpy.ViewModels.TabPageModel?)mi.Tag;
                         return args.OldItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>().Any(tp => tp == tabPage);
@@ -360,6 +398,8 @@ namespace ICSharpCode.ILSpy.Controls
                     
                     foreach (var item in toRemove)
                     {
+                        var tabPage = (ICSharpCode.ILSpy.ViewModels.TabPageModel?)item.Tag;
+                        Console.WriteLine($"[MainMenu] Removing menu item for tab: {tabPage?.Title ?? "unknown"}");
                         windowMenuItem.Items.Remove(item);
                         tabPageMenuItems.Remove(item);
                         _windowMenuTabPageUpdaters.Remove(item);
@@ -373,7 +413,30 @@ namespace ICSharpCode.ILSpy.Controls
 
                     if (OperatingSystem.IsMacOS())
                     {
-                        BuildNativeMenu(Menu);
+                        // Instead of rebuilding the entire native menu, directly remove items from the Window submenu
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                            System.Threading.Tasks.Task.Delay(50).ContinueWith(_ => {
+                                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                                    foreach (var oldItem in args.OldItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>())
+                                    {
+                                        if (_nativeWindowSubmenu != null && _nativeTabPageItems.TryGetValue(oldItem, out var nativeItem))
+                                        {
+                                            _nativeWindowSubmenu.Items.Remove(nativeItem);
+                                            _nativeTabPageItems.Remove(oldItem);
+                                            Console.WriteLine($"[MainMenu] Removed native tab item: {oldItem.Title}");
+                                        }
+                                    }
+                                    
+                                    // Remove separator if no tab pages left
+                                    if (_nativeTabPageItems.Count == 0 && _nativeTabPageSeparator != null && _nativeWindowSubmenu != null)
+                                    {
+                                        _nativeWindowSubmenu.Items.Remove(_nativeTabPageSeparator);
+                                        _nativeTabPageSeparator = null;
+                                        Console.WriteLine($"[MainMenu] Removed tab page separator");
+                                    }
+                                });
+                            });
+                        });
                     }
                 }
             };
@@ -410,6 +473,63 @@ namespace ICSharpCode.ILSpy.Controls
             }
 
             // Note: Native menu will be built after this method completes in the AttachedToVisualTree handler
+            
+            // Listen for active tab changes to update native menu items
+            if (OperatingSystem.IsMacOS())
+            {
+                dockWorkspace.PropertyChanged += (_, e) => {
+                    Console.WriteLine($"[MainMenu] DockWorkspace.PropertyChanged: {e.PropertyName}");
+                    if (e.PropertyName == nameof(dockWorkspace.ActiveTabPage))
+                    {
+                        Console.WriteLine($"[MainMenu] ActiveTabPage changed to: {dockWorkspace.ActiveTabPage?.Title ?? "null"}");
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => UpdateNativeTabPageStates());
+                    }
+                };
+                
+                // Also listen for property changes on individual TabPageModel objects
+                // This handles cases where the same tab is reused but its Title property changes
+                void HookTabPagePropertyChanged(ICSharpCode.ILSpy.ViewModels.TabPageModel tabPage)
+                {
+                    tabPage.PropertyChanged += (_, e) => {
+                        Console.WriteLine($"[MainMenu] TabPageModel '{tabPage.Title}' PropertyChanged: {e.PropertyName}");
+                        if (e.PropertyName == nameof(tabPage.Title))
+                        {
+                            Console.WriteLine($"[MainMenu] Tab title changed, updating native menu");
+                            Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                                // Update the native menu item's header
+                                if (_nativeTabPageItems.TryGetValue(tabPage, out var nativeItem))
+                                {
+                                    var headerProp = nativeItem.GetType().GetProperty("Header", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                                    if (headerProp != null && headerProp.CanWrite)
+                                    {
+                                        headerProp.SetValue(nativeItem, tabPage.Title);
+                                        Console.WriteLine($"[MainMenu] Updated native menu item header to: {tabPage.Title}");
+                                    }
+                                }
+                            });
+                        }
+                    };
+                }
+                
+                // Hook existing tabs
+                foreach (var tabPage in dockWorkspace.TabPages)
+                {
+                    HookTabPagePropertyChanged(tabPage);
+                }
+                
+                // Hook future tabs when they're added
+                MessageBus<TabPagesCollectionChangedEventArgs>.Subscribers += (_, wrappedArgs) => {
+                    if (wrappedArgs is null) return;
+                    var args = (System.Collections.Specialized.NotifyCollectionChangedEventArgs)wrappedArgs;
+                    if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && args.NewItems != null)
+                    {
+                        foreach (var newItem in args.NewItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>())
+                        {
+                            HookTabPagePropertyChanged(newItem);
+                        }
+                    }
+                };
+            }
         }
 
         static MenuItem CreateToolPaneMenuItem(ICSharpCode.ILSpy.ViewModels.ToolPaneModel toolPane, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
@@ -789,6 +909,7 @@ namespace ICSharpCode.ILSpy.Controls
             if (!OperatingSystem.IsMacOS())
                 return;
 
+            Console.WriteLine($"[MainMenu.BuildNativeMenu] Starting native menu build");
             try
             {
                 var settingsService = _settingsService;
@@ -803,6 +924,7 @@ namespace ICSharpCode.ILSpy.Controls
                 _nativeThemeMenuItems = new List<NativeMenuItem>();
 
                 var nativeRoot = new NativeMenu();
+                var itemCount = 0;
 
                 NativeMenuItem Convert(MenuItem m)
                 {
@@ -812,6 +934,12 @@ namespace ICSharpCode.ILSpy.Controls
                     var isApiVisibilityItem = IsApiVisibilityMenuItem(m);
                     var isLanguageMenuItem = IsLanguageMenuItem(m);
                     var suppressNativeToggle = isThemeMenuItem || isApiVisibilityItem || isLanguageMenuItem;
+
+                    itemCount++;
+                    if (m.Tag is ICSharpCode.ILSpy.ViewModels.TabPageModel tp)
+                    {
+                        Console.WriteLine($"[MainMenu.Convert] Converting tab page menu item: header='{header}', title='{tp.Title}'");
+                    }
 
                     if (m.Command != null)
                     {
@@ -873,11 +1001,24 @@ namespace ICSharpCode.ILSpy.Controls
                                     sub.Items.Add(new NativeMenuItemSeparator());
                                     break;
                                 case MenuItem childMi:
-                                    sub.Items.Add(Convert(childMi));
+                                    var convertedChild = Convert(childMi);
+                                    sub.Items.Add(convertedChild);
+                                    // Track tab page items for dynamic updates
+                                    if (childMi.Tag is ICSharpCode.ILSpy.ViewModels.TabPageModel tabPageModel)
+                                    {
+                                        _nativeTabPageItems[tabPageModel] = convertedChild;
+                                    }
                                     break;
                             }
                         }
                         native.Menu = sub;
+                        
+                        // Store the Window submenu for dynamic tab updates
+                        if (string.Equals(header, "Window", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _nativeWindowSubmenu = sub;
+                            Console.WriteLine($"[MainMenu.BuildNativeMenu] Stored Window submenu reference with {sub.Items.Count} items");
+                        }
                     }
 
                     if (m.Command is ICommand cmd)
@@ -897,18 +1038,64 @@ namespace ICSharpCode.ILSpy.Controls
                     }
                 }
 
+                Console.WriteLine($"[MainMenu.BuildNativeMenu] Converted {itemCount} menu items total");
+
                 // Always set a fresh native menu; avoid reusing existing items to prevent parent conflicts.
+                // Some native backends may throw when attempting to update menus that are still
+                // referenced by the platform. Always clear existing menu first before setting new one.
+                void TrySetNativeMenu(AvaloniaObject target)
+                {
+                    try
+                    {
+                        // Check if there's already a menu set, and clear it first to avoid update conflicts
+                        var existingMenu = NativeMenu.GetMenu(target);
+                        if (existingMenu != null)
+                        {
+                            Console.WriteLine($"[MainMenu.BuildNativeMenu] Clearing existing native menu before setting new one");
+                            try
+                            {
+                                NativeMenu.SetMenu(target, null);
+                            }
+                            catch (Exception clearEx)
+                            {
+                                Console.WriteLine($"[MainMenu.BuildNativeMenu] Clear failed (will try setting new menu anyway): {clearEx.Message}");
+                            }
+                        }
+                        
+                        NativeMenu.SetMenu(target, nativeRoot);
+                        Console.WriteLine($"[MainMenu.BuildNativeMenu] Successfully set native menu on target");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[MainMenu.BuildNativeMenu] SetMenu failed: {ex.Message}");
+                        // Last resort: try setting on Application.Current as fallback
+                        if (!ReferenceEquals(target, Application.Current))
+                        {
+                            try
+                            {
+                                Console.WriteLine($"[MainMenu.BuildNativeMenu] Trying Application.Current as fallback");
+                                NativeMenu.SetMenu(Application.Current, nativeRoot);
+                                Console.WriteLine($"[MainMenu.BuildNativeMenu] Fallback succeeded");
+                            }
+                            catch (Exception fallbackEx)
+                            {
+                                Console.WriteLine($"[MainMenu.BuildNativeMenu] Fallback also failed: {fallbackEx.Message}");
+                            }
+                        }
+                    }
+                }
+
+                // Set native menu only on the window (rootObj); setting on both window and
+                // Application.Current causes "menu does not match" errors on macOS
                 if (rootObj != null)
-                    NativeMenu.SetMenu(rootObj, nativeRoot);
+                    TrySetNativeMenu(rootObj);
 
-                if (Application.Current != null)
-                    NativeMenu.SetMenu(Application.Current, nativeRoot);
-
+                Console.WriteLine($"[MainMenu.BuildNativeMenu] Native menu set successfully");
                 MainMenuThemeHelpers.UpdateNativeThemeChecks(_nativeThemeMenuItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"InitMainMenu: native menu integration failed: {ex}");
+                Console.WriteLine($"[MainMenu.BuildNativeMenu] ERROR: {ex}");
             }
         }
         
@@ -917,21 +1104,105 @@ namespace ICSharpCode.ILSpy.Controls
             // For dynamic items (tab pages, tool panes), prefer getting the title from the Tag model
             // since TextBlock bindings may not be evaluated yet when native menu is built
             if (m.Tag is ICSharpCode.ILSpy.ViewModels.TabPageModel tp && !string.IsNullOrWhiteSpace(tp.Title))
+            {
+                Console.WriteLine($"[MainMenu.ResolveMenuHeader] Resolved from TabPageModel.Title: '{tp.Title}'");
                 return tp.Title;
+            }
             
             // For tool panes, the Header is already a string (toolPane.Title)
             if (m.Header is string hs)
+            {
+                Console.WriteLine($"[MainMenu.ResolveMenuHeader] Resolved from string Header: '{hs}'");
                 return hs;
+            }
                 
             // For TextBlock headers, try to get the text
             if (m.Header is TextBlock tb && !string.IsNullOrWhiteSpace(tb.Text))
+            {
+                Console.WriteLine($"[MainMenu.ResolveMenuHeader] Resolved from TextBlock.Text: '{tb.Text}'");
                 return tb.Text;
+            }
             
             // Fallback to Tag if it's a string
             if (m.Tag is string ts)
+            {
+                Console.WriteLine($"[MainMenu.ResolveMenuHeader] Resolved from string Tag: '{ts}'");
                 return ts;
+            }
+            
+            var fallback = m.Header?.ToString() ?? string.Empty;
+            Console.WriteLine($"[MainMenu.ResolveMenuHeader] Fallback to ToString: '{fallback}'");
+            return fallback;
+        }
+
+        NativeMenuItem CreateNativeTabPageMenuItem(ICSharpCode.ILSpy.ViewModels.TabPageModel tabPage, ICSharpCode.ILSpy.Docking.DockWorkspace dockWorkspace)
+        {
+            var nativeItem = new NativeMenuItem 
+            { 
+                Header = tabPage.Title ?? "Untitled",
+                Command = new ICSharpCode.ILSpy.Commands.TabPageCommand(tabPage, dockWorkspace)
+            };
+            
+            Console.WriteLine($"[MainMenu.CreateNativeTabPageMenuItem] Created native item for: {tabPage.Title}");
+            return nativeItem;
+        }
+
+        void UpdateNativeTabPageStates()
+        {
+            if (_dockWorkspace == null) return;
+            
+            var activeTab = _dockWorkspace.ActiveTabPage;
+            Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Updating for active tab: {activeTab?.Title ?? "none"}");
+            Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Total native tab items: {_nativeTabPageItems.Count}");
+            
+            foreach (var kvp in _nativeTabPageItems)
+            {
+                var tabPage = kvp.Key;
+                var nativeItem = kvp.Value;
+                var isActive = tabPage == activeTab;
                 
-            return m.Header?.ToString() ?? string.Empty;
+                Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Checking tab '{tabPage.Title}' (active={isActive}, same object={ReferenceEquals(tabPage, activeTab)})");
+                
+                // Update header to reflect active state
+                nativeItem.Header = tabPage.Title ?? "Untitled";
+                
+                // Add/remove checkmark icon based on active state
+                if (isActive)
+                {
+                    try
+                    {
+                        // Create a temporary menu item to load the icon
+                        var tempMenuItem = new MenuItem();
+                        tempMenuItem.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
+                        var iconSource = LoadNativeMenuImage(tempMenuItem);
+                        if (iconSource != null)
+                        {
+                            TryApplyNativeMenuIcon(nativeItem, tempMenuItem);
+                            Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Added checkmark to active tab '{tabPage.Title}'");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Failed to add icon: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    // Remove icon for inactive tabs
+                    try
+                    {
+                        var iconProp = nativeItem.GetType().GetProperty("Icon", BindingFlags.Public | BindingFlags.Instance);
+                        if (iconProp != null && iconProp.CanWrite)
+                        {
+                            iconProp.SetValue(nativeItem, null);
+                            Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Removed checkmark from inactive tab '{tabPage.Title}'");
+                        }
+                    }
+                    catch { }
+                }
+                
+                Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Tab '{tabPage.Title}' active={isActive}");
+            }
         }
     }
 
