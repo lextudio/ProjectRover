@@ -90,8 +90,8 @@
       </Grid>
 
       <Button Command="{Binding ManageAssemblyListsCommand}"
-              ToolTip.Tip="{x:Static properties:Resources.ManageAssemblyLists}" VerticalAlignment="Center">
-        <svg:Svg Path="/Assets/AssemblyList.svg" />
+          ToolTip.Tip="{x:Static properties:Resources.ManageAssemblyLists}" VerticalAlignment="Center">
+        <Image controls:ThemeAware.Icon="{DynamicResource AssemblyListIcon}" />
       </Button>
 
       <Separator />
@@ -99,15 +99,15 @@
       <!-- API Visibility -->
       <ToggleButton IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicOnly}"
                     ToolTip.Tip="{x:Static properties:Resources.ShowPublicOnlyTypesMembers}" VerticalAlignment="Center">
-        <svg:Svg Path="/Assets/ShowPublicOnly.svg" />
+        <Image controls:ThemeAware.Icon="{DynamicResource ShowPublicOnlyIcon}" />
       </ToggleButton>
       <ToggleButton IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisPublicAndInternal}"
                     ToolTip.Tip="{x:Static properties:Resources.ShowInternalTypesMembers}" VerticalAlignment="Center">
-        <svg:Svg Path="/Assets/ShowPrivateInternal.svg" />
+        <Image controls:ThemeAware.Icon="{DynamicResource ShowPrivateInternalIcon}" />
       </ToggleButton>
       <ToggleButton IsChecked="{Binding SessionSettings.LanguageSettings.ApiVisAll}"
                     ToolTip.Tip="{x:Static properties:Resources.ShowAllTypesAndMembers}" VerticalAlignment="Center">
-        <svg:Svg Path="/Assets/ShowAll.svg" />
+        <Image controls:ThemeAware.Icon="{DynamicResource ShowAllIcon}" />
       </ToggleButton>
 
       <Separator />

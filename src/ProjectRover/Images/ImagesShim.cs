@@ -5,11 +5,17 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Svg.Skia;
 using ICSharpCode.Decompiler.TypeSystem;
+using System.Collections.Concurrent;
 
 namespace ICSharpCode.ILSpy
 {
     internal static class Images
     {
+		// Simple in-memory cache for loaded images keyed by the resolved asset URI.
+		// Key: absolute avares:// URI used to load the SvgSource
+		// Value: cached IImage (SvgImage) instance
+		private static readonly ConcurrentDictionary<string, IImage> imageCache = new ConcurrentDictionary<string, IImage>(StringComparer.OrdinalIgnoreCase);
+
         private static string GetUri(string path) => $"avares://ProjectRover/Assets/{path}";
 
         public static object OK => GetUri("StatusOKOutline.svg");
@@ -92,9 +98,20 @@ namespace ICSharpCode.ILSpy
 						{
 							p = $"avares://ProjectRover/Assets/{p}";
 						}
+						// Try cache first
+						if (imageCache.TryGetValue(p, out var cached))
+						{
+							Console.WriteLine($"Images.LoadImage: cache hit for {p}");
+							return cached;
+						}
 						var svg = SvgSource.Load(p, null);
 						if (svg != null)
-							return new SvgImage { Source = svg };
+						{
+							var svgImage = new SvgImage { Source = svg };
+							Console.WriteLine($"Images.LoadImage: loaded svg for {p}");
+							// Add to cache and return the cached instance
+							return imageCache.GetOrAdd(p, svgImage);
+						}
 					}
 					catch
 					{

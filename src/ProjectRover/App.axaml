@@ -21,6 +21,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:editing="https://github.com/avaloniaui/avaloniaedit"
              xmlns:converters="clr-namespace:ProjectRover.Converters"
+             xmlns:ilspyConv="clr-namespace:ICSharpCode.ILSpy.Converters;assembly=ProjectRover"
              xmlns:dockThemes="clr-namespace:Dock.Avalonia.Themes.Fluent;assembly=Dock.Avalonia.Themes.Fluent"
              xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
              x:Class="ProjectRover.App"
@@ -98,6 +99,10 @@
                     <x:String x:Key="ClearIcon">/Assets/Clear.svg</x:String>
                     <x:String x:Key="CloseIcon">/Assets/Close.svg</x:String>
                     <x:String x:Key="SortIcon">/Assets/SortAssemblies.svg</x:String>
+                    <x:String x:Key="AssemblyListIcon">/Assets/AssemblyList.svg</x:String>
+                    <x:String x:Key="ShowPublicOnlyIcon">/Assets/ShowPublicOnly.svg</x:String>
+                    <x:String x:Key="ShowPrivateInternalIcon">/Assets/ShowPrivateInternal.svg</x:String>
+                    <x:String x:Key="ShowAllIcon">/Assets/ShowAll.svg</x:String>
                     <x:String x:Key="CollapseIcon">/Assets/CollapseAll.svg</x:String>
                     <x:String x:Key="MetadataIcon">/Assets/Metadata.svg</x:String>
                     <x:String x:Key="DebugMetadataIcon">/Assets/Metadata.svg</x:String>
@@ -215,6 +220,10 @@
                     <x:String x:Key="ClearIcon">/Assets/Dark/Clear.svg</x:String>
                     <x:String x:Key="CloseIcon">/Assets/Dark/Close.svg</x:String>
                     <x:String x:Key="SortIcon">/Assets/Dark/SortAssemblies.svg</x:String>
+                    <x:String x:Key="AssemblyListIcon">/Assets/Dark/AssemblyList.svg</x:String>
+                    <x:String x:Key="ShowPublicOnlyIcon">/Assets/Dark/ShowPublicOnly.svg</x:String>
+                    <x:String x:Key="ShowPrivateInternalIcon">/Assets/Dark/ShowPrivateInternal.svg</x:String>
+                    <x:String x:Key="ShowAllIcon">/Assets/Dark/ShowAll.svg</x:String>
                     <x:String x:Key="CollapseIcon">/Assets/Dark/CollapseAll.svg</x:String>
                     <x:String x:Key="MetadataIcon">/Assets/Dark/Metadata.svg</x:String>
                     <x:String x:Key="DebugMetadataIcon">/Assets/Dark/Metadata.svg</x:String>
@@ -307,6 +316,7 @@
             <converters:ThemeEqualityConverter x:Key="ThemeEqualityConverter" />
             <converters:EqualityMultiConverter x:Key="EqualityMultiConverter" />
             <converters:IconKeyToPathConverter x:Key="IconKeyToPathConverter" />
+            <ilspyConv:IconToImageConverter x:Key="IconToImageConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
