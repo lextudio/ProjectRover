@@ -23,6 +23,7 @@ namespace ICSharpCode.ILSpy.Controls
 {
     public partial class MainMenu : UserControl
     {
+        private readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("MainMenu");
         // Attached property to remember the original icon key for each MenuItem so we can reload
         // the themed image when the application theme changes.
         public static readonly AttachedProperty<string?> MenuIconKeyProperty =
@@ -783,12 +784,12 @@ namespace ICSharpCode.ILSpy.Controls
                 }
                 else
                 {
-                    Console.WriteLine($"[MainMenu] Native menu icon skipped: source={src.GetType().FullName}, target={targetType.FullName}");
+                    ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Native menu icon skipped: source={SourceType}, target={TargetType}", src.GetType().FullName, targetType.FullName);
                 }
             }
-            catch (Exception ex)
+                catch (Exception ex)
             {
-                Console.WriteLine($"[MainMenu] Applying native menu icon failed: {ex}");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "Applying native menu icon failed");
             }
         }
 
@@ -804,9 +805,9 @@ namespace ICSharpCode.ILSpy.Controls
                 }
                 return rtb;
             }
-            catch (Exception ex)
+                catch (Exception ex)
             {
-                Console.WriteLine($"[MainMenu] RasterizeImage failed: {ex}");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "RasterizeImage failed");
                 return null;
             }
         }
@@ -924,7 +925,7 @@ namespace ICSharpCode.ILSpy.Controls
             if (!OperatingSystem.IsMacOS())
                 return;
 
-            Console.WriteLine($"[MainMenu.BuildNativeMenu] Starting native menu build");
+            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("BuildNativeMenu: Starting native menu build");
             try
             {
                 var settingsService = _settingsService;
@@ -953,7 +954,7 @@ namespace ICSharpCode.ILSpy.Controls
                     itemCount++;
                     if (m.Tag is ICSharpCode.ILSpy.ViewModels.TabPageModel tp)
                     {
-                        Console.WriteLine($"[MainMenu.Convert] Converting tab page menu item: header='{header}', title='{tp.Title}'");
+                        ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Convert: Converting tab page menu item: header={Header}, title={Title}", header, tp.Title);
                     }
 
                     if (m.Command != null)
@@ -1032,7 +1033,7 @@ namespace ICSharpCode.ILSpy.Controls
                         if (string.Equals(header, "Window", StringComparison.OrdinalIgnoreCase))
                         {
                             _nativeWindowSubmenu = sub;
-                            Console.WriteLine($"[MainMenu.BuildNativeMenu] Stored Window submenu reference with {sub.Items.Count} items");
+                            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("BuildNativeMenu: Stored Window submenu reference with {Count} items", sub.Items.Count);
                         }
                     }
 
@@ -1053,7 +1054,7 @@ namespace ICSharpCode.ILSpy.Controls
                     }
                 }
 
-                Console.WriteLine($"[MainMenu.BuildNativeMenu] Converted {itemCount} menu items total");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("BuildNativeMenu: Converted {ItemCount} menu items total", itemCount);
 
                 // Always set a fresh native menu; avoid reusing existing items to prevent parent conflicts.
                 // Some native backends may throw when attempting to update menus that are still
@@ -1066,35 +1067,35 @@ namespace ICSharpCode.ILSpy.Controls
                         var existingMenu = NativeMenu.GetMenu(target);
                         if (existingMenu != null)
                         {
-                            Console.WriteLine($"[MainMenu.BuildNativeMenu] Clearing existing native menu before setting new one");
+                            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("BuildNativeMenu: Clearing existing native menu before setting new one");
                             try
                             {
                                 NativeMenu.SetMenu(target, null);
                             }
                             catch (Exception clearEx)
                             {
-                                Console.WriteLine($"[MainMenu.BuildNativeMenu] Clear failed (will try setting new menu anyway): {clearEx.Message}");
+                                ICSharpCode.ILSpy.Util.RoverLog.Log.Warning(clearEx, "BuildNativeMenu: Clear failed (will try setting new menu anyway)");
                             }
                         }
                         
                         NativeMenu.SetMenu(target, nativeRoot);
-                        Console.WriteLine($"[MainMenu.BuildNativeMenu] Successfully set native menu on target");
+                        ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("BuildNativeMenu: Successfully set native menu on target");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[MainMenu.BuildNativeMenu] SetMenu failed: {ex.Message}");
+                        ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "BuildNativeMenu: SetMenu failed");
                         // Last resort: try setting on Application.Current as fallback
                         if (!ReferenceEquals(target, Application.Current))
                         {
                             try
                             {
-                                Console.WriteLine($"[MainMenu.BuildNativeMenu] Trying Application.Current as fallback");
+                                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("BuildNativeMenu: Trying Application.Current as fallback");
                                 NativeMenu.SetMenu(Application.Current, nativeRoot);
-                                Console.WriteLine($"[MainMenu.BuildNativeMenu] Fallback succeeded");
+                                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("BuildNativeMenu: Fallback succeeded");
                             }
                             catch (Exception fallbackEx)
                             {
-                                Console.WriteLine($"[MainMenu.BuildNativeMenu] Fallback also failed: {fallbackEx.Message}");
+                                ICSharpCode.ILSpy.Util.RoverLog.Log.Warning(fallbackEx, "BuildNativeMenu: Fallback also failed");
                             }
                         }
                     }
@@ -1105,12 +1106,12 @@ namespace ICSharpCode.ILSpy.Controls
                 if (rootObj != null)
                     TrySetNativeMenu(rootObj);
 
-                Console.WriteLine($"[MainMenu.BuildNativeMenu] Native menu set successfully");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("BuildNativeMenu: Native menu set successfully");
                 MainMenuThemeHelpers.UpdateNativeThemeChecks(_nativeThemeMenuItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[MainMenu.BuildNativeMenu] ERROR: {ex}");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Error(ex, "BuildNativeMenu: ERROR");
             }
         }
         
@@ -1120,33 +1121,33 @@ namespace ICSharpCode.ILSpy.Controls
             // since TextBlock bindings may not be evaluated yet when native menu is built
             if (m.Tag is ICSharpCode.ILSpy.ViewModels.TabPageModel tp && !string.IsNullOrWhiteSpace(tp.Title))
             {
-                Console.WriteLine($"[MainMenu.ResolveMenuHeader] Resolved from TabPageModel.Title: '{tp.Title}'");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("ResolveMenuHeader: Resolved from TabPageModel.Title: {Title}", tp.Title);
                 return tp.Title;
             }
             
             // For tool panes, the Header is already a string (toolPane.Title)
             if (m.Header is string hs)
             {
-                Console.WriteLine($"[MainMenu.ResolveMenuHeader] Resolved from string Header: '{hs}'");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("ResolveMenuHeader: Resolved from string Header: {Header}", hs);
                 return hs;
             }
                 
             // For TextBlock headers, try to get the text
             if (m.Header is TextBlock tb && !string.IsNullOrWhiteSpace(tb.Text))
             {
-                Console.WriteLine($"[MainMenu.ResolveMenuHeader] Resolved from TextBlock.Text: '{tb.Text}'");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("ResolveMenuHeader: Resolved from TextBlock.Text: {Text}", tb.Text);
                 return tb.Text;
             }
             
             // Fallback to Tag if it's a string
             if (m.Tag is string ts)
             {
-                Console.WriteLine($"[MainMenu.ResolveMenuHeader] Resolved from string Tag: '{ts}'");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("ResolveMenuHeader: Resolved from string Tag: {Tag}", ts);
                 return ts;
             }
             
             var fallback = m.Header?.ToString() ?? string.Empty;
-            Console.WriteLine($"[MainMenu.ResolveMenuHeader] Fallback to ToString: '{fallback}'");
+            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("ResolveMenuHeader: Fallback to ToString: {Fallback}", fallback);
             return fallback;
         }
 
@@ -1158,7 +1159,7 @@ namespace ICSharpCode.ILSpy.Controls
                 Command = new ICSharpCode.ILSpy.Commands.TabPageCommand(tabPage, dockWorkspace)
             };
             
-            Console.WriteLine($"[MainMenu.CreateNativeTabPageMenuItem] Created native item for: {tabPage.Title}");
+            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("CreateNativeTabPageMenuItem: Created native item for: {Title}", tabPage.Title);
             return nativeItem;
         }
 
@@ -1167,8 +1168,8 @@ namespace ICSharpCode.ILSpy.Controls
             if (_dockWorkspace == null) return;
             
             var activeTab = _dockWorkspace.ActiveTabPage;
-            Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Updating for active tab: {activeTab?.Title ?? "none"}");
-            Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Total native tab items: {_nativeTabPageItems.Count}");
+            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("UpdateNativeTabPageStates: Updating for active tab: {Active}", activeTab?.Title ?? "none");
+            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("UpdateNativeTabPageStates: Total native tab items: {Count}", _nativeTabPageItems.Count);
             
             foreach (var kvp in _nativeTabPageItems)
             {
@@ -1176,7 +1177,7 @@ namespace ICSharpCode.ILSpy.Controls
                 var nativeItem = kvp.Value;
                 var isActive = tabPage == activeTab;
                 
-                Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Checking tab '{tabPage.Title}' (active={isActive}, same object={ReferenceEquals(tabPage, activeTab)})");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("UpdateNativeTabPageStates: Checking tab {Title} (active={IsActive}, sameObject={SameObject})", tabPage.Title, isActive, ReferenceEquals(tabPage, activeTab));
                 
                 // Update header to reflect active state
                 nativeItem.Header = tabPage.Title ?? "Untitled";
@@ -1193,12 +1194,12 @@ namespace ICSharpCode.ILSpy.Controls
                         if (iconSource != null)
                         {
                             TryApplyNativeMenuIcon(nativeItem, tempMenuItem);
-                            Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Added checkmark to active tab '{tabPage.Title}'");
+                            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("UpdateNativeTabPageStates: Added checkmark to active tab {Title}", tabPage.Title);
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Failed to add icon: {ex.Message}");
+                        ICSharpCode.ILSpy.Util.RoverLog.Log.Warning(ex, "UpdateNativeTabPageStates: Failed to add icon");
                     }
                 }
                 else
@@ -1210,13 +1211,13 @@ namespace ICSharpCode.ILSpy.Controls
                         if (iconProp != null && iconProp.CanWrite)
                         {
                             iconProp.SetValue(nativeItem, null);
-                            Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Removed checkmark from inactive tab '{tabPage.Title}'");
+                            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("UpdateNativeTabPageStates: Removed checkmark from inactive tab {Title}", tabPage.Title);
                         }
                     }
                     catch { }
                 }
                 
-                Console.WriteLine($"[MainMenu.UpdateNativeTabPageStates] Tab '{tabPage.Title}' active={isActive}");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("UpdateNativeTabPageStates: Tab {Title} active={IsActive}", tabPage.Title, isActive);
             }
         }
     }
@@ -1250,13 +1251,13 @@ namespace ICSharpCode.ILSpy.Controls
             if (string.IsNullOrWhiteSpace(header))
                 return;
 
-            Console.WriteLine($"[MainMenu] Theme menu click: {header}");
+            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Theme menu click: {Header}", header);
             ThemeManager.Current.ApplyTheme(header);
-            Console.WriteLine($"[MainMenu] Application.ActualThemeVariant now {Application.Current?.ActualThemeVariant}");
+            ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("Application.ActualThemeVariant now {Variant}", Application.Current?.ActualThemeVariant);
             if (settingsService != null)
             {
                 settingsService.SessionSettings.Theme = header;
-                Console.WriteLine($"[MainMenu] SessionSettings.Theme set to {header}");
+                ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("SessionSettings.Theme set to {Header}", header);
             }
         }
     }

@@ -74,6 +74,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="appsettings*.json" />
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

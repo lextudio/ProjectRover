@@ -97,7 +97,7 @@ namespace ICSharpCode.ILSpy.Updates
 		{
 			if (!settings.AutomaticUpdateCheckEnabled)
 			{
-				Console.WriteLine("[UpdateService] Automatic update check disabled in settings.");
+				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("Automatic update check disabled in settings.");
 				return null;
 			}
 
@@ -107,7 +107,7 @@ namespace ICSharpCode.ILSpy.Updates
 				|| settings.LastSuccessfulUpdateCheck < DateTime.UtcNow.AddDays(-7)
 				|| settings.LastSuccessfulUpdateCheck > DateTime.UtcNow)
 			{
-				Console.WriteLine("[UpdateService] Performing update check based on LastSuccessfulUpdateCheck.");
+				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("Performing update check based on LastSuccessfulUpdateCheck.");
 				return await CheckForUpdateInternal(settings).ConfigureAwait(false);
 			}
 
@@ -123,20 +123,20 @@ namespace ICSharpCode.ILSpy.Updates
 		{
 			try
 			{
-				Console.WriteLine("[UpdateService] CheckForUpdateInternal: calling GetLatestVersionAsync");
+				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("CheckForUpdateInternal: calling GetLatestVersionAsync");
 				var v = await GetLatestVersionAsync().ConfigureAwait(false);
 				settings.LastSuccessfulUpdateCheck = DateTime.UtcNow;
 				var latest = LatestAvailableSemanticVersion ?? v.Version;
-				Console.WriteLine($"[UpdateService] LatestAvailableSemanticVersion={LatestAvailableSemanticVersion} AppCurrent={AppUpdateService.CurrentVersion}");
+				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("LatestAvailableSemanticVersion={Latest} AppCurrent={Current}", LatestAvailableSemanticVersion, AppUpdateService.CurrentVersion);
 
 				// If the current app version couldn't be resolved (0.0.0), skip update notifications
 				if (AppUpdateService.IsUnset(AppUpdateService.CurrentVersion))
 				{
-					Console.WriteLine("[UpdateService] Current application semantic version appears to be unset (0.0.0); skipping update check.");
+					ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("Current application semantic version appears to be unset (0.0.0); skipping update check.");
 					return null;
 				}
 				bool isNewer = AppUpdateService.IsNewerThanCurrent(latest);
-				Console.WriteLine($"[UpdateService] Is newer: {isNewer}");
+				ICSharpCode.ILSpy.Util.LogCategory.For("Updates").Debug("Is newer: {IsNewer}", isNewer);
 				return isNewer ? v.DownloadUrl : null;
 			}
 			catch (Exception)

@@ -43,6 +43,7 @@ namespace ProjectRover;
 
 public partial class App : Application
 {
+    private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("App");
     public new static App Current => (App)Application.Current!;
 
     public IServiceProvider Services { get; private set; } = null!;
@@ -68,6 +69,32 @@ public partial class App : Application
             var settingsService = new ICSharpCode.ILSpy.Util.SettingsService();
             var desiredTheme = settingsService.SessionSettings.Theme;
             services.AddSingleton(settingsService);
+
+            // ProjectRover-only sanitization: some persisted settings may contain
+            // empty/whitespace assembly list names (causes an empty combobox entry).
+            // We sanitize here in the port layer (without modifying ILSpy files).
+            try
+            {
+                var asmLists = settingsService.AssemblyListManager.AssemblyLists;
+                var empties = asmLists.Where(s => string.IsNullOrWhiteSpace(s)).ToList();
+                if (empties.Count > 0)
+                {
+                    foreach (var e in empties)
+                        asmLists.Remove(e);
+                    log.Warning("Removed {Count} empty assembly list name(s) from settings", empties.Count);
+                }
+
+                var active = settingsService.SessionSettings.ActiveAssemblyList;
+                if (string.IsNullOrWhiteSpace(active) || !asmLists.Contains(active))
+                {
+                    settingsService.SessionSettings.ActiveAssemblyList = ICSharpCode.ILSpyX.AssemblyListManager.DefaultListName;
+                    log.Information("Reset SessionSettings.ActiveAssemblyList to default: {Default}", ICSharpCode.ILSpyX.AssemblyListManager.DefaultListName);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex, "Failed to sanitize assembly lists");
+            }
 
             // Bind exports from assemblies
             // ILSpyX
@@ -136,7 +163,7 @@ public partial class App : Application
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Warning dialog failed: " + ex);
+                    log.Error(ex, "Warning dialog failed");
                 }
             };
 
@@ -231,7 +258,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Console.WriteLine("ShowWarningIfILSpyRunning failed: " + ex);
+            log.Error(ex, "ShowWarningIfILSpyRunning failed");
         }
     }
 

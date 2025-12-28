@@ -21,6 +21,7 @@ namespace ICSharpCode.ILSpy.Commands
 	[Shared]
 	public class SetLightThemeMenuCommand : SimpleCommand
 	{
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Theme");
 		private readonly SettingsService settingsService;
 
 		public SetLightThemeMenuCommand(SettingsService settingsService)
@@ -30,7 +31,7 @@ namespace ICSharpCode.ILSpy.Commands
 
 		public override void Execute(object parameter)
 		{
-			System.Console.WriteLine("[ThemeCommands] SetLightThemeMenuCommand executed");
+			log.Debug("SetLightThemeMenuCommand executed");
 			ThemeManager.Current.ApplyTheme("Light");
 			settingsService.SessionSettings.Theme = "Light";
 		}
@@ -41,6 +42,7 @@ namespace ICSharpCode.ILSpy.Commands
 	public class SetDarkThemeMenuCommand : SimpleCommand
 	{
 		private readonly SettingsService settingsService;
+			private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Theme");
 
 		public SetDarkThemeMenuCommand(SettingsService settingsService)
 		{
@@ -49,7 +51,7 @@ namespace ICSharpCode.ILSpy.Commands
 
 		public override void Execute(object parameter)
 		{
-			System.Console.WriteLine("[ThemeCommands] SetDarkThemeMenuCommand executed");
+			log.Debug("SetDarkThemeMenuCommand executed");
 			ThemeManager.Current.ApplyTheme("Dark");
 			settingsService.SessionSettings.Theme = "Dark";
 		}

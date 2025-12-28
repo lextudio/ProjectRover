@@ -27,6 +27,7 @@ namespace ICSharpCode.ILSpy.Docking
   public partial class DockWorkspace
   {
     private IFactory? currentFactory;
+    private readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Dock");
     private DockControl? dockHost;
     private IDocumentDock? documentDock;
     private IFactory? factory;
@@ -129,17 +130,18 @@ namespace ICSharpCode.ILSpy.Docking
 
     public void SaveLayout()
     {
-      if (dockHost?.Layout is not IRootDock rootLayout)
-        return;
-
-      if (GetRoverSettings().UseDefaultDockLayoutOnly)
-      {
-        ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DockWorkspace.SaveLayout: Skipped because Rover uses the default layout only.");
-        return;
-      }
-
       try
       {
+        var host = dockHost;
+        if (host?.Layout is not IRootDock rootLayout)
+          return;
+
+        if (GetRoverSettings().UseDefaultDockLayoutOnly)
+        {
+          ICSharpCode.ILSpy.Util.RoverLog.Log.Debug("DockWorkspace.SaveLayout: Skipped because Rover uses the default layout only.");
+          return;
+        }
+
         var snapshot = BuildLayoutSnapshot(rootLayout);
         if (snapshot == null)
           return;
@@ -201,7 +203,7 @@ namespace ICSharpCode.ILSpy.Docking
         RegisterDockablesForActivation(layout);
 
         var rightDock = FindDockById(layout, "RightDock");
-        Console.WriteLine($"[DockWorkspace] TryRestoreLayout: RightDock found: {rightDock != null}");
+        log.Debug("TryRestoreLayout: RightDock found: {Found}", rightDock != null);
 
         var factory = new Factory();
         dockHost.Factory = factory;
@@ -214,12 +216,12 @@ namespace ICSharpCode.ILSpy.Docking
         HookUpToolListeners(dockHost);
 
         dockHost.IsVisible = true;
-        Console.WriteLine("DockWorkspace.InitializeLayout: Restored layout from ProjectRover settings");
+        log.Debug("InitializeLayout: Restored layout from ProjectRover settings");
         return true;
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"DockWorkspace.InitializeLayout: Failed to restore layout: {ex}");
+        log.Error(ex, "InitializeLayout: Failed to restore layout");
         return false;
       }
     }
@@ -235,7 +237,7 @@ namespace ICSharpCode.ILSpy.Docking
     private void RegisterDockablesForActivation(IDockable layout)
     {
       var searchDock = FindDockableById(layout, "SearchDock") as ToolDock;
-      Console.WriteLine($"[DockWorkspace] RegisterDockablesForActivation: SearchDock found in layout: {searchDock != null}");
+      log.Debug("RegisterDockablesForActivation: SearchDock found in layout: {Found}", searchDock != null);
       if (searchDock == null)
       {
         searchDock = new ToolDock
@@ -252,7 +254,7 @@ namespace ICSharpCode.ILSpy.Docking
         var searchPane = ToolPanes.FirstOrDefault(t => t.ContentId == SearchPaneModel.PaneContentId);
         if (searchPane != null && searchPane.IsVisible)
         {
-          Console.WriteLine($"[DockWorkspace] SearchDock missing, resetting searchPane.IsVisible to false");
+          log.Debug("SearchDock missing, resetting searchPane.IsVisible to false");
           searchPane.IsVisible = false;
         }
       }
@@ -527,12 +529,12 @@ namespace ICSharpCode.ILSpy.Docking
 
     private void HookUpToolListeners(DockControl dockHost)
     {
-      Console.WriteLine($"[DockWorkspace] HookUpToolListeners called, ToolPanes count: {ToolPanes.Count}");
+      log.Debug("HookUpToolListeners called, ToolPanes count: {Count}", ToolPanes.Count);
       HookUpFactoryListeners(dockHost.Factory);
 
       foreach (var toolModel in this.ToolPanes)
       {
-        Console.WriteLine($"[DockWorkspace] Hooking up PropertyChanged for tool: {toolModel.ContentId}, IsVisible={toolModel.IsVisible}");
+        log.Debug("Hooking up PropertyChanged for tool: {ContentId}, IsVisible={IsVisible}", toolModel.ContentId, toolModel.IsVisible);
         // Note: We are not unsubscribing here because we don't have the previous handler instance.
         // Assuming InitializeLayout is called once or we accept multiple subscriptions (which is bad).
         // Ideally we should track subscriptions.
@@ -542,10 +544,10 @@ namespace ICSharpCode.ILSpy.Docking
           if (e.PropertyName == nameof(ToolPaneModel.IsVisible))
           {
             var tm = (ToolPaneModel)s;
-            Console.WriteLine($"[DockWorkspace] ToolModel '{tm.ContentId}' IsVisible changed to {tm.IsVisible}");
+            log.Debug("ToolModel {ContentId} IsVisible changed to {IsVisible}", tm.ContentId, tm.IsVisible);
             if (tm.IsVisible)
             {
-              Console.WriteLine($"[DockWorkspace] Calling ActivateTool for '{tm.ContentId}'");
+              log.Debug("Calling ActivateTool for {ContentId}", tm.ContentId);
               ActivateTool(dockHost, tm.ContentId);
             }
           }
@@ -614,7 +616,7 @@ namespace ICSharpCode.ILSpy.Docking
     /// </summary>
     public DocumentDock CreateDocumentDock()
     {
-      Console.WriteLine("[DockWorkspace.Avalonia] CreateDocumentDock called");
+      log.Debug("CreateDocumentDock called");
       EnsureTabPage();
 
       var docDock = new DocumentDock
@@ -807,59 +809,59 @@ namespace ICSharpCode.ILSpy.Docking
     {
       try
       {
-        Console.WriteLine($"[DockWorkspace] ActivateTool called for contentId: {contentId}");
+        log.Debug("ActivateTool called for contentId: {ContentId}", contentId);
         var factory = dockHost.Factory;
         var layout = dockHost.Layout;
         if (factory == null || layout == null)
         {
-          Console.WriteLine($"[DockWorkspace] ActivateTool: factory or layout is null");
+          log.Debug("ActivateTool: factory or layout is null");
           return;
         }
 
         var tool = FindToolById(layout, contentId);
         if (tool != null)
         {
-          Console.WriteLine($"[DockWorkspace] ActivateTool: Found tool '{tool.Id}', Owner={tool.Owner?.GetType().Name}");
+          log.Debug("ActivateTool: Found tool {Id}, Owner={Owner}", tool.Id, tool.Owner?.GetType().Name);
           // Make the containing dock visible
           if (tool.Owner is IDock parentDock)
           {
-            Console.WriteLine($"[DockWorkspace] ActivateTool: Parent dock ID={parentDock.Id}");
+            log.Debug("ActivateTool: Parent dock ID={Id}", parentDock.Id);
             if (parentDock is DockableBase dockableBase)
             {
-              Console.WriteLine($"[DockWorkspace] ActivateTool: Setting parent dock IsVisible=true (was {dockableBase.IsVisible})");
+              log.Debug("ActivateTool: Setting parent dock IsVisible=true (was {WasVisible})", dockableBase.IsVisible);
               dockableBase.IsVisible = true;
-              Console.WriteLine($"[DockWorkspace] ActivateTool: Parent dock IsVisible is now {dockableBase.IsVisible}");
+              log.Debug("ActivateTool: Parent dock IsVisible is now {IsVisible}", dockableBase.IsVisible);
             }
           }
 
           factory.SetActiveDockable(tool);
           factory.SetFocusedDockable(layout, tool);
-          Console.WriteLine($"[DockWorkspace] ActivateTool: Activated and focused tool '{contentId}'");
+          log.Debug("ActivateTool: Activated and focused tool {ContentId}", contentId);
           return;
         }
         else
         {
-          Console.WriteLine($"[DockWorkspace] ActivateTool: Tool '{contentId}' not found in layout, checking registered tools");
+          log.Debug("ActivateTool: Tool {ContentId} not found in layout, checking registered tools", contentId);
         }
         {
           // Try to find in registered tools
           if (_registeredTools.TryGetValue(contentId, out var registeredTool))
           {
-            Console.WriteLine($"[DockWorkspace] ActivateTool: Found registered tool '{contentId}'");
+            log.Debug("ActivateTool: Found registered tool {ContentId}", contentId);
             // Determine target dock
             string targetDockId = contentId == SearchPaneModel.PaneContentId ? "SearchDock" : "LeftDock";
             var targetDock = FindDockById(layout, targetDockId);
-            Console.WriteLine($"[DockWorkspace] ActivateTool: Looking for targetDock '{targetDockId}', found={targetDock != null}");
+            log.Debug("ActivateTool: Looking for targetDock {TargetDockId}, found={Found}", targetDockId, targetDock != null);
 
             // If target dock not found in layout, try to find in registered dockables and insert it
             if (targetDock == null && targetDockId == "SearchDock")
             {
-              Console.WriteLine($"[DockWorkspace] ActivateTool: SearchDock not in layout, will create and insert it");
+              log.Debug("ActivateTool: SearchDock not in layout, will create and insert it");
               var docDock = FindDockById(layout, "DocumentDock");
-              Console.WriteLine($"[DockWorkspace] ActivateTool: DocumentDock found={docDock != null}, Owner={docDock?.Owner?.GetType().Name}, Owner.Id={docDock?.Owner?.Id}");
+              log.Debug("ActivateTool: DocumentDock found={Found}, Owner={Owner}, OwnerId={OwnerId}", docDock != null, docDock?.Owner?.GetType().Name, docDock?.Owner?.Id);
               if (docDock != null && docDock.Owner is IDock docOwner && docOwner.VisibleDockables != null)
               {
-                Console.WriteLine($"[DockWorkspace] ActivateTool: DocOwner is {docOwner.GetType().Name}, Orientation={(docOwner as IProportionalDock)?.Orientation}");
+                log.Debug("ActivateTool: DocOwner is {Owner}, Orientation={Orientation}", docOwner.GetType().Name, (docOwner as IProportionalDock)?.Orientation);
                 // If the owner is horizontal (e.g. MainLayout), we need to wrap DocumentDock in a vertical dock
                 if (docOwner is IProportionalDock propDock && propDock.Orientation == Dock.Model.Core.Orientation.Horizontal)
                 {
@@ -901,14 +903,14 @@ namespace ICSharpCode.ILSpy.Docking
                 }
                 else
                 {
-                  Console.WriteLine($"[DockWorkspace] ActivateTool: RightDock is vertical, will insert SearchDock at top");
+                  log.Debug("ActivateTool: RightDock is vertical, will insert SearchDock at top");
                   // Owner is likely vertical (or we assume it is safe to insert), just insert at top
                   if (_registeredDockables.TryGetValue("SearchDock", out var searchDock) && searchDock is IToolDock sd)
                   {
-                    Console.WriteLine($"[DockWorkspace] ActivateTool: Found SearchDock in registered dockables");
+                    log.Debug("ActivateTool: Found SearchDock in registered dockables");
                     if (!docOwner.VisibleDockables.Contains(sd))
                     {
-                      Console.WriteLine($"[DockWorkspace] ActivateTool: Inserting SearchDock into RightDock");
+                      log.Debug("ActivateTool: Inserting SearchDock into RightDock");
                       sd.Owner = docOwner;
                       sd.Factory = factory;
                       docOwner.VisibleDockables.Insert(0, sd);
@@ -921,19 +923,19 @@ namespace ICSharpCode.ILSpy.Docking
                           splitter.Owner = docOwner;
                           splitter.Factory = factory;
                           docOwner.VisibleDockables.Insert(1, splitter);
-                          Console.WriteLine($"[DockWorkspace] ActivateTool: Inserted SearchSplitter");
+                          log.Debug("ActivateTool: Inserted SearchSplitter");
                         }
                       }
                     }
                     else
                     {
-                      Console.WriteLine($"[DockWorkspace] ActivateTool: SearchDock already in RightDock");
+                        log.Debug("ActivateTool: SearchDock already in RightDock");
                       targetDock = sd;
                     }
                   }
                   else
                   {
-                    Console.WriteLine($"[DockWorkspace] ActivateTool: SearchDock NOT found in registered dockables, creating new one");
+                    log.Debug("ActivateTool: SearchDock NOT found in registered dockables, creating new one");
                     // Create SearchDock if not registered
                     var newSearchDock = new ToolDock
                     {
@@ -961,7 +963,7 @@ namespace ICSharpCode.ILSpy.Docking
                     };
                     docOwner.VisibleDockables.Insert(1, newSplitter);
                     RegisterDockable(newSplitter);
-                    Console.WriteLine($"[DockWorkspace] ActivateTool: Created and inserted new SearchDock and splitter");
+                    log.Debug("ActivateTool: Created and inserted new SearchDock and splitter");
                   }
                 }
               }
@@ -1106,25 +1108,25 @@ namespace ICSharpCode.ILSpy.Docking
     {
       try
       {
-        Console.WriteLine("[DockWorkspace] ResetLayoutPlatformSpecific called");
+        log.Debug("ResetLayoutPlatformSpecific called");
 
         // Clear the current dockHost layout so InitializeLayout will create a new one
         if (dockHost != null)
         {
           dockHost.Layout = null;
           dockHost.Factory = null;
-          Console.WriteLine("[DockWorkspace] Cleared dockHost Layout and Factory");
+          log.Debug("Cleared dockHost Layout and Factory");
         }
 
         // Clear saved layout in Avalonia settings
         var roverSettings = GetRoverSettings();
         roverSettings.DockLayout = null;
 
-        Console.WriteLine("[DockWorkspace] Cleared DockLayout setting");
+        log.Debug("Cleared DockLayout setting");
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"[DockWorkspace] ResetLayoutPlatformSpecific error: {ex}");
+        log.Error(ex, "ResetLayoutPlatformSpecific error");
       }
     }
   }
