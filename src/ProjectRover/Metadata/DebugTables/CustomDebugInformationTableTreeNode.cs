@@ -23,6 +23,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Avalonia.Controls;
+using System.Windows.Controls;
 
 using ICSharpCode.Decompiler.DebugInfo;
 using ICSharpCode.Decompiler.Metadata;
@@ -50,26 +51,26 @@ namespace ICSharpCode.ILSpy.Metadata
 		protected override void ConfigureDataGrid(DataGrid view)
 		{
 			view.RowDetailsVisibilityMode = DataGridRowDetailsVisibilityMode.VisibleWhenSelected;
-			// TODO: view.RowDetailsTemplateSelector = new CustomDebugInformationDetailsTemplateSelector();
+			view.RowDetailsTemplateSelector = new CustomDebugInformationDetailsTemplateSelector();
 		}
 
-		//class CustomDebugInformationDetailsTemplateSelector : DataTemplateSelector
-		//{
-		//	public override DataTemplate SelectTemplate(object item, DependencyObject container)
-		//	{
-		//		var entry = (CustomDebugInformationEntry)item;
-		//		switch (entry.kind)
-		//		{
-		//			case CustomDebugInformationEntry.CustomDebugInformationKind.StateMachineHoistedLocalScopes:
-		//			case CustomDebugInformationEntry.CustomDebugInformationKind.CompilationMetadataReferences:
-		//			case CustomDebugInformationEntry.CustomDebugInformationKind.CompilationOptions:
-		//			case CustomDebugInformationEntry.CustomDebugInformationKind.TupleElementNames:
-		//				return (DataTemplate)MetadataTableViews.Instance["CustomDebugInformationDetailsDataGrid"];
-		//			default:
-		//				return (DataTemplate)MetadataTableViews.Instance["CustomDebugInformationDetailsTextBlob"];
-		//		}
-		//	}
-		//}
+		class CustomDebugInformationDetailsTemplateSelector : DataTemplateSelector
+		{
+			public override DataTemplate SelectTemplate(object item, DependencyObject container)
+			{
+				var entry = (CustomDebugInformationEntry)item;
+				switch (entry.kind)
+				{
+					case CustomDebugInformationEntry.CustomDebugInformationKind.StateMachineHoistedLocalScopes:
+					case CustomDebugInformationEntry.CustomDebugInformationKind.CompilationMetadataReferences:
+					case CustomDebugInformationEntry.CustomDebugInformationKind.CompilationOptions:
+					case CustomDebugInformationEntry.CustomDebugInformationKind.TupleElementNames:
+						return (DataTemplate)MetadataTableViews.Instance["CustomDebugInformationDetailsDataGrid"];
+					default:
+						return (DataTemplate)MetadataTableViews.Instance["CustomDebugInformationDetailsTextBlob"];
+				}
+			}
+		}
 
 		internal struct CustomDebugInformationEntry
 		{
