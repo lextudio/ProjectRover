@@ -95,10 +95,18 @@ namespace ICSharpCode.ILSpy
 		public static TextViewContext Create(EventArgs eventArgs, TreeView treeView = null, DecompilerTextView textView = null, ListBox listBox = null, DataGrid dataGrid = null)
 		{
 			ReferenceSegment reference;
+			Point? textViewPoint = null;
 
 			if (textView is not null)
 			{
-				reference = textView.GetReferenceSegmentAtMousePosition(new TextViewPosition());
+				if (eventArgs is ContextRequestedEventArgs contextRequestedEventArgs
+					&& contextRequestedEventArgs.TryGetPosition(textView, out var point))
+				{
+					textViewPoint = point;
+				}
+				reference = textViewPoint.HasValue
+					? textView.GetReferenceSegmentAtMousePosition(textViewPoint.Value)
+					: null;
 			}
 			else
 			{
@@ -116,7 +124,7 @@ namespace ICSharpCode.ILSpy
 				_ => null
 			};
 
-			var position = textView?.GetPositionFromMousePosition(new TextViewPosition());
+			var position = textViewPoint.HasValue ? textView?.GetPositionFromMousePosition(textViewPoint.Value) : null;
 			var selectedTreeNodes = treeView?.GetTopLevelSelection().ToArray();
 
 			return new() {

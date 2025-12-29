@@ -13,6 +13,12 @@ using System.Windows.Input;
 
 namespace System.Windows
 {
+    public static class SystemParameters
+    {
+        public const double MinimumHorizontalDragDistance = 2;
+        public const double MinimumVerticalDragDistance = 2;
+    }
+
     public static class Clipboard
     {
         public static void SetText(string text)

@@ -277,8 +277,8 @@ namespace ICSharpCode.ILSpy.TextView
 			textEditor.Options.RequireControlModifierForHyperlinkClick = false;
 			textEditor.TextArea.TextView.PointerHover += TextViewMouseHover;
 			textEditor.TextArea.TextView.PointerHoverStopped += TextViewMouseHoverStopped;
-			// TODO: textEditor.TextArea.PreviewMouseDown += TextAreaMouseDown;
-			//textEditor.TextArea.PreviewMouseUp += TextAreaMouseUp;
+			textEditor.TextArea.AddHandler(InputElement.PointerPressedEvent, TextAreaMouseDown, RoutingStrategies.Tunnel, true);
+			textEditor.TextArea.AddHandler(InputElement.PointerReleasedEvent, TextAreaMouseUp, RoutingStrategies.Tunnel, true);
 			textEditor.TextArea.Caret.PositionChanged += HighlightBrackets;
 			textEditor.PointerMoved += TextEditorMouseMove;
 			textEditor.PointerExited += TextEditorMouseLeave;
@@ -400,7 +400,7 @@ namespace ICSharpCode.ILSpy.TextView
 			{
 				return;
 			}
-			TextViewPosition? position = null; //GetPositionFromMousePosition(e.GetPosition(this));
+			TextViewPosition? position = GetPositionFromMousePosition(e.GetPosition(this));
 			if (position == null)
 				return;
 			int offset = textEditor.Document.GetOffset(position.Value.Location);
@@ -1197,25 +1197,25 @@ namespace ICSharpCode.ILSpy.TextView
 			if (mouseDownPos == null)
 				return;
 			Vector dragDistance = e.GetPosition(this) - mouseDownPos.Value;
-			// if (Math.Abs(dragDistance.X) < SystemParameters.MinimumHorizontalDragDistance
-			// 	&& Math.Abs(dragDistance.Y) < SystemParameters.MinimumVerticalDragDistance)
-			// {
-			// 	// click without moving mouse
-			// 	var referenceSegment = GetReferenceSegmentAtMousePosition(e.GetPosition(this));
-			// 	if (referenceSegment == null)
-			// 	{
-			// 		ClearLocalReferenceMarks();
-			// 	}
-			// 	else if (referenceSegment.IsLocal || !referenceSegment.IsDefinition)
-			// 	{
-			// 		textEditor.TextArea.ClearSelection();
-			// 		// cancel mouse selection to avoid AvalonEdit selecting between the new
-			// 		// cursor position and the mouse position.
-			// 		// textEditor.TextArea.MouseSelectionMode = MouseSelectionMode.None;
-
-			// 		///JumpToReference(referenceSegment, e.ChangedButton == MouseButton.Middle || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift));
-			// 	}
-			// }
+			mouseDownPos = null;
+			if (Math.Abs(dragDistance.X) < SystemParameters.MinimumHorizontalDragDistance
+				&& Math.Abs(dragDistance.Y) < SystemParameters.MinimumVerticalDragDistance
+				&& (e.InitialPressMouseButton == MouseButton.Left || e.InitialPressMouseButton == MouseButton.Middle))
+			{
+				// click without moving pointer
+				var referenceSegment = GetReferenceSegmentAtMousePosition(e.GetPosition(this));
+				if (referenceSegment == null)
+				{
+					ClearLocalReferenceMarks();
+					return;
+				}
+				if (referenceSegment.IsLocal || !referenceSegment.IsDefinition)
+				{
+					textEditor.TextArea.ClearSelection();
+					JumpToReference(referenceSegment, e.InitialPressMouseButton == MouseButton.Middle || e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+					e.Handled = true;
+				}
+			}
 		}
 
 		void ClearLocalReferenceMarks()
@@ -1419,26 +1419,36 @@ namespace ICSharpCode.ILSpy.TextView
 		}
 		#endregion
 
-		internal ReferenceSegment? GetReferenceSegmentAtMousePosition(TextViewPosition textViewPosition)
+		internal ReferenceSegment? GetReferenceSegmentAtMousePosition(Point mousePosition)
 		{
 			if (referenceElementGenerator.References == null)
 				return null;
-			TextViewPosition? position = GetPositionFromMousePosition(textViewPosition);
+			TextViewPosition? position = GetPositionFromMousePosition(mousePosition);
 			if (position == null)
 				return null;
 			int offset = textEditor.Document.GetOffset(position.Value.Location);
 			return referenceElementGenerator.References.FindSegmentsContaining(offset).FirstOrDefault();
 		}
 
-		internal TextViewPosition? GetPositionFromMousePosition(TextViewPosition textViewPosition)
+		internal TextViewPosition? GetPositionFromMousePosition(Point mousePosition)
 		{
-			TextViewPosition? position = null; // TODO: textEditor.TextArea.TextView.GetPosition(textViewPosition + textEditor.TextArea.TextView.ScrollOffset);
-			if (position == null)
+			var editorPoint = this.TranslatePoint(mousePosition, textEditor);
+			if (editorPoint == null)
 				return null;
-			var lineLength = textEditor.Document.GetLineByNumber(position.Value.Line).Length + 1;
-			if (position.Value.Column == lineLength)
+			TextViewPosition? position = textEditor.GetPositionFromPoint(editorPoint.Value);
+			if (position == null || !IsValidTextViewPosition(position.Value))
 				return null;
 			return position;
+		}
+
+		bool IsValidTextViewPosition(TextViewPosition textViewPosition)
+		{
+			if (textEditor.Document == null)
+				return false;
+			if (textViewPosition.Line <= 0 || textViewPosition.Line > textEditor.Document.LineCount)
+				return false;
+			var lineLength = textEditor.Document.GetLineByNumber(textViewPosition.Line).Length + 1;
+			return textViewPosition.Column != lineLength;
 		}
 
 		public DecompilerTextViewState? GetState()
