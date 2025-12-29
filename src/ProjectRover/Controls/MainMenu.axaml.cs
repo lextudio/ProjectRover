@@ -989,6 +989,7 @@ namespace ICSharpCode.ILSpy.Controls
                 var appMenu = Application.Current != null ? NativeMenu.GetMenu(Application.Current) ?? new NativeMenu() : null;
                 appMenu?.Items.Clear();
                 var itemCount = 0;
+                NativeMenuItem? appQuitItemCandidate = null;
                 MenuItem? helpMenu = null;
 
                 NativeMenuItem Convert(MenuItem m)
@@ -1077,6 +1078,31 @@ namespace ICSharpCode.ILSpy.Controls
                                 case MenuItem childMi:
                                     var convertedChild = Convert(childMi);
                                     sub.Items.Add(convertedChild);
+                                    // If this is the File menu, look for the Exit child and record it
+                                    // so we can add it to the application menu after Help items are added.
+                                    try
+                                    {
+                                        var fileHeader = header;
+                                        if (string.Equals(fileHeader, "File", StringComparison.OrdinalIgnoreCase) && appMenu != null && appQuitItemCandidate == null)
+                                        {
+                                            var childHeader = ResolveMenuHeader(childMi);
+                                            if (!string.IsNullOrEmpty(childHeader) && childHeader.IndexOf("xit", StringComparison.OrdinalIgnoreCase) >= 0)
+                                            {
+                                                // Remove the Exit item from the File submenu
+                                                if (sub.Items.Contains(convertedChild))
+                                                    sub.Items.Remove(convertedChild);
+
+                                                // Record a candidate quit item (do not insert now)
+                                                var quitItem = new NativeMenuItem { Header = "Quit Project Rover" };
+                                                quitItem.Command = convertedChild.Command;
+                                                quitItem.CommandParameter = convertedChild.CommandParameter;
+                                                if (convertedChild.Gesture != null)
+                                                    quitItem.Gesture = convertedChild.Gesture;
+                                                appQuitItemCandidate = quitItem;
+                                            }
+                                        }
+                                    }
+                                    catch { }
                                     // Track tab page items for dynamic updates
                                     if (childMi.Tag is ICSharpCode.ILSpy.ViewModels.TabPageModel tabPageModel)
                                     {
@@ -1139,6 +1165,18 @@ namespace ICSharpCode.ILSpy.Controls
                                         break;
                                 }
                             }
+                        }
+
+                        // If we recorded a Quit item candidate (moved from File menu), append it as
+                        // the bottom item in the app menu and ensure it's isolated by a separator.
+                        if (appQuitItemCandidate != null)
+                        {
+                            if (appMenu.Items.Count > 0 && !(appMenu.Items.Last() is NativeMenuItemSeparator))
+                            {
+                                appMenu.Items.Add(new NativeMenuItemSeparator());
+                            }
+                            appMenu.Items.Add(appQuitItemCandidate);
+                            appQuitItemCandidate = null;
                         }
 
                         log.Debug("BuildNativeMenu: Filled app menu with {Count} items", appMenu.Items.Count);
