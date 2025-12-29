@@ -26,8 +26,11 @@
              xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
              x:Class="ProjectRover.App"
              RequestedThemeVariant="Light"
-             Name="ProjectRover">
+             Name="Project Rover">
 
+    <NativeMenu.Menu>
+        <NativeMenu />
+    </NativeMenu.Menu>
     <Application.Styles>
         <FluentTheme />
         <dockThemes:DockFluentTheme />

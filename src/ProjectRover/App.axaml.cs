@@ -55,6 +55,7 @@ public partial class App : Application
 
     public override void Initialize()
     {
+        Name = "Project Rover";
         AvaloniaXamlLoader.Load(this);
     }
 

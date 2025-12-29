@@ -738,6 +738,11 @@ namespace ICSharpCode.ILSpy.Controls
                 || string.Equals(menuItem.Tag as string, "ApiVisAll", StringComparison.Ordinal);
         }
 
+        static bool IsHelpMenuItem(MenuItem menuItem)
+        {
+            return string.Equals(menuItem.Tag as string, "_Help", StringComparison.Ordinal);
+        }
+
         static bool IsLanguageMenuItem(MenuItem menuItem)
         {
             var tag = menuItem.Tag as string;
@@ -980,8 +985,11 @@ namespace ICSharpCode.ILSpy.Controls
 
                 _nativeThemeMenuItems = new List<NativeMenuItem>();
 
-                var nativeRoot = new NativeMenu();
+                var windowMenu = new NativeMenu();
+                var appMenu = Application.Current != null ? NativeMenu.GetMenu(Application.Current) ?? new NativeMenu() : null;
+                appMenu?.Items.Clear();
                 var itemCount = 0;
+                MenuItem? helpMenu = null;
 
                 NativeMenuItem Convert(MenuItem m)
                 {
@@ -1002,6 +1010,15 @@ namespace ICSharpCode.ILSpy.Controls
                     {
                         native.Command = m.Command;
                         native.CommandParameter = m.CommandParameter;
+                    }
+
+                    if (m.InputGesture != null)
+                    {
+                        native.Gesture = m.InputGesture;
+                    }
+                    else if (m.HotKey != null)
+                    {
+                        native.Gesture = m.HotKey;
                     }
 
                     TryApplyNativeMenuIcon(native, m);
@@ -1091,34 +1108,51 @@ namespace ICSharpCode.ILSpy.Controls
                 {
                     if (item is MenuItem mi)
                     {
-                        nativeRoot.Items.Add(Convert(mi));
+                        if (IsHelpMenuItem(mi))
+                        {
+                            helpMenu = mi;
+                            continue;
+                        }
+
+                        windowMenu.Items.Add(Convert(mi));
                     }
                 }
 
                 log.Debug("BuildNativeMenu: Converted {ItemCount} menu items total", itemCount);
 
-                // Insert an explicit application menu to avoid the platform/Avalonia
-                // falling back to a default menu (which can show "About Avalonia").
-                try
+                // Fill the application menu with Help items (no extra "Project Rover" tier).
+                if (appMenu != null)
                 {
-                    var appName = Application.Current?.Name
-                                  ?? Assembly.GetEntryAssembly()?.GetName().Name
-                                  ?? "Project Rover";
-                    var appSub = new NativeMenu();
-                    // Optionally populate appSub with About/Preferences/Quit entries.
-                    var appMenuItem = new NativeMenuItem { Header = appName, Menu = appSub };
-                    nativeRoot.Items.Insert(0, appMenuItem);
-                    log.Debug("BuildNativeMenu: Inserted application menu '{AppName}' to override default app menu", appName);
-                }
-                catch (Exception ex)
-                {
-                    log.Warning(ex, "BuildNativeMenu: Failed to insert application menu");
+                    try
+                    {
+                        if (helpMenu != null)
+                        {
+                            foreach (var child in helpMenu.Items)
+                            {
+                                switch (child)
+                                {
+                                    case Separator:
+                                        appMenu.Items.Add(new NativeMenuItemSeparator());
+                                        break;
+                                    case MenuItem childMi:
+                                        appMenu.Items.Add(Convert(childMi));
+                                        break;
+                                }
+                            }
+                        }
+
+                        log.Debug("BuildNativeMenu: Filled app menu with {Count} items", appMenu.Items.Count);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Warning(ex, "BuildNativeMenu: Failed to fill application menu");
+                    }
                 }
 
                 // Always set a fresh native menu; avoid reusing existing items to prevent parent conflicts.
                 // Some native backends may throw when attempting to update menus that are still
                 // referenced by the platform. Always clear existing menu first before setting new one.
-                void TrySetNativeMenu(AvaloniaObject target)
+                void TrySetNativeMenu(AvaloniaObject target, NativeMenu menu)
                 {
                     try
                     {
@@ -1137,7 +1171,7 @@ namespace ICSharpCode.ILSpy.Controls
                             }
                         }
                         
-                        NativeMenu.SetMenu(target, nativeRoot);
+                        NativeMenu.SetMenu(target, menu);
                         log.Debug("BuildNativeMenu: Successfully set native menu on target");
                     }
                     catch (Exception ex)
@@ -1149,7 +1183,7 @@ namespace ICSharpCode.ILSpy.Controls
                             try
                             {
                                 log.Debug("BuildNativeMenu: Trying Application.Current as fallback");
-                                NativeMenu.SetMenu(Application.Current, nativeRoot);
+                                NativeMenu.SetMenu(Application.Current, menu);
                                 log.Debug("BuildNativeMenu: Fallback succeeded");
                             }
                             catch (Exception fallbackEx)
@@ -1160,10 +1194,12 @@ namespace ICSharpCode.ILSpy.Controls
                     }
                 }
 
-                // Set native menu only on the window (rootObj); setting on both window and
-                // Application.Current causes "menu does not match" errors on macOS
+                // Set window menu on the window and app menu on Application.Current.
                 if (rootObj != null)
-                    TrySetNativeMenu(rootObj);
+                    TrySetNativeMenu(rootObj, windowMenu);
+
+                if (Application.Current != null && appMenu != null)
+                    TrySetNativeMenu(Application.Current, appMenu);
 
                 log.Debug("BuildNativeMenu: Native menu set successfully");
                 MainMenuThemeHelpers.UpdateNativeThemeChecks(_nativeThemeMenuItems, settingsService?.SessionSettings?.Theme ?? ThemeManager.Current.Theme);
