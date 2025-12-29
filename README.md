@@ -1,5 +1,12 @@
 # Project Rover
 
+A small, cross-platform UI for exploring .NET assemblies.
+
+|  |  |
+|---:|:---|
+| [![Stable Releases](https://img.shields.io/github/downloads/lextudio/ProjectRover/total?label=Stable%20Downloads&logo=github)](https://github.com/lextudio/ProjectRover/releases) | Click to access stable releases. |
+| [![Unstable Releases](https://img.shields.io/github/actions/workflow/status/lextudio/ProjectRover/package.yml?label=Unstable%20Downloads&&logo=github)](https://github.com/lextudio/ProjectRover/actions/workflows/package.yml) | Click to access unstable releases. |
+
 Project Rover is a cross-platform desktop UI for ILSpy, focused on giving macOS and Linux users a first-class experience (Windows too). It is the successor to the deprecated AvaloniaILSpy and keeps pace with upstream ILSpy through mechanisms like `ICSharpCode.ILSpyX`. The UI foundation was initially based on the CodeMerx decompiler app and gradually adapted to view models and other supporting files from ILSpy WPF.
 
 This project is currently maintained by LeXtudio Inc, and not affiliated with or endorsed by the ILSpy team.
@@ -18,9 +25,11 @@ Download the latest release archive for your platform from the Releases page, ex
 ### Linux
 
 1. Extract the archive, for example:
+
    ```bash
    mkdir ProjectRover && tar -xzpf ./ProjectRover-linux-x64.tar.gz -C ProjectRover
    ```
+
 2. Start the app using `./ProjectRover/ProjectRover`.
 
 ### macOS
@@ -29,9 +38,11 @@ Download the latest release archive for your platform from the Releases page, ex
    - ARM64: `tar -xzpf ./ProjectRover-macos-arm64.tar.gz`
    - x64: `tar -xzpf ./ProjectRover-macos-x64.tar.gz`
 2. Remove the quarantine attribute because the app is not signed and macOS will otherwise block it:
+
    ```bash
    xattr -d com.apple.quarantine ProjectRover.app
    ```
+
 3. Start `ProjectRover.app`.
 
 ## Build from source
