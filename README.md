@@ -60,3 +60,7 @@ dotnet run
 ## License
 
 This project is [AGPL](COPYING) licensed. It depends on ILSpy (MIT); see [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md).
+
+## Enabling Categorized Rover Logging
+
+Please read [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for step-by-step instructions for shipped users and other debugging tips.
