@@ -413,6 +413,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\AssemblyTreeNode.cs">
       <Link>TreeNodes\AssemblyTreeNode.cs</Link>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ThreadingSupport.cs">
+      <Link>TreeNodes\ThreadingSupport.cs</Link>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ResourceNodes\ResourcesFileTreeNode.cs">
       <Link>TreeNodes\ResourceNodes\ResourcesFileTreeNode.cs</Link>
     </Compile>
