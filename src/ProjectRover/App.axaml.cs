@@ -63,6 +63,8 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            var dataGridLog = ICSharpCode.ILSpy.Util.LogCategory.For("DataGrid");
+            Avalonia.Controls.DataGrid.ScrollDiagnosticsLog = message => dataGridLog.Debug("{Message}", message);
             ProjectRover.Settings.RectTypeConverterRegistration.Ensure();
             var services = CreateServiceCollection();
 
