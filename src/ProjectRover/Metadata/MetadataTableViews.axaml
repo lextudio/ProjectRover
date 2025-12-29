@@ -18,7 +18,6 @@
   <local:ByteWidthConverter x:Key="byteWidthConverter" />
 
   <!-- Simple filter templates to mimic WPF DataGridExtensions behavior. -->
-  <!-- Simple filter templates to mimic WPF DataGridExtensions behavior. -->
   <Style x:Key="FilterIconStyle" Selector="TextBlock.filterIcon">
     <Setter Property="Margin" Value="0,2,6,0" />
     <Setter Property="VerticalAlignment" Value="Center" />

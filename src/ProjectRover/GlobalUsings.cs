@@ -68,6 +68,7 @@ global using Window = Avalonia.Controls.Window;
 global using WindowState = Avalonia.Controls.WindowState;
 
 global using static Avalonia.Controls.ResourceNodeExtensions;
+global using static TomsToolbox.Wpf.Composition.VisualExtensions;
 
 global using PaneModel = Dock.Model.TomsToolbox.Core.DockableBase;
 global using FileReader = AvaloniaEdit.Utils.FileReader;
@@ -92,3 +93,4 @@ global using Style = Avalonia.Styling.Style;
 global using Run = Avalonia.Controls.Documents.Run;
 global using Bold = Avalonia.Controls.Documents.Bold;
 global using LineBreak = Avalonia.Controls.Documents.LineBreak;
+global using DataGridCell = Avalonia.Controls.DataGridCell;

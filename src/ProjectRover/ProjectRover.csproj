@@ -199,6 +199,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Commands\BrowseBackCommand.cs">
       <Link>Commands\BrowseBackCommand.cs</Link>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Metadata\GoToTokenCommand.cs">
+      <Link>Metadata\GoToTokenCommand.cs</Link>
+    </Compile>
 
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Commands\BrowseForwardCommand.cs">
       <Link>Commands\BrowseForwardCommand.cs</Link>
