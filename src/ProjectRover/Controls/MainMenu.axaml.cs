@@ -133,6 +133,7 @@ namespace ICSharpCode.ILSpy.Controls
                                 Tag = entry.Metadata?.MenuID,
                                 Header = headerText ?? entry.Metadata?.Header
                             };
+                            ApplyGesture(menuItem, entry.Metadata?.InputGestureText, cmd);
                             if (!string.IsNullOrEmpty(entry.Metadata?.MenuIcon))
                             {
                                 try
@@ -556,6 +557,11 @@ namespace ICSharpCode.ILSpy.Controls
                 Tag = toolPane.ContentId,
                 Command = toolPane.AssociatedCommand ?? new ICSharpCode.ILSpy.Commands.ToolPaneCommand(toolPane.ContentId, dockWorkspace)
             };
+            if (toolPane.ShortcutKey != null)
+            {
+                menuItem.HotKey = toolPane.ShortcutKey;
+                menuItem.InputGesture = toolPane.ShortcutKey;
+            }
 
             // Add icon if available
             if (!string.IsNullOrEmpty(toolPane.Icon))
@@ -920,6 +926,41 @@ namespace ICSharpCode.ILSpy.Controls
             }
         }
 
+        static void ApplyGesture(MenuItem menuItem, string? gestureText, ICommand cmd)
+        {
+            // Prefer explicit metadata text; otherwise fall back to routed command gestures.
+            var resolvedCommand = ICSharpCode.ILSpy.CommandWrapper.Unwrap(cmd);
+            if (string.IsNullOrWhiteSpace(gestureText) && resolvedCommand is System.Windows.Input.RoutedCommand routed)
+            {
+                var routedGesture = routed.InputGestures?.OfType<KeyGesture>().FirstOrDefault();
+                gestureText = routedGesture?.ToString();
+            }
+            else if (string.IsNullOrWhiteSpace(gestureText) && resolvedCommand is System.Windows.Input.RoutedUICommand routedUi)
+            {
+                var routedGesture = routedUi.InputGestures?.OfType<KeyGesture>().FirstOrDefault();
+                gestureText = routedGesture?.ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(gestureText))
+                return;
+
+            try
+            {
+                // HotKey drives visual hint rendering in Avalonia menus
+                var parsed = KeyGesture.Parse(gestureText);
+                menuItem.HotKey = parsed;
+                menuItem.InputGesture = parsed; // ensures hint is rendered even if HotKey isn't
+            }
+            catch
+            {
+                // Fallback: append gesture text so it is still visible
+                if (menuItem.Header is string headerText)
+                {
+                    menuItem.Header = $"{headerText}\t{gestureText}";
+                }
+            }
+        }
+
         void BuildNativeMenu(Menu mainMenu)
         {
             if (!OperatingSystem.IsMacOS())
@@ -1055,6 +1096,24 @@ namespace ICSharpCode.ILSpy.Controls
                 }
 
                 log.Debug("BuildNativeMenu: Converted {ItemCount} menu items total", itemCount);
+
+                // Insert an explicit application menu to avoid the platform/Avalonia
+                // falling back to a default menu (which can show "About Avalonia").
+                try
+                {
+                    var appName = Application.Current?.Name
+                                  ?? Assembly.GetEntryAssembly()?.GetName().Name
+                                  ?? "Project Rover";
+                    var appSub = new NativeMenu();
+                    // Optionally populate appSub with About/Preferences/Quit entries.
+                    var appMenuItem = new NativeMenuItem { Header = appName, Menu = appSub };
+                    nativeRoot.Items.Insert(0, appMenuItem);
+                    log.Debug("BuildNativeMenu: Inserted application menu '{AppName}' to override default app menu", appName);
+                }
+                catch (Exception ex)
+                {
+                    log.Warning(ex, "BuildNativeMenu: Failed to insert application menu");
+                }
 
                 // Always set a fresh native menu; avoid reusing existing items to prevent parent conflicts.
                 // Some native backends may throw when attempting to update menus that are still

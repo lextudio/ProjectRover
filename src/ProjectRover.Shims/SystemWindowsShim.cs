@@ -7,6 +7,8 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.Input;
+using ModifierKeys = Avalonia.Input.KeyModifiers;
 using System.Windows.Input;
 
 namespace System.Windows
@@ -49,9 +51,19 @@ namespace System.Windows
     public static class ApplicationCommands
     {
         // Provide commonly used RoutedUICommands as placeholders
-        public static readonly RoutedUICommand Save = new("Save", "Save", typeof(ApplicationCommands));
-        public static readonly RoutedUICommand Open = new("Open", "Open", typeof(ApplicationCommands));
-        public static readonly RoutedUICommand Close = new("Close", "Close", typeof(ApplicationCommands));
+        public static readonly RoutedUICommand Save = Create("Save", "Save", new KeyGesture(Key.S, ModifierKeys.Control));
+        public static readonly RoutedUICommand Open = Create("Open", "Open", new KeyGesture(Key.O, ModifierKeys.Control));
+        public static readonly RoutedUICommand Close = Create("Close", "Close", new KeyGesture(Key.F4, ModifierKeys.Control));
+
+        static RoutedUICommand Create(string text, string name, KeyGesture defaultGesture)
+        {
+            var cmd = new RoutedUICommand(text, name, typeof(ApplicationCommands));
+            if (defaultGesture != null)
+            {
+                cmd.InputGestures.Add(defaultGesture);
+            }
+            return cmd;
+        }
     }
 
         // Minimal mock for DelegateCommand to allow ILSpy code to compile.

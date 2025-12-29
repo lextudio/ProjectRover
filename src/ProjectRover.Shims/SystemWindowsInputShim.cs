@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using System.Linq;
 using System.Collections.Generic;
+using ModifierKeys = Avalonia.Input.KeyModifiers;
 
 namespace System.Windows.Input
 {
@@ -74,11 +75,21 @@ namespace System.Windows.Input
 
     public static class NavigationCommands
     {
-        public static readonly RoutedCommand BrowseBack = new RoutedCommand();
-        public static readonly RoutedCommand BrowseForward = new RoutedCommand();
+        public static readonly RoutedCommand BrowseBack = Create("BrowseBack", new KeyGesture(Key.Left, ModifierKeys.Alt));
+        public static readonly RoutedCommand BrowseForward = Create("BrowseForward", new KeyGesture(Key.Right, ModifierKeys.Alt));
 
-        public static readonly RoutedCommand Refresh = new RoutedCommand();
-        public static readonly RoutedCommand Search = new RoutedCommand();
+        public static readonly RoutedCommand Refresh = Create("Refresh", new KeyGesture(Key.F5));
+        public static readonly RoutedCommand Search = Create("Search", null); // ShowSearchCommand overrides gestures
+
+        static RoutedCommand Create(string name, KeyGesture? defaultGesture)
+        {
+            var cmd = new RoutedCommand(name);
+            if (defaultGesture != null)
+            {
+                cmd.InputGestures.Add(defaultGesture);
+            }
+            return cmd;
+        }
     }
 
     // Very small RoutedCommand implementation for shimming purposes
