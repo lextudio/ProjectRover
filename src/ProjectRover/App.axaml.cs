@@ -225,6 +225,7 @@ public partial class App : Application
 
             // Register command bindings
             ICSharpCode.ILSpy.CommandWrapper.RegisterBindings(desktop.MainWindow);
+            ICSharpCode.ILSpy.Commands.CommandManagerExtensions.RegisterNavigationRequery();
 
             // Diagnostic: attach to AssemblyTreeModel export when available and watch Root.Children
             try

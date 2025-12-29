@@ -42,20 +42,10 @@ namespace ICSharpCode.ILSpy.AssemblyTree
 			MessageBus<NavigateToReferenceEventArgs>.Subscribers += JumpToReference;
 			MessageBus<SettingsChangedEventArgs>.Subscribers += (sender, e) => Settings_PropertyChanged(sender, e);
 			MessageBus<ApplySessionSettingsEventArgs>.Subscribers += ApplySessionSettings;
-			MessageBus<AssemblyTreeSelectionChangedEventArgs>.Subscribers += (_, _) => RefreshNavigationCommands();
-			MessageBus<ActiveTabPageChangedEventArgs>.Subscribers += (sender, e) => {
-				ActiveTabPageChanged(sender, e);
-				RefreshNavigationCommands();
-			};
-			MessageBus<TabPagesCollectionChangedEventArgs>.Subscribers += (_, e) => {
-				history.RemoveAll(s => !DockWorkspace.TabPages.Contains(s.TabPage));
-				RefreshNavigationCommands();
-			};
+			MessageBus<ActiveTabPageChangedEventArgs>.Subscribers += ActiveTabPageChanged;
+			MessageBus<TabPagesCollectionChangedEventArgs>.Subscribers += (_, e) => history.RemoveAll(s => !DockWorkspace.TabPages.Contains(s.TabPage));
 			MessageBus<ResetLayoutEventArgs>.Subscribers += ResetLayout;
-			MessageBus<NavigateToEventArgs>.Subscribers += (_, e) => {
-				NavigateTo(e.Request, e.InNewTabPage);
-				RefreshNavigationCommands();
-			};
+			MessageBus<NavigateToEventArgs>.Subscribers += (_, e) => NavigateTo(e.Request, e.InNewTabPage);
 			MessageBus<MainWindowLoadedEventArgs>.Subscribers += (_, _) => {
 				Initialize();
 				Show();
@@ -67,13 +57,6 @@ namespace ICSharpCode.ILSpy.AssemblyTree
 			refreshThrottle = new DispatcherThrottle(RefreshInternal);
 
 			AssemblyList = settingsService.CreateEmptyAssemblyList();
-		}
-
-		void RefreshNavigationCommands()
-		{
-			OnPropertyChanged(nameof(CanNavigateBack));
-			OnPropertyChanged(nameof(CanNavigateForward));
-			CommandManager.InvalidateRequerySuggested();
 		}
 
 		private static void LoadInitialAssemblies(AssemblyList assemblyList)
