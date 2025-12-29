@@ -189,7 +189,7 @@
                     CanUserAddRows="False"
                     CanUserDeleteRows="False"
                     CanUserReorderColumns="False"
-                    HeadersVisibility="Column"
+                    HeadersVisibility="None"
                     EnableColumnVirtualization="True"
                     EnableRowVirtualization="True"
                     RowHeight="20"
