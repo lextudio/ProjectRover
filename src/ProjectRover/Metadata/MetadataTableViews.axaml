@@ -36,9 +36,10 @@
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
       <TextBlock Grid.Column="0" Classes="filterIcon" Text="🔍" />
-       <TextBox Grid.Column="1" Classes="filterTextBox"
-         Text="{Binding Path=FilterValue, Mode=TwoWay}"
-         Watermark="Filter..." />
+      <TextBox Grid.Column="1"
+               Classes="filterTextBox"
+               Text="{Binding Path=FilterValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+               Watermark="Filter..." />
     </Grid>
   </ControlTemplate>
 

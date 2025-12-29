@@ -70,6 +70,59 @@ public partial class App : Application
             var desiredTheme = settingsService.SessionSettings.Theme;
             services.AddSingleton(settingsService);
 
+            // Apply persisted UI culture early so resource managers probe satellite assemblies correctly
+            try
+            {
+                var cultureName = settingsService.SessionSettings.CurrentCulture;
+                if (!string.IsNullOrWhiteSpace(cultureName))
+                {
+                    var ci = new System.Globalization.CultureInfo(cultureName);
+                    System.Threading.Thread.CurrentThread.CurrentUICulture = ci;
+                    System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ci;
+                    // Update generated strongly-typed resources culture so Properties.Resources picks the satellite
+                    ICSharpCode.ILSpy.Properties.Resources.Culture = ci;
+                    log.Information("Applied persisted UI culture: {Culture}", cultureName);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warning(ex, "Failed to apply persisted UI culture");
+            }
+
+            // Watch for runtime changes to the selected UI culture and apply them
+            try
+            {
+                settingsService.SessionSettings.PropertyChanged += (s, e) =>
+                {
+                    if (e.PropertyName == nameof(ICSharpCode.ILSpy.SessionSettings.CurrentCulture))
+                    {
+                        try
+                        {
+                            var name = settingsService.SessionSettings.CurrentCulture;
+                            if (string.IsNullOrWhiteSpace(name))
+                            {
+                                // Use system default
+                                ICSharpCode.ILSpy.Properties.Resources.Culture = null;
+                                System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = System.Globalization.CultureInfo.InstalledUICulture;
+                            }
+                            else
+                            {
+                                var ci2 = new System.Globalization.CultureInfo(name);
+                                ICSharpCode.ILSpy.Properties.Resources.Culture = ci2;
+                                System.Threading.Thread.CurrentThread.CurrentUICulture = ci2;
+                                System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ci2;
+                            }
+                            log.Information("UI culture changed to: {Culture}", settingsService.SessionSettings.CurrentCulture);
+                        }
+                        catch (Exception ex2)
+                        {
+                            log.Warning(ex2, "Failed to apply UI culture change");
+                        }
+                    }
+                };
+            }
+            catch { }
+
             // ProjectRover-only sanitization: some persisted settings may contain
             // empty/whitespace assembly list names (causes an empty combobox entry).
             // We sanitize here in the port layer (without modifying ILSpy files).
