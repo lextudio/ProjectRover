@@ -417,26 +417,35 @@ namespace ICSharpCode.ILSpy.TextView
 		#endregion
 
 		#region Tooltip support
-		Tooltip? toolTip;
-		Popup? popupToolTip;
-		TooltipSegmentKey? lastTooltipSegmentKey;
+			Tooltip? toolTip;
+			Popup? popupToolTip;
+			TooltipSegmentKey? lastTooltipSegmentKey;
 
 			void TextViewMouseHover(object sender, Avalonia.Input.PointerEventArgs e)
-		{
-			var mousePos = e.GetPosition(this);
-			log.Debug("TextViewMouseHover triggered at ({X}, {Y}) relative to DecompilerTextView", mousePos.X, mousePos.Y);
-			log.Debug("DecompilerTextView bounds: Width={Width}, Height={Height}, IsVisible={IsVisible}", Bounds.Width, Bounds.Height, IsVisible);
-			log.Debug("TextEditor: IsInitialized={IsInit}, Document={HasDoc}, TextView={HasView}", 
-				textEditor != null, 
-				textEditor?.Document != null, 
-				textEditor?.TextArea?.TextView != null);
-			
-			TextViewPosition? position = GetPositionFromMousePosition(mousePos);
-			if (position == null)
 			{
-				log.Warning("GetPositionFromMousePosition returned null for mouse at ({X}, {Y})", mousePos.X, mousePos.Y);
-				return;
-			}
+				// WPF tooltips live in a separate window and don't re-trigger hover logic while the pointer is over them.
+				// Mirror that behavior by ignoring hover events whenever the custom popup already has pointer focus/over state.
+				if (popupToolTip != null && (popupToolTip.IsPointerInside || popupToolTip.IsPointerOver || (popupToolTip.Child as Control)?.IsPointerOver == true))
+				{
+					log.Debug("Ignoring hover while pointer is over the popup");
+					return;
+				}
+
+				var mousePos = e.GetPosition(this);
+				log.Debug("TextViewMouseHover triggered at ({X}, {Y}) relative to DecompilerTextView", mousePos.X, mousePos.Y);
+				log.Debug("DecompilerTextView bounds: Width={Width}, Height={Height}, IsVisible={IsVisible}", Bounds.Width, Bounds.Height, IsVisible);
+				log.Debug("TextEditor: IsInitialized={IsInit}, Document={HasDoc}, TextView={HasView}", 
+					textEditor != null, 
+					textEditor?.Document != null, 
+					textEditor?.TextArea?.TextView != null);
+				
+				TextViewPosition? position = GetPositionFromMousePosition(mousePos);
+				if (position == null)
+				{
+					// This usually means the pointer is over the popup or outside the text view; WPF would ignore it.
+					log.Debug("GetPositionFromMousePosition returned null for mouse at ({X}, {Y})", mousePos.X, mousePos.Y);
+					return;
+				}
 			
 			int offset = textEditor.Document.GetOffset(position.Value.Location);
 			log.Debug("Mouse hover at offset {Offset}, line {Line}, column {Column}", offset, position.Value.Line, position.Value.Column);
