@@ -680,11 +680,24 @@ namespace ICSharpCode.ILSpy.TextView
 
 		void TextEditorMouseLeave(object sender, Avalonia.Input.PointerEventArgs e)
 		{
-			if (popupToolTip != null && !popupToolTip.IsPointerInside)
+			if (popupToolTip == null)
+				return;
+
+			// Mirror WPF: keep the popup open while the pointer is moving into it.
+			// Avalonia raises PointerExited on the editor before PointerEntered on the popup,
+			// so rely on current pointer-over state or proximity instead of closing immediately.
+			if (popupToolTip.IsPointerInside || popupToolTip.IsPointerOver || (popupToolTip.Child as Control)?.IsPointerOver == true)
+				return;
+
+			// If the pointer is still close to the popup, allow the distance-based logic in MouseMove to manage closure.
+			var distanceToPopup = GetDistanceToPopup(e);
+			if (distanceToPopup <= MaxMovementAwayFromPopup)
 			{
-				// do not close popup if mouse moved from editor to popup
-				TryCloseExistingPopup(false);
+				distanceToPopupLimit = Math.Min(distanceToPopupLimit, distanceToPopup + MaxMovementAwayFromPopup);
+				return;
 			}
+
+			TryCloseExistingPopup(false);
 		}
 
 		void OnUnloaded(object sender, EventArgs e)
