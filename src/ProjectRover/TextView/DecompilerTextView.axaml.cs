@@ -531,12 +531,16 @@ namespace ICSharpCode.ILSpy.TextView
 				{
 					log.Information("Showing Popup tooltip");
 					var popupPosition = GetPopupPosition(e);
+					var cursorInView = e.GetPosition(this);
+					var cursorInEditor = e.GetPosition(textEditor);
+					log.Debug("Popup position: ({X}, {Y}); cursor view=({CX}, {CY}), cursor editor=({EX}, {EY})",
+						popupPosition.X, popupPosition.Y, cursorInView.X, cursorInView.Y, cursorInEditor.X, cursorInEditor.Y);
 					popupToolTip.Closed += ToolTipClosed;
-					popupToolTip.Placement = PlacementMode.Pointer; // PlacementMode.Relative;
-					popupToolTip.PlacementTarget = this;
+					popupToolTip.Placement = PlacementMode.Pointer;
+					popupToolTip.PlacementTarget = textEditor.TextArea.TextView;
 					popupToolTip.HorizontalOffset = popupPosition.X;
 					popupToolTip.VerticalOffset = popupPosition.Y;
-					// popupToolTip.StaysOpen = true;  // We will close it ourselves // TODO: need to migrate to Flyout or just Popup
+					// popupToolTip.StaysOpen = true;  // We will close it ourselves
 					try
 					{
 						e.Handled = true;
@@ -554,6 +558,28 @@ namespace ICSharpCode.ILSpy.TextView
 							popupToolTip.IsOpen = true;
 							log.Information("Popup IsOpen set to true with fallback PlacementTarget=textEditor");
 							log.Debug("Popup child present: {HasChild}, childRoot={ChildRoot}", popupToolTip.Child != null, popupToolTip.Child?.GetVisualRoot() != null);
+							// If popup failed to materialize visually, fall back to ToolTip
+							if (!popupToolTip.IsOpen || popupToolTip.Child?.GetVisualRoot() == null)
+							{
+								log.Debug("Popup did not render visually; falling back to ToolTip.SetTip");
+								try
+								{
+									Control? inner = null;
+									if (popupToolTip.Child is Border b && b.Child is Control c)
+										inner = c;
+									else if (popupToolTip.Child is Control c2)
+										inner = c2;
+									if (inner != null)
+									{
+										ToolTip.SetTip(this, inner);
+										log.Information("Fallback ToolTip set with inner control");
+									}
+								}
+								catch (Exception ex3)
+								{
+									log.Debug(ex3, "Fallback ToolTip.SetTip failed");
+								}
+							}
 						}
 						catch (Exception ex2)
 						{
@@ -597,7 +623,7 @@ namespace ICSharpCode.ILSpy.TextView
 		{
 			if (popupToolTip != null)
 			{
-				if (popupToolTip.IsOpen && !mouseClick && popupToolTip is FlowDocumentTooltip t)// && !t.CloseWhenMouseMovesAway)
+				if (popupToolTip.IsOpen && !mouseClick && popupToolTip is FlowDocumentTooltip t && !t.CloseWhenMouseMovesAway)
 				{
 					return false; // Popup does not want to be closed yet
 				}
@@ -610,19 +636,25 @@ namespace ICSharpCode.ILSpy.TextView
 		/// <summary> Returns Popup position based on mouse position, in device independent units </summary>
 		Point GetPopupPosition(Avalonia.Input.PointerEventArgs mouseArgs)
 		{
-			Point mousePos = mouseArgs.GetPosition(this);
+			var textView = textEditor.TextArea.TextView;
+			Point mousePos = mouseArgs.GetPosition(textEditor);
+			log.Debug("GetPopupPosition: mouse editor=({X}, {Y}), scroll=({SX}, {SY})",
+				mousePos.X, mousePos.Y, textView.ScrollOffset.X, textView.ScrollOffset.Y);
 			// align Popup with line bottom
 			TextViewPosition? logicalPos = textEditor.GetPositionFromPoint(mousePos);
 			if (logicalPos.HasValue)
 			{
-				var textView = textEditor.TextArea.TextView;
-				return textView.GetVisualPosition(logicalPos.Value, VisualYPosition.LineBottom);
-					//- textView.ScrollOffset
-					//+ new Vector(-4, 0);
+				var visualPos = textView.GetVisualPosition(logicalPos.Value, VisualYPosition.LineBottom);
+				var popupPos = visualPos - textView.ScrollOffset + new Vector(-4, 0);
+				log.Debug("GetPopupPosition: logical={Line},{Col} visual=({VX}, {VY}) popup=({PX}, {PY})",
+					logicalPos.Value.Line, logicalPos.Value.Column, visualPos.X, visualPos.Y, popupPos.X, popupPos.Y);
+				return popupPos;
 			}
 			else
 			{
-				return mousePos;// + new Vector(-4, 6);
+				var fallback = mouseArgs.GetPosition(textView) + new Vector(-4, 6);
+				log.Debug("GetPopupPosition: fallback=({PX}, {PY})", fallback.X, fallback.Y);
+				return fallback;
 			}
 		}
 
@@ -678,7 +710,8 @@ namespace ICSharpCode.ILSpy.TextView
 
 		void TextEditorMouseLeave(object sender, Avalonia.Input.PointerEventArgs e)
 		{
-			//if (popupToolTip != null && !popupToolTip.IsMouseOver)
+			if (popupToolTip != null && popupToolTip.IsPointerOver)
+				return;
 			{
 				// do not close popup if mouse moved from editor to popup
 				TryCloseExistingPopup(false);
@@ -736,7 +769,9 @@ namespace ICSharpCode.ILSpy.TextView
 			else if (segment.Reference is IEntity entity)
 			{
 				log.Debug("Generating entity tooltip for: {EntityName}", entity.Name);
-				var documentControl = CreateTooltipForEntity(entity);
+				try
+				{
+					var documentControl = CreateTooltipForEntity(entity);
 					if (documentControl == null)
 					{
 						log.Debug("CreateTooltipForEntity returned null");
@@ -745,6 +780,13 @@ namespace ICSharpCode.ILSpy.TextView
 					var tooltip = new FlowDocumentTooltip(documentControl, fontSize, MainWindowInstance.Width);
 					log.Debug("Created FlowDocumentTooltip for entity");
 					return tooltip;
+				}
+				catch (Exception ex)
+				{
+					log.Debug(ex, "CreateTooltipForEntity failed; falling back to plain text tooltip");
+					var fallback = new TextBlock { Text = entity.Name, TextWrapping = TextWrapping.Wrap };
+					return new FlowDocumentTooltip(fallback, fontSize, MainWindowInstance.Width);
+				}
 			}
 			else if (segment.Reference is EntityReference unresolvedEntity)
 			{
@@ -789,15 +831,17 @@ namespace ICSharpCode.ILSpy.TextView
 			renderer.AddSignatureBlock(richText.Text, richText.ToRichTextModel());
 			try
 			{
-				if (resolved.ParentModule == null || resolved.ParentModule.MetadataFile == null)
-					return null;
-				var docProvider = XmlDocLoader.LoadDocumentation(resolved.ParentModule.MetadataFile);
-				if (docProvider != null)
+				var metadataFile = resolved.ParentModule?.MetadataFile;
+				if (metadataFile != null)
 				{
-					string documentation = docProvider.GetDocumentation(resolved.GetIdString());
-					if (documentation != null)
+					var docProvider = XmlDocLoader.LoadDocumentation(metadataFile);
+					if (docProvider != null)
 					{
-						renderer.AddXmlDocumentation(documentation, resolved, ResolveReference);
+						string documentation = docProvider.GetDocumentation(resolved.GetIdString());
+						if (documentation != null)
+						{
+							renderer.AddXmlDocumentation(documentation, resolved, ResolveReference);
+						}
 					}
 				}
 			}
@@ -816,8 +860,11 @@ namespace ICSharpCode.ILSpy.TextView
 
 		sealed class FlowDocumentTooltip : Popup
 		{
+			const double DefaultMaxWidth = 800;
+
 			public FlowDocumentTooltip(Control documentControl, double fontSize, double maxWith)
 			{
+				var safeMaxWidth = GetSafeMaxWidth(maxWith);
 				// Host the provided control inside a border
 				var border = new Border
 				{
@@ -830,15 +877,17 @@ namespace ICSharpCode.ILSpy.TextView
 				// Subscribe to pointer leave on the child to detect mouse leaving the popup
 				border.PointerExited += OnPointerLeaveHandler;
 				// set sizes
-				documentControl.MaxWidth = maxWith;
+				documentControl.MaxWidth = safeMaxWidth;
 			}
 
-			bool CloseWhenMouseMovesAway => !this.IsKeyboardFocusWithin;
+			internal bool CloseWhenMouseMovesAway => !this.IsKeyboardFocusWithin && !IsPointerOver;
 
 			protected override void OnLostFocus(Avalonia.Interactivity.RoutedEventArgs e)
 			{
 				base.OnLostFocus(e);
-				this.IsOpen = false;
+				// Avoid closing immediately on open when focus doesn't move into the popup.
+				if (CloseWhenMouseMovesAway && !IsPointerOver)
+					this.IsOpen = false;
 			}
 
 			// PointerLeave override is not available for Popup in all Avalonia versions; use event subscription instead
@@ -846,6 +895,13 @@ namespace ICSharpCode.ILSpy.TextView
 			{
 				if (CloseWhenMouseMovesAway)
 					this.IsOpen = false;
+			}
+
+			static double GetSafeMaxWidth(double maxWidth)
+			{
+				if (double.IsNaN(maxWidth) || double.IsInfinity(maxWidth) || maxWidth <= 0)
+					return DefaultMaxWidth;
+				return maxWidth;
 			}
 		}
 		#endregion
@@ -1609,10 +1665,10 @@ namespace ICSharpCode.ILSpy.TextView
 			log.Debug("GetPositionFromMousePosition: translated to editor point = ({X}, {Y})", editorPoint.Value.X, editorPoint.Value.Y);
 			log.Debug("TextEditor bounds: Width={Width}, Height={Height}", textEditor.Bounds.Width, textEditor.Bounds.Height);
 			
-			TextViewPosition? position = textEditor.GetPositionFromPoint(editorPoint.Value);
+			TextViewPosition? position = textEditor.GetPositionFromPointWithFallback(editorPoint.Value);
 			if (position == null)
 			{
-				log.Warning("GetPositionFromMousePosition: textEditor.GetPositionFromPoint returned null for editor point ({X}, {Y})", editorPoint.Value.X, editorPoint.Value.Y);
+				log.Warning("GetPositionFromMousePosition: textEditor.GetPositionFromPointWithFallback returned null for editor point ({X}, {Y})", editorPoint.Value.X, editorPoint.Value.Y);
 				return null;
 			}
 			
@@ -1660,70 +1716,8 @@ namespace ICSharpCode.ILSpy.TextView
 				log.Debug(ex, "GetPositionFromMousePosition: failed while collecting line/visual diagnostics");
 			}
 			
-			if (!IsValidTextViewPosition(position.Value))
-			{
-				log.Warning("GetPositionFromMousePosition: position validation failed for Line={Line}, Column={Column}", position.Value.Line, position.Value.Column);
-				// Recovery: if the position falls on an empty line (common when clicking between wrapped/visual lines),
-				// try probing slightly below/above the Y coordinate to find the intended line.
-				try
-				{
-					var docLine = textEditor.Document.GetLineByNumber(position.Value.Line);
-					if (docLine.Length == 0)
-					{
-						var tv = textEditor.TextArea.TextView;
-						if (tv != null)
-						{
-							double[] probes = { 1.0, 3.0, 8.0, -1.0, -3.0, -8.0 };
-							foreach (var d in probes)
-							{
-								var probePoint = new Point(editorPoint.Value.X, editorPoint.Value.Y + d);
-								TextViewPosition? probePos = textEditor.GetPositionFromPoint(probePoint);
-								log.Debug("GetPositionFromMousePosition: probe at dy={Delta} gave position {Pos}", d, probePos?.ToString() ?? "null");
-								if (probePos != null && IsValidTextViewPosition(probePos.Value))
-								{
-									log.Debug("GetPositionFromMousePosition: probe succeeded at dy={Delta} -> Line={Line}, Column={Column}", d, probePos.Value.Line, probePos.Value.Column);
-									return probePos;
-								}
-							}
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					log.Debug(ex, "GetPositionFromMousePosition: probe attempt failed");
-				}
-				return null;
-			}
-			
 			log.Debug("GetPositionFromMousePosition: returning valid position Line={Line}, Column={Column}", position.Value.Line, position.Value.Column);
 			return position;
-		}
-
-		bool IsValidTextViewPosition(TextViewPosition textViewPosition)
-		{
-			if (textEditor.Document == null)
-			{
-				log.Debug("IsValidTextViewPosition: Document is null");
-				return false;
-			}
-			
-			var lineCount = textEditor.Document.LineCount;
-			if (textViewPosition.Line <= 0 || textViewPosition.Line > lineCount)
-			{
-				log.Debug("IsValidTextViewPosition: Line {Line} out of range (1-{LineCount})", textViewPosition.Line, lineCount);
-				return false;
-			}
-			
-			var line = textEditor.Document.GetLineByNumber(textViewPosition.Line);
-			var lineLength = line.Length + 1;
-			bool valid = textViewPosition.Column != lineLength;
-			
-			if (!valid)
-			{
-				log.Debug("IsValidTextViewPosition: Column {Column} equals line length+1 ({Length}), invalid", textViewPosition.Column, lineLength);
-			}
-			
-			return valid;
 		}
 
 		// Helper to determine identifier characters (letters, digits, underscore, and '.')

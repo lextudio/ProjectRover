@@ -88,30 +88,21 @@ namespace ICSharpCode.ILSpy.TextView
         public void AddCodeBlock(string textContent, bool keepLargeMargin = false)
         {
             var document = new TextDocument(textContent);
-            var highlighter = new DocumentHighlighter(document, highlightingDefinition);
-            // TODO: var richText = DocumentPrinter.ConvertTextDocumentToRichText(document, highlighter).ToRichTextModel();
-
             var tb = NewParagraph();
             tb.FontFamily = GetCodeFont();
             if (!keepLargeMargin)
                 tb.Margin = new Thickness(0, 6, 0, 6);
-
-            // Simple mapping: append text runs
-            //foreach (var run in richText.CreateRuns(document))
-            //    tb.Text += run.Text;
-
+            tb.Text = document.Text;
             AddBlock(tb);
         }
 
-        public void AddSignatureBlock(string signature, RichTextModel highlighting = null)
+        public void AddSignatureBlock(string signature, RichTextModel? highlighting = null)
         {
             var document = new TextDocument(signature);
-            // TODO: var richText = highlighting ?? DocumentPrinter.ConvertTextDocumentToRichText(document, new DocumentHighlighter(document, highlightingDefinition)).ToRichTextModel();
             var tb = NewParagraph();
             tb.FontFamily = GetCodeFont();
             tb.FontSize = displaySettings.SelectedFontSize;
-            //foreach (var run in richText.CreateRuns(document))
-            //    tb.Text += run.Text;
+            AppendHighlightedRuns(tb, document, highlighting);
             AddBlock(tb);
         }
 
@@ -512,6 +503,45 @@ namespace ICSharpCode.ILSpy.TextView
         void FlushAddedText()
         {
             FlushAddedText(true);
+        }
+
+        static void AppendHighlightedRuns(TextBlock target, TextDocument document, RichTextModel? highlighting)
+        {
+            if (highlighting == null || document.TextLength == 0)
+            {
+                target.Text = document.Text;
+                return;
+            }
+
+            foreach (var section in highlighting.GetHighlightedSections(0, document.TextLength))
+            {
+                var runText = document.GetText(section.Offset, section.Length);
+                if (string.IsNullOrEmpty(runText))
+                    continue;
+                var run = new Run(runText);
+                ApplyHighlighting(run, section.Color);
+                target.Inlines.Add(run);
+            }
+
+            if (target.Inlines.Count == 0)
+            {
+                target.Text = document.Text;
+            }
+        }
+
+        static void ApplyHighlighting(Run run, HighlightingColor? color)
+        {
+            if (color == null)
+                return;
+
+            if (color.Foreground != null)
+                run.Foreground = color.Foreground.GetBrush(null);
+            if (color.Background != null)
+                run.Background = color.Background.GetBrush(null);
+            if (color.FontWeight.HasValue)
+                run.FontWeight = color.FontWeight.Value;
+            if (color.FontStyle.HasValue)
+                run.FontStyle = color.FontStyle.Value;
         }
     }
 }
