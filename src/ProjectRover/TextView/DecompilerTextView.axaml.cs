@@ -417,6 +417,8 @@ namespace ICSharpCode.ILSpy.TextView
 		#region Tooltip support
 		ToolTip? toolTip;
 		Popup? popupToolTip;
+		Avalonia.Threading.DispatcherTimer? popupCloseTimer;
+		const int PopupCloseDelayMs = 200;
 
 			void TextViewMouseHover(object sender, Avalonia.Input.PointerEventArgs e)
 		{
@@ -433,6 +435,7 @@ namespace ICSharpCode.ILSpy.TextView
 				log.Debug("Cannot close existing popup, aborting tooltip");
 				return;
 			}
+			CancelPopupCloseTimer();
 			
 			TextViewPosition? position = GetPositionFromMousePosition(mousePos);
 			if (position == null)
@@ -530,11 +533,15 @@ namespace ICSharpCode.ILSpy.TextView
 				if (popupToolTip != null)
 				{
 					log.Information("Showing Popup tooltip");
-					var popupPosition = GetPopupPosition(e);
+					var popupPosition = GetPopupPosition(e, position.Value);
 					var cursorInView = e.GetPosition(this);
 					var cursorInEditor = e.GetPosition(textEditor);
-					log.Debug("Popup position: ({X}, {Y}); cursor view=({CX}, {CY}), cursor editor=({EX}, {EY})",
-						popupPosition.X, popupPosition.Y, cursorInView.X, cursorInView.Y, cursorInEditor.X, cursorInEditor.Y);
+					var cursorInTextView = e.GetPosition(textEditor.TextArea.TextView);
+					var deltaX = popupPosition.X - cursorInTextView.X;
+					var deltaY = popupPosition.Y - cursorInTextView.Y;
+					log.Debug("Popup position: ({X}, {Y}); cursor view=({CX}, {CY}), editor=({EX}, {EY}), textView=({TX}, {TY}) delta=({DX}, {DY})",
+						popupPosition.X, popupPosition.Y, cursorInView.X, cursorInView.Y, cursorInEditor.X, cursorInEditor.Y,
+						cursorInTextView.X, cursorInTextView.Y, deltaX, deltaY);
 					popupToolTip.Closed += ToolTipClosed;
 					popupToolTip.Placement = PlacementMode.Pointer;
 					popupToolTip.PlacementTarget = textEditor.TextArea.TextView;
@@ -634,28 +641,21 @@ namespace ICSharpCode.ILSpy.TextView
 		}
 
 		/// <summary> Returns Popup position based on mouse position, in device independent units </summary>
-		Point GetPopupPosition(Avalonia.Input.PointerEventArgs mouseArgs)
+		Point GetPopupPosition(Avalonia.Input.PointerEventArgs mouseArgs, TextViewPosition position)
 		{
 			var textView = textEditor.TextArea.TextView;
-			Point mousePos = mouseArgs.GetPosition(textEditor);
-			log.Debug("GetPopupPosition: mouse editor=({X}, {Y}), scroll=({SX}, {SY})",
-				mousePos.X, mousePos.Y, textView.ScrollOffset.X, textView.ScrollOffset.Y);
-			// align Popup with line bottom
-			TextViewPosition? logicalPos = textEditor.GetPositionFromPoint(mousePos);
-			if (logicalPos.HasValue)
-			{
-				var visualPos = textView.GetVisualPosition(logicalPos.Value, VisualYPosition.LineBottom);
-				var popupPos = visualPos - textView.ScrollOffset + new Vector(-4, 0);
-				log.Debug("GetPopupPosition: logical={Line},{Col} visual=({VX}, {VY}) popup=({PX}, {PY})",
-					logicalPos.Value.Line, logicalPos.Value.Column, visualPos.X, visualPos.Y, popupPos.X, popupPos.Y);
-				return popupPos;
-			}
-			else
-			{
-				var fallback = mouseArgs.GetPosition(textView) + new Vector(-4, 6);
-				log.Debug("GetPopupPosition: fallback=({PX}, {PY})", fallback.X, fallback.Y);
-				return fallback;
-			}
+			var mouseInTextView = mouseArgs.GetPosition(textView);
+			log.Debug("GetPopupPosition: mouse textView=({X}, {Y}), scroll=({SX}, {SY})",
+				mouseInTextView.X, mouseInTextView.Y, textView.ScrollOffset.X, textView.ScrollOffset.Y);
+			// align Popup with line bottom for the resolved position, but keep X near the cursor
+			var visualPos = textView.GetVisualPosition(position, VisualYPosition.LineBottom);
+			var desired = new Point(
+				mouseInTextView.X - 4,
+				visualPos.Y - textView.ScrollOffset.Y);
+			var offset = new Point(desired.X - mouseInTextView.X, desired.Y - mouseInTextView.Y);
+			log.Debug("GetPopupPosition: logical={Line},{Col} visual=({VX}, {VY}) desired=({DX}, {DY}) offset=({OX}, {OY})",
+				position.Line, position.Column, visualPos.X, visualPos.Y, desired.X, desired.Y, offset.X, offset.Y);
+			return offset;
 		}
 
 		void TextViewMouseHoverStopped(object sender, Avalonia.Input.PointerEventArgs e)
@@ -675,6 +675,7 @@ namespace ICSharpCode.ILSpy.TextView
 		{
 			if (popupToolTip != null && popupToolTip.Child?.GetVisualRoot() != null)
 			{
+				CancelPopupCloseTimer();
 				double distanceToPopup = GetDistanceToPopup(e);
 				if (distanceToPopup > distanceToPopupLimit)
 				{
@@ -710,12 +711,36 @@ namespace ICSharpCode.ILSpy.TextView
 
 		void TextEditorMouseLeave(object sender, Avalonia.Input.PointerEventArgs e)
 		{
-			if (popupToolTip != null && popupToolTip.IsPointerOver)
+			if (popupToolTip is FlowDocumentTooltip tooltip && tooltip.IsPointerInside)
 				return;
-			{
-				// do not close popup if mouse moved from editor to popup
-				TryCloseExistingPopup(false);
-			}
+			SchedulePopupCloseTimer();
+		}
+
+		void SchedulePopupCloseTimer()
+		{
+			if (popupToolTip == null)
+				return;
+			popupCloseTimer ??= new Avalonia.Threading.DispatcherTimer();
+			popupCloseTimer.Interval = TimeSpan.FromMilliseconds(PopupCloseDelayMs);
+			popupCloseTimer.Tick -= PopupCloseTimer_Tick;
+			popupCloseTimer.Tick += PopupCloseTimer_Tick;
+			popupCloseTimer.Start();
+		}
+
+		void CancelPopupCloseTimer()
+		{
+			if (popupCloseTimer == null)
+				return;
+			popupCloseTimer.Stop();
+		}
+
+		void PopupCloseTimer_Tick(object? sender, EventArgs e)
+		{
+			if (popupCloseTimer != null)
+				popupCloseTimer.Stop();
+			if (popupToolTip is FlowDocumentTooltip tooltip && tooltip.IsPointerInside)
+				return;
+			TryCloseExistingPopup(false);
 		}
 
 		void OnUnloaded(object sender, EventArgs e)
@@ -861,6 +886,7 @@ namespace ICSharpCode.ILSpy.TextView
 		sealed class FlowDocumentTooltip : Popup
 		{
 			const double DefaultMaxWidth = 800;
+			bool isPointerInside;
 
 			public FlowDocumentTooltip(Control documentControl, double fontSize, double maxWith)
 			{
@@ -874,25 +900,34 @@ namespace ICSharpCode.ILSpy.TextView
 				};
 
 				this.Child = border;
-				// Subscribe to pointer leave on the child to detect mouse leaving the popup
+				// Track pointer in/out for close logic.
+				border.PointerEntered += OnPointerEnterHandler;
 				border.PointerExited += OnPointerLeaveHandler;
 				// set sizes
 				documentControl.MaxWidth = safeMaxWidth;
 			}
 
-			internal bool CloseWhenMouseMovesAway => !this.IsKeyboardFocusWithin && !IsPointerOver;
+			internal bool IsPointerInside => isPointerInside;
+
+			internal bool CloseWhenMouseMovesAway => !this.IsKeyboardFocusWithin && !isPointerInside;
 
 			protected override void OnLostFocus(Avalonia.Interactivity.RoutedEventArgs e)
 			{
 				base.OnLostFocus(e);
 				// Avoid closing immediately on open when focus doesn't move into the popup.
-				if (CloseWhenMouseMovesAway && !IsPointerOver)
+				if (CloseWhenMouseMovesAway && !isPointerInside)
 					this.IsOpen = false;
 			}
 
 			// PointerLeave override is not available for Popup in all Avalonia versions; use event subscription instead
+			private void OnPointerEnterHandler(object? sender, PointerEventArgs e)
+			{
+				isPointerInside = true;
+			}
+
 			private void OnPointerLeaveHandler(object? sender, PointerEventArgs e)
 			{
+				isPointerInside = false;
 				if (CloseWhenMouseMovesAway)
 					this.IsOpen = false;
 			}
