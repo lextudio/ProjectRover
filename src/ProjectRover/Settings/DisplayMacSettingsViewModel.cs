@@ -34,12 +34,12 @@ namespace ProjectRover.Settings
 
         public string? PreferredTerminalApp
         {
-            get => _settings.PreferredTerminalApp;
+            get => _settings.PreferredTerminalAppMac;
             set
             {
-                if (_settings.PreferredTerminalApp != value)
+                if (_settings.PreferredTerminalAppMac != value)
                 {
-                    _settings.PreferredTerminalApp = value;
+                    _settings.PreferredTerminalAppMac = value;
                     OnPropertyChanged();
                 }
             }
@@ -49,12 +49,12 @@ namespace ProjectRover.Settings
 
         public string? CustomTerminalPath
         {
-            get => _settings.CustomTerminalPath;
+            get => _settings.CustomTerminalPathMac;
             set
             {
-                if (_settings.CustomTerminalPath != value)
+                if (_settings.CustomTerminalPathMac != value)
                 {
-                    _settings.CustomTerminalPath = value;
+                    _settings.CustomTerminalPathMac = value;
                     OnPropertyChanged();
                 }
             }
@@ -71,9 +71,14 @@ namespace ProjectRover.Settings
             {
                 OnPropertyChanged(nameof(ShowAvaloniaMainMenuOnMac));
             }
-            if (e.PropertyName == nameof(ProjectRoverSettingsSection.PreferredTerminalApp))
+            if (e.PropertyName == nameof(ProjectRoverSettingsSection.PreferredTerminalAppMac))
             {
                 OnPropertyChanged(nameof(PreferredTerminalApp));
+                OnPropertyChanged(nameof(IsCustomSelected));
+            }
+            if (e.PropertyName == nameof(ProjectRoverSettingsSection.CustomTerminalPathMac))
+            {
+                OnPropertyChanged(nameof(CustomTerminalPath));
             }
         }
 

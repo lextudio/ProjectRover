@@ -13,6 +13,12 @@ namespace ProjectRover.Settings
         private string? dockLayout;
         private string? preferredTerminalApp;
         private string? customTerminalPath;
+        private string? preferredTerminalAppWindows;
+        private string? preferredTerminalAppMac;
+        private string? preferredTerminalAppLinux;
+        private string? customTerminalPathWindows;
+        private string? customTerminalPathMac;
+        private string? customTerminalPathLinux;
         private bool useDefaultDockLayoutOnly = true;
 
         public XName SectionName => "ProjectRover";
@@ -47,12 +53,54 @@ namespace ProjectRover.Settings
             set => SetProperty(ref customTerminalPath, value);
         }
 
+        public string? PreferredTerminalAppWindows
+        {
+            get => preferredTerminalAppWindows;
+            set => SetProperty(ref preferredTerminalAppWindows, value);
+        }
+
+        public string? PreferredTerminalAppMac
+        {
+            get => preferredTerminalAppMac;
+            set => SetProperty(ref preferredTerminalAppMac, value);
+        }
+
+        public string? PreferredTerminalAppLinux
+        {
+            get => preferredTerminalAppLinux;
+            set => SetProperty(ref preferredTerminalAppLinux, value);
+        }
+
+        public string? CustomTerminalPathWindows
+        {
+            get => customTerminalPathWindows;
+            set => SetProperty(ref customTerminalPathWindows, value);
+        }
+
+        public string? CustomTerminalPathMac
+        {
+            get => customTerminalPathMac;
+            set => SetProperty(ref customTerminalPathMac, value);
+        }
+
+        public string? CustomTerminalPathLinux
+        {
+            get => customTerminalPathLinux;
+            set => SetProperty(ref customTerminalPathLinux, value);
+        }
+
         public void LoadFromXml(XElement section)
         {
             ShowAvaloniaMainMenuOnMac = (bool?)section.Attribute(nameof(ShowAvaloniaMainMenuOnMac)) ?? false;
             UseDefaultDockLayoutOnly = (bool?)section.Attribute(nameof(UseDefaultDockLayoutOnly)) ?? true;
             PreferredTerminalApp = (string?)section.Attribute(nameof(PreferredTerminalApp)) ?? string.Empty;
             CustomTerminalPath = (string?)section.Attribute(nameof(CustomTerminalPath)) ?? string.Empty;
+            PreferredTerminalAppWindows = (string?)section.Attribute(nameof(PreferredTerminalAppWindows)) ?? PreferredTerminalApp;
+            PreferredTerminalAppMac = (string?)section.Attribute(nameof(PreferredTerminalAppMac)) ?? PreferredTerminalApp;
+            PreferredTerminalAppLinux = (string?)section.Attribute(nameof(PreferredTerminalAppLinux)) ?? PreferredTerminalApp;
+            CustomTerminalPathWindows = (string?)section.Attribute(nameof(CustomTerminalPathWindows)) ?? CustomTerminalPath;
+            CustomTerminalPathMac = (string?)section.Attribute(nameof(CustomTerminalPathMac)) ?? CustomTerminalPath;
+            CustomTerminalPathLinux = (string?)section.Attribute(nameof(CustomTerminalPathLinux)) ?? CustomTerminalPath;
             var dockLayoutElement = section.Element(nameof(DockLayout));
             if (dockLayoutElement != null)
             {
@@ -85,6 +133,12 @@ namespace ProjectRover.Settings
             }
             element.SetAttributeValue(nameof(PreferredTerminalApp), PreferredTerminalApp);
             element.SetAttributeValue(nameof(CustomTerminalPath), CustomTerminalPath);
+            element.SetAttributeValue(nameof(PreferredTerminalAppWindows), PreferredTerminalAppWindows);
+            element.SetAttributeValue(nameof(PreferredTerminalAppMac), PreferredTerminalAppMac);
+            element.SetAttributeValue(nameof(PreferredTerminalAppLinux), PreferredTerminalAppLinux);
+            element.SetAttributeValue(nameof(CustomTerminalPathWindows), CustomTerminalPathWindows);
+            element.SetAttributeValue(nameof(CustomTerminalPathMac), CustomTerminalPathMac);
+            element.SetAttributeValue(nameof(CustomTerminalPathLinux), CustomTerminalPathLinux);
             return element;
         }
 

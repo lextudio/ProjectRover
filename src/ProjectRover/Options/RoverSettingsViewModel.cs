@@ -11,7 +11,9 @@ namespace ICSharpCode.ILSpy.Options
 	[NonShared]
 	public class RoverSettingsViewModel : ObservableObject, IOptionPage
 	{
-		static readonly string[] DefaultTerminals = ["System Default", "Terminal.app", "iTerm2", "Custom"];
+		static readonly string[] WindowsTerminals = ["Command Prompt", "PowerShell", "PowerShell Core", "Windows Terminal", "Custom"];
+		static readonly string[] MacTerminals = ["System Default", "Terminal.app", "iTerm2", "Custom"];
+		static readonly string[] LinuxTerminals = ["System Default", "GNOME Terminal", "Konsole", "Xfce Terminal", "XTerm", "Custom"];
 
 		ProjectRoverSettingsSection settings = new();
 
@@ -39,41 +41,107 @@ namespace ICSharpCode.ILSpy.Options
 			}
 		}
 
-		public string? PreferredTerminalApp {
-			get => settings.PreferredTerminalApp;
+		public string? PreferredTerminalAppWindows {
+			get => settings.PreferredTerminalAppWindows;
 			set {
-				if (settings.PreferredTerminalApp != value)
+				if (settings.PreferredTerminalAppWindows != value)
 				{
+					settings.PreferredTerminalAppWindows = value;
 					settings.PreferredTerminalApp = value;
 					OnPropertyChanged();
-					OnPropertyChanged(nameof(IsCustomSelected));
+					OnPropertyChanged(nameof(IsCustomSelectedWindows));
 				}
 			}
 		}
 
-		public string? CustomTerminalPath {
-			get => settings.CustomTerminalPath;
+		public string? PreferredTerminalAppMac {
+			get => settings.PreferredTerminalAppMac;
 			set {
-				if (settings.CustomTerminalPath != value)
+				if (settings.PreferredTerminalAppMac != value)
 				{
+					settings.PreferredTerminalAppMac = value;
+					settings.PreferredTerminalApp = value;
+					OnPropertyChanged();
+					OnPropertyChanged(nameof(IsCustomSelectedMac));
+				}
+			}
+		}
+
+		public string? PreferredTerminalAppLinux {
+			get => settings.PreferredTerminalAppLinux;
+			set {
+				if (settings.PreferredTerminalAppLinux != value)
+				{
+					settings.PreferredTerminalAppLinux = value;
+					settings.PreferredTerminalApp = value;
+					OnPropertyChanged();
+					OnPropertyChanged(nameof(IsCustomSelectedLinux));
+				}
+			}
+		}
+
+		public string? CustomTerminalPathWindows {
+			get => settings.CustomTerminalPathWindows;
+			set {
+				if (settings.CustomTerminalPathWindows != value)
+				{
+					settings.CustomTerminalPathWindows = value;
 					settings.CustomTerminalPath = value;
 					OnPropertyChanged();
 				}
 			}
 		}
 
-		public string[] AvailableTerminals => DefaultTerminals;
+		public string? CustomTerminalPathMac {
+			get => settings.CustomTerminalPathMac;
+			set {
+				if (settings.CustomTerminalPathMac != value)
+				{
+					settings.CustomTerminalPathMac = value;
+					settings.CustomTerminalPath = value;
+					OnPropertyChanged();
+				}
+			}
+		}
 
-		public bool IsCustomSelected => string.Equals(PreferredTerminalApp, "Custom", StringComparison.OrdinalIgnoreCase);
+		public string? CustomTerminalPathLinux {
+			get => settings.CustomTerminalPathLinux;
+			set {
+				if (settings.CustomTerminalPathLinux != value)
+				{
+					settings.CustomTerminalPathLinux = value;
+					settings.CustomTerminalPath = value;
+					OnPropertyChanged();
+				}
+			}
+		}
+
+		public string[] AvailableTerminalsWindows => WindowsTerminals;
+
+		public string[] AvailableTerminalsMac => MacTerminals;
+
+		public string[] AvailableTerminalsLinux => LinuxTerminals;
+
+		public bool IsCustomSelectedWindows => string.Equals(PreferredTerminalAppWindows, "Custom", StringComparison.OrdinalIgnoreCase);
+
+		public bool IsCustomSelectedMac => string.Equals(PreferredTerminalAppMac, "Custom", StringComparison.OrdinalIgnoreCase);
+
+		public bool IsCustomSelectedLinux => string.Equals(PreferredTerminalAppLinux, "Custom", StringComparison.OrdinalIgnoreCase);
 
 		public void Load(SettingsSnapshot snapshot)
 		{
 			settings = snapshot.GetSettings<ProjectRoverSettingsSection>();
 			OnPropertyChanged(nameof(ShowAvaloniaMainMenuOnMac));
 			OnPropertyChanged(nameof(UseDefaultDockLayoutOnly));
-			OnPropertyChanged(nameof(PreferredTerminalApp));
-			OnPropertyChanged(nameof(CustomTerminalPath));
-			OnPropertyChanged(nameof(IsCustomSelected));
+			OnPropertyChanged(nameof(PreferredTerminalAppWindows));
+			OnPropertyChanged(nameof(PreferredTerminalAppMac));
+			OnPropertyChanged(nameof(PreferredTerminalAppLinux));
+			OnPropertyChanged(nameof(CustomTerminalPathWindows));
+			OnPropertyChanged(nameof(CustomTerminalPathMac));
+			OnPropertyChanged(nameof(CustomTerminalPathLinux));
+			OnPropertyChanged(nameof(IsCustomSelectedWindows));
+			OnPropertyChanged(nameof(IsCustomSelectedMac));
+			OnPropertyChanged(nameof(IsCustomSelectedLinux));
 		}
 
 		public void LoadDefaults()
@@ -85,13 +153,25 @@ namespace ICSharpCode.ILSpy.Options
 			settings.UseDefaultDockLayoutOnly = defaults.UseDefaultDockLayoutOnly;
 			settings.PreferredTerminalApp = defaults.PreferredTerminalApp;
 			settings.CustomTerminalPath = defaults.CustomTerminalPath;
+			settings.PreferredTerminalAppWindows = defaults.PreferredTerminalAppWindows;
+			settings.PreferredTerminalAppMac = defaults.PreferredTerminalAppMac;
+			settings.PreferredTerminalAppLinux = defaults.PreferredTerminalAppLinux;
+			settings.CustomTerminalPathWindows = defaults.CustomTerminalPathWindows;
+			settings.CustomTerminalPathMac = defaults.CustomTerminalPathMac;
+			settings.CustomTerminalPathLinux = defaults.CustomTerminalPathLinux;
 			settings.DockLayout = defaults.DockLayout;
 
 			OnPropertyChanged(nameof(ShowAvaloniaMainMenuOnMac));
 			OnPropertyChanged(nameof(UseDefaultDockLayoutOnly));
-			OnPropertyChanged(nameof(PreferredTerminalApp));
-			OnPropertyChanged(nameof(CustomTerminalPath));
-			OnPropertyChanged(nameof(IsCustomSelected));
+			OnPropertyChanged(nameof(PreferredTerminalAppWindows));
+			OnPropertyChanged(nameof(PreferredTerminalAppMac));
+			OnPropertyChanged(nameof(PreferredTerminalAppLinux));
+			OnPropertyChanged(nameof(CustomTerminalPathWindows));
+			OnPropertyChanged(nameof(CustomTerminalPathMac));
+			OnPropertyChanged(nameof(CustomTerminalPathLinux));
+			OnPropertyChanged(nameof(IsCustomSelectedWindows));
+			OnPropertyChanged(nameof(IsCustomSelectedMac));
+			OnPropertyChanged(nameof(IsCustomSelectedLinux));
 		}
 	}
 }

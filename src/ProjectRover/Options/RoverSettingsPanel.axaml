@@ -23,22 +23,57 @@
       </StackPanel>
     </controls:GroupBox>
 
+    <controls:GroupBox Header="Terminal">
+      <StackPanel Margin="12">
+        <StackPanel IsVisible="{OnPlatform Windows='True', macOS='False', Linux='False'}">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Preferred terminal:</TextBlock>
+            <ComboBox ItemsSource="{Binding AvailableTerminalsWindows}"
+              SelectedItem="{Binding PreferredTerminalAppWindows, Mode=TwoWay}"
+              Width="220" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,6,0,0" IsVisible="{Binding IsCustomSelectedWindows}">
+            <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Custom path:</TextBlock>
+            <TextBox Width="360"
+              Text="{Binding CustomTerminalPathWindows, Mode=TwoWay}" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Preferred terminal:</TextBlock>
+            <ComboBox ItemsSource="{Binding AvailableTerminalsMac}"
+              SelectedItem="{Binding PreferredTerminalAppMac, Mode=TwoWay}"
+              Width="220" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,6,0,0" IsVisible="{Binding IsCustomSelectedMac}">
+            <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Custom path:</TextBlock>
+            <TextBox Width="360"
+              Text="{Binding CustomTerminalPathMac, Mode=TwoWay}" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel IsVisible="{OnPlatform Linux='True', Windows='False', macOS='False'}">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Preferred terminal:</TextBlock>
+            <ComboBox ItemsSource="{Binding AvailableTerminalsLinux}"
+              SelectedItem="{Binding PreferredTerminalAppLinux, Mode=TwoWay}"
+              Width="220" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,6,0,0" IsVisible="{Binding IsCustomSelectedLinux}">
+            <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Custom path:</TextBlock>
+            <TextBox Width="360"
+              Text="{Binding CustomTerminalPathLinux, Mode=TwoWay}" />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </controls:GroupBox>
+
     <controls:GroupBox Header="macOS"
       IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}">
       <StackPanel Margin="12">
         <CheckBox IsChecked="{Binding ShowAvaloniaMainMenuOnMac, Mode=TwoWay}"
           Content="Keep main menu visible on macOS (takes effect after restart)" />
-        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-          <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Preferred terminal:</TextBlock>
-          <ComboBox ItemsSource="{Binding AvailableTerminals}"
-            SelectedItem="{Binding PreferredTerminalApp, Mode=TwoWay}"
-            Width="180" />
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="0,6,0,0" IsVisible="{Binding IsCustomSelected}">
-          <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Custom path:</TextBlock>
-          <TextBox Width="360"
-            Text="{Binding CustomTerminalPath, Mode=TwoWay}" />
-        </StackPanel>
       </StackPanel>
     </controls:GroupBox>
   </StackPanel>
