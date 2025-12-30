@@ -16,6 +16,9 @@
     <DataTemplate DataType="options:DisplaySettingsViewModel">
       <options:DisplaySettingsPanel />
     </DataTemplate>
+    <DataTemplate DataType="options:RoverSettingsViewModel">
+      <options:RoverSettingsPanel />
+    </DataTemplate>
     <DataTemplate DataType="options:DecompilerSettingsViewModel">
       <options:DecompilerSettingsPanel />
     </DataTemplate>

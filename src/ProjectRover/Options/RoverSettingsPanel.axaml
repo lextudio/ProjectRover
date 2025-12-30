@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:options="clr-namespace:ICSharpCode.ILSpy.Options"
+  xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
+  xmlns:controls="clr-namespace:ProjectRover.Controls;assembly=ProjectRover"
+  x:Class="ICSharpCode.ILSpy.Options.RoverSettingsPanel"
+  x:DataType="options:RoverSettingsViewModel">
+  <StackPanel Orientation="Vertical" Margin="6">
+    <controls:GroupBox Header="Docking">
+      <StackPanel Margin="12">
+        <Border Background="{DynamicResource ThemeWarningBackgroundBrush}"
+          BorderBrush="{DynamicResource ThemeWarningBorderBrush}"
+          BorderThickness="1"
+          CornerRadius="4"
+          Padding="8"
+          Margin="0,0,0,6">
+          <TextBlock Text="{x:Static properties:Resources.DockLayoutPersistenceNotice}"
+            TextWrapping="Wrap"
+            Foreground="{DynamicResource ThemeWarningForegroundBrush}" />
+        </Border>
+        <CheckBox Content="{x:Static properties:Resources.DockLayoutPersistenceSettingLabel}"
+          IsChecked="{Binding UseDefaultDockLayoutOnly, Mode=TwoWay}" />
+      </StackPanel>
+    </controls:GroupBox>
+
+    <controls:GroupBox Header="macOS"
+      IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}">
+      <StackPanel Margin="12">
+        <CheckBox IsChecked="{Binding ShowAvaloniaMainMenuOnMac, Mode=TwoWay}"
+          Content="Keep main menu visible on macOS (takes effect after restart)" />
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+          <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Preferred terminal:</TextBlock>
+          <ComboBox ItemsSource="{Binding AvailableTerminals}"
+            SelectedItem="{Binding PreferredTerminalApp, Mode=TwoWay}"
+            Width="180" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0" IsVisible="{Binding IsCustomSelected}">
+          <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Custom path:</TextBlock>
+          <TextBox Width="360"
+            Text="{Binding CustomTerminalPath, Mode=TwoWay}" />
+        </StackPanel>
+      </StackPanel>
+    </controls:GroupBox>
+  </StackPanel>
+</UserControl>

@@ -17,7 +17,79 @@ namespace ICSharpCode.ILSpy.Util
 
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
-					ExecuteCommand("cmd.exe", $"/k \"cd /d {path}\"");
+					// Read user preference from ProjectRover settings and launch exactly that terminal (no fallbacks)
+					string? preferred = null;
+					try
+					{
+						if (ProjectRover.App.ExportProvider is not null)
+						{
+							var settingsService = ProjectRover.App.ExportProvider.GetExportedValueOrDefault<ICSharpCode.ILSpy.Util.SettingsService>();
+							if (settingsService != null)
+							{
+								var roverSettings = settingsService.GetSettings<ProjectRover.Settings.ProjectRoverSettingsSection>();
+								preferred = roverSettings.PreferredTerminalApp;
+							}
+						}
+					}
+					catch { }
+
+					if (!string.IsNullOrEmpty(preferred))
+					{
+						try
+						{
+							switch (preferred)
+							{
+								case "Command Prompt":
+								case "cmd":
+									ExecuteCommand("cmd.exe", $"/k \"cd /d {path}\"");
+									break;
+								case "PowerShell":
+								case "Windows PowerShell":
+									Process.Start(new ProcessStartInfo { FileName = "powershell.exe", Arguments = $"-NoExit -Command Set-Location -LiteralPath \"{path}\"", UseShellExecute = false });
+									break;
+								case "PowerShell Core":
+								case "pwsh":
+									Process.Start(new ProcessStartInfo { FileName = "pwsh.exe", Arguments = $"-NoExit -Command Set-Location -LiteralPath \"{path}\"", UseShellExecute = false });
+									break;
+								case "Windows Terminal":
+								case "wt":
+									Process.Start(new ProcessStartInfo { FileName = "wt.exe", Arguments = $"-d \"{path}\"", UseShellExecute = false });
+									break;
+								case "Custom":
+									{
+										var settingsService = ProjectRover.App.ExportProvider?.GetExportedValueOrDefault<ICSharpCode.ILSpy.Util.SettingsService>();
+										var roverSettings = settingsService?.GetSettings<ProjectRover.Settings.ProjectRoverSettingsSection>();
+										var custom = roverSettings?.CustomTerminalPath;
+										if (!string.IsNullOrEmpty(custom))
+										{
+											Process.Start(new ProcessStartInfo { FileName = custom, Arguments = path, UseShellExecute = false });
+										}
+										else
+										{
+											System.Windows.MessageBox.Show("Custom terminal path is empty. Please set it in Preferences.", "ProjectRover");
+										}
+										break;
+									}
+								default:
+									// Treat as executable name/path
+									Process.Start(new ProcessStartInfo { FileName = preferred, Arguments = path, UseShellExecute = false });
+									break;
+							}
+						}
+						catch (Exception ex)
+						{
+							try
+							{
+								System.Windows.MessageBox.Show($"Failed to start terminal '{preferred}': {ex.Message}\nPlease check the setting and try another option.", "ProjectRover");
+							}
+							catch { }
+						}
+					}
+					else
+					{
+						ExecuteCommand("cmd.exe", $"/k \"cd /d {path}\"");
+					}
+
 					return;
 				}
 
