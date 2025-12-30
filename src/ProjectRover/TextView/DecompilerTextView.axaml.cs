@@ -58,6 +58,7 @@ using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using ICSharpCode.Decompiler.Documentation;
 using ICSharpCode.Decompiler.TypeSystem;
+using ICSharpCode.ILSpy.Controls;
 using ICSharpCode.ILSpy.AssemblyTree;
 using ICSharpCode.ILSpy.AvalonEdit;
 using ICSharpCode.ILSpy.Options;
@@ -85,6 +86,7 @@ using Avalonia.Styling;
 using System.Windows.Threading;
 using TextMateSharp.Grammars;
 using RegistryOptions = TextMateSharp.Grammars.RegistryOptions;
+using Popup = ICSharpCode.ILSpy.Controls.Popup;
 
 namespace ICSharpCode.ILSpy.TextView
 {
@@ -415,10 +417,9 @@ namespace ICSharpCode.ILSpy.TextView
 		#endregion
 
 		#region Tooltip support
-		ToolTip? toolTip;
+		Tooltip? toolTip;
 		Popup? popupToolTip;
-		Avalonia.Threading.DispatcherTimer? popupCloseTimer;
-		const int PopupCloseDelayMs = 200;
+		TooltipSegmentKey? lastTooltipSegmentKey;
 
 			void TextViewMouseHover(object sender, Avalonia.Input.PointerEventArgs e)
 		{
@@ -429,13 +430,6 @@ namespace ICSharpCode.ILSpy.TextView
 				textEditor != null, 
 				textEditor?.Document != null, 
 				textEditor?.TextArea?.TextView != null);
-			
-			if (!TryCloseExistingPopup(false))
-			{
-				log.Debug("Cannot close existing popup, aborting tooltip");
-				return;
-			}
-			CancelPopupCloseTimer();
 			
 			TextViewPosition? position = GetPositionFromMousePosition(mousePos);
 			if (position == null)
@@ -491,7 +485,16 @@ namespace ICSharpCode.ILSpy.TextView
 				log.Debug("No reference segment found at offset {Offset}", offset);
 				return;
 			}
-			
+
+			if (IsSameTooltipSegment(seg) && popupToolTip?.IsOpen == true)
+			{
+				var popupPosition = GetPopupPosition(e, position.Value);
+				popupToolTip.HorizontalOffset = popupPosition.X;
+				popupToolTip.VerticalOffset = popupPosition.Y;
+				log.Debug("Reusing existing popup for segment {Start}-{End}", seg.StartOffset, seg.EndOffset);
+				return;
+			}
+
 			var refText = textEditor.Document.GetText(seg.StartOffset, seg.Length);
 			log.Debug("Found reference segment: {SegmentType} at {Start}-{End} (len={Len}) text=\"{RefText}\"", seg.Reference?.GetType().Name ?? "null", seg.StartOffset, seg.EndOffset, seg.Length, refText);
 			object? content = GenerateTooltip(seg);
@@ -524,105 +527,62 @@ namespace ICSharpCode.ILSpy.TextView
 				log.Verbose("Nearby ref[{Index}]: {Type} {Start}-{End} len={Len} text=\"{Text}\"", i, n.Reference?.GetType().Name ?? "null", n.StartOffset, n.EndOffset, n.Length, nText);
 			}
 
-			if (content != null)
+			if (content == null)
 			{
-				log.Information("Generated tooltip content: {ContentType}", content.GetType().FullName);
-				popupToolTip = content as Popup;
-				log.Debug("Popup cast result: {IsPopup}", popupToolTip != null);
+				log.Debug("GenerateTooltip returned null");
+				return;
+			}
 
-				if (popupToolTip != null)
-				{
-					log.Information("Showing Popup tooltip");
-					var popupPosition = GetPopupPosition(e, position.Value);
-					var cursorInView = e.GetPosition(this);
-					var cursorInEditor = e.GetPosition(textEditor);
-					var cursorInTextView = e.GetPosition(textEditor.TextArea.TextView);
-					var deltaX = popupPosition.X - cursorInTextView.X;
-					var deltaY = popupPosition.Y - cursorInTextView.Y;
-					log.Debug("Popup position: ({X}, {Y}); cursor view=({CX}, {CY}), editor=({EX}, {EY}), textView=({TX}, {TY}) delta=({DX}, {DY})",
-						popupPosition.X, popupPosition.Y, cursorInView.X, cursorInView.Y, cursorInEditor.X, cursorInEditor.Y,
-						cursorInTextView.X, cursorInTextView.Y, deltaX, deltaY);
-					popupToolTip.Closed += ToolTipClosed;
-					popupToolTip.Placement = PlacementMode.Pointer;
-					popupToolTip.PlacementTarget = textEditor.TextArea.TextView;
-					popupToolTip.HorizontalOffset = popupPosition.X;
-					popupToolTip.VerticalOffset = popupPosition.Y;
-					// popupToolTip.StaysOpen = true;  // We will close it ourselves
-					try
-					{
-						e.Handled = true;
-						popupToolTip.IsOpen = true;
-						log.Information("Popup IsOpen set to true");
-						log.Debug("Popup child present: {HasChild}, childRoot={ChildRoot}", popupToolTip.Child != null, popupToolTip.Child?.GetVisualRoot() != null);
-						distanceToPopupLimit = double.PositiveInfinity; // reset limit; we'll re-calculate it on the next mouse movement
-					}
-					catch (Exception ex)
-					{
-						log.Debug(ex, "Failed to open popup with PlacementTarget=this; trying fallback PlacementTarget=textEditor");
-						try
-						{
-							popupToolTip.PlacementTarget = textEditor;
-							popupToolTip.IsOpen = true;
-							log.Information("Popup IsOpen set to true with fallback PlacementTarget=textEditor");
-							log.Debug("Popup child present: {HasChild}, childRoot={ChildRoot}", popupToolTip.Child != null, popupToolTip.Child?.GetVisualRoot() != null);
-							// If popup failed to materialize visually, fall back to ToolTip
-							if (!popupToolTip.IsOpen || popupToolTip.Child?.GetVisualRoot() == null)
-							{
-								log.Debug("Popup did not render visually; falling back to ToolTip.SetTip");
-								try
-								{
-									Control? inner = null;
-									if (popupToolTip.Child is Border b && b.Child is Control c)
-										inner = c;
-									else if (popupToolTip.Child is Control c2)
-										inner = c2;
-									if (inner != null)
-									{
-										ToolTip.SetTip(this, inner);
-										log.Information("Fallback ToolTip set with inner control");
-									}
-								}
-								catch (Exception ex3)
-								{
-									log.Debug(ex3, "Fallback ToolTip.SetTip failed");
-								}
-							}
-						}
-						catch (Exception ex2)
-						{
-							log.Debug(ex2, "Fallback popup open failed");
-						}
-					}
-				}
-				else
-				{
-					log.Information("Showing ToolTip (not Popup)");
-					if (toolTip == null)
-					{
-						toolTip = new ToolTip();
-						log.Debug("Created new ToolTip instance");
-						//toolTip.Closed += ToolTipClosed;
-					}
-					
-					// Use Avalonia's proper API to set tooltip
-					if (content is string s)
-					{
-						ToolTip.SetTip(this, s);
-						log.Debug("Set tooltip to string via ToolTip.SetTip: {Text}", s.Substring(0, Math.Min(50, s.Length)));
-					}
-					else
-					{
-						ToolTip.SetTip(this, content);
-						log.Debug("Set tooltip to object via ToolTip.SetTip: {ContentType}", content.GetType().Name);
-					}
+			if (!TryCloseExistingPopup(false))
+			{
+				return;
+			}
 
-					e.Handled = true;
-					log.Information("ToolTip set via ToolTip.SetTip, Avalonia should show it automatically");
-				}
+			log.Information("Generated tooltip content: {ContentType}", content.GetType().FullName);
+			popupToolTip = content as Popup;
+
+			if (popupToolTip != null)
+			{
+				log.Information("Showing Popup tooltip");
+				var popupPosition = GetPopupPosition(e, position.Value);
+				var cursorInView = e.GetPosition(this);
+				var cursorInEditor = e.GetPosition(textEditor);
+				var cursorInTextView = e.GetPosition(textEditor.TextArea.TextView);
+				var deltaX = popupPosition.X - cursorInTextView.X;
+				var deltaY = popupPosition.Y - cursorInTextView.Y;
+				log.Debug("Popup position: ({X}, {Y}); cursor view=({CX}, {CY}), editor=({EX}, {EY}), textView=({TX}, {TY}) delta=({DX}, {DY})",
+					popupPosition.X, popupPosition.Y, cursorInView.X, cursorInView.Y, cursorInEditor.X, cursorInEditor.Y,
+					cursorInTextView.X, cursorInTextView.Y, deltaX, deltaY);
+				popupToolTip.Closed += ToolTipClosed;
+				popupToolTip.Placement = PlacementMode.Pointer;
+				popupToolTip.PlacementTarget = textEditor.TextArea.TextView;
+				popupToolTip.HorizontalOffset = popupPosition.X;
+				popupToolTip.VerticalOffset = popupPosition.Y;
+				popupToolTip.StaysOpen = true; // We will close it ourselves
+
+				e.Handled = true;
+				popupToolTip.IsOpen = true;
+				lastTooltipSegmentKey = TooltipSegmentKey.FromSegment(seg);
+				log.Information("Popup IsOpen set to true");
+				log.Debug("Popup child present: {HasChild}, childRoot={ChildRoot}", popupToolTip.Child != null, popupToolTip.Child?.GetVisualRoot() != null);
+				distanceToPopupLimit = double.PositiveInfinity; // reset limit; we'll re-calculate it on the next mouse movement
 			}
 			else
 			{
-				log.Debug("GenerateTooltip returned null");
+				if (toolTip == null)
+				{
+					toolTip = new Tooltip();
+					toolTip.Closed += ToolTipClosed;
+				}
+				var popupPosition = GetPopupPosition(e, position.Value);
+				toolTip.Placement = PlacementMode.Pointer;
+				toolTip.PlacementTarget = textEditor.TextArea.TextView; // required for property inheritance
+				toolTip.HorizontalOffset = popupPosition.X;
+				toolTip.VerticalOffset = popupPosition.Y;
+				toolTip.SetContent(content, settingsService.DisplaySettings.SelectedFontSize, MainWindowInstance.Width);
+
+				e.Handled = true;
+				toolTip.IsOpen = true;
 			}
 		}
 
@@ -636,8 +596,14 @@ namespace ICSharpCode.ILSpy.TextView
 				}
 				popupToolTip.IsOpen = false;
 				popupToolTip = null;
+				lastTooltipSegmentKey = null;
 			}
 			return true;
+		}
+
+		bool IsSameTooltipSegment(ReferenceSegment segment)
+		{
+			return lastTooltipSegmentKey.HasValue && lastTooltipSegmentKey.Value.Equals(TooltipSegmentKey.FromSegment(segment));
 		}
 
 		/// <summary> Returns Popup position based on mouse position, in device independent units </summary>
@@ -663,7 +629,7 @@ namespace ICSharpCode.ILSpy.TextView
 			// Non-popup tooltips get closed as soon as the mouse starts moving again
 			if (toolTip != null)
 			{
-				//toolTip.IsOpen = false;
+				toolTip.IsOpen = false;
 				e.Handled = true;
 			}
 		}
@@ -675,7 +641,6 @@ namespace ICSharpCode.ILSpy.TextView
 		{
 			if (popupToolTip != null && popupToolTip.Child?.GetVisualRoot() != null)
 			{
-				CancelPopupCloseTimer();
 				double distanceToPopup = GetDistanceToPopup(e);
 				if (distanceToPopup > distanceToPopupLimit)
 				{
@@ -692,55 +657,34 @@ namespace ICSharpCode.ILSpy.TextView
 
 		double GetDistanceToPopup(Avalonia.Input.PointerEventArgs e)
 		{
-			// Convert pointer position to control coordinates
-			var pos = e.GetPosition(this);
-			//Point p = popupToolTip!.Child.PointToClient(pos);
-			//Size size = popupToolTip.Child.RenderSize;
+			if (popupToolTip?.Child is not Control child)
+				return double.PositiveInfinity;
+
+			var mouseInSelf = e.GetPosition(this);
+			var mouseInScreen = this.PointToScreen(mouseInSelf);
+			var popupOriginInScreen = child.PointToScreen(new Point(0, 0));
+			var p = new Point(mouseInScreen.X - popupOriginInScreen.X, mouseInScreen.Y - popupOriginInScreen.Y);
+			var size = child.Bounds.Size;
 			double x = 0;
-			// if (p.X < 0)
-			// 	x = -p.X;
-			// else if (p.X > size.Width)
-			// 	x = p.X - size.Width;
+			if (p.X < 0)
+				x = -p.X;
+			else if (p.X > size.Width)
+				x = p.X - size.Width;
 			double y = 0;
-			// if (p.Y < 0)
-			// 	y = -p.Y;
-			// else if (p.Y > size.Height)
-			// 	y = p.Y - size.Height;
+			if (p.Y < 0)
+				y = -p.Y;
+			else if (p.Y > size.Height)
+				y = p.Y - size.Height;
 			return Math.Sqrt(x * x + y * y);
 		}
 
 		void TextEditorMouseLeave(object sender, Avalonia.Input.PointerEventArgs e)
 		{
-			if (popupToolTip is FlowDocumentTooltip tooltip && tooltip.IsPointerInside)
-				return;
-			SchedulePopupCloseTimer();
-		}
-
-		void SchedulePopupCloseTimer()
-		{
-			if (popupToolTip == null)
-				return;
-			popupCloseTimer ??= new Avalonia.Threading.DispatcherTimer();
-			popupCloseTimer.Interval = TimeSpan.FromMilliseconds(PopupCloseDelayMs);
-			popupCloseTimer.Tick -= PopupCloseTimer_Tick;
-			popupCloseTimer.Tick += PopupCloseTimer_Tick;
-			popupCloseTimer.Start();
-		}
-
-		void CancelPopupCloseTimer()
-		{
-			if (popupCloseTimer == null)
-				return;
-			popupCloseTimer.Stop();
-		}
-
-		void PopupCloseTimer_Tick(object? sender, EventArgs e)
-		{
-			if (popupCloseTimer != null)
-				popupCloseTimer.Stop();
-			if (popupToolTip is FlowDocumentTooltip tooltip && tooltip.IsPointerInside)
-				return;
-			TryCloseExistingPopup(false);
+			if (popupToolTip != null && !popupToolTip.IsPointerInside)
+			{
+				// do not close popup if mouse moved from editor to popup
+				TryCloseExistingPopup(false);
+			}
 		}
 
 		void OnUnloaded(object sender, EventArgs e)
@@ -753,18 +697,12 @@ namespace ICSharpCode.ILSpy.TextView
 		void ToolTipClosed(object? sender, EventArgs e)
 		{
 			if (toolTip == sender)
-			{
 				toolTip = null;
-			}
 			if (popupToolTip == sender)
 			{
-				// Because popupToolTip instances are created by the tooltip provider,
-				// they might be reused; so we should detach the event handler
-				if (popupToolTip != null)
-				{
-					popupToolTip.Closed -= ToolTipClosed;
-				}
+				popupToolTip.Closed -= ToolTipClosed;
 				popupToolTip = null;
+				lastTooltipSegmentKey = null;
 			}
 		}
 
@@ -787,9 +725,9 @@ namespace ICSharpCode.ILSpy.TextView
 						renderer.AddXmlDocumentation(documentation, null, null);
 					}
 				}
-				var tooltip = new FlowDocumentTooltip(renderer.CreateDocument(), fontSize, MainWindowInstance.Width);
+				var document = renderer.CreateDocument();
 				log.Debug("Created FlowDocumentTooltip for OpCode");
-				return tooltip;
+				return new FlowDocumentTooltip(document, fontSize, MainWindowInstance.Width);
 			}
 			else if (segment.Reference is IEntity entity)
 			{
@@ -802,14 +740,13 @@ namespace ICSharpCode.ILSpy.TextView
 						log.Debug("CreateTooltipForEntity returned null");
 						return null;
 					}
-					var tooltip = new FlowDocumentTooltip(documentControl, fontSize, MainWindowInstance.Width);
 					log.Debug("Created FlowDocumentTooltip for entity");
-					return tooltip;
+					return new FlowDocumentTooltip(documentControl, fontSize, MainWindowInstance.Width);
 				}
 				catch (Exception ex)
 				{
 					log.Debug(ex, "CreateTooltipForEntity failed; falling back to plain text tooltip");
-					var fallback = new TextBlock { Text = entity.Name, TextWrapping = TextWrapping.Wrap };
+					var fallback = new TextBlock { Text = entity.Name, TextWrapping = TextWrapping.Wrap, FontSize = fontSize };
 					return new FlowDocumentTooltip(fallback, fontSize, MainWindowInstance.Width);
 				}
 			}
@@ -883,62 +820,68 @@ namespace ICSharpCode.ILSpy.TextView
 			}
 		}
 
+		// Tooltip and Popup moved to TextView/Controls/RoverTooltipPopup.cs (namespace ICSharpCode.ILSpy.TextView.Controls)
+
 		sealed class FlowDocumentTooltip : Popup
 		{
-			const double DefaultMaxWidth = 800;
-			bool isPointerInside;
-
 			public FlowDocumentTooltip(Control documentControl, double fontSize, double maxWith)
 			{
-				var safeMaxWidth = GetSafeMaxWidth(maxWith);
-				// Host the provided control inside a border
-				var border = new Border
-				{
-					BorderThickness = new Thickness(1),
-					MaxHeight = 400,
-					Child = documentControl
-				};
-
-				this.Child = border;
-				// Track pointer in/out for close logic.
-				border.PointerEntered += OnPointerEnterHandler;
-				border.PointerExited += OnPointerLeaveHandler;
-				// set sizes
-				documentControl.MaxWidth = safeMaxWidth;
+				if (documentControl is TextBlock textBlock && fontSize > 0 && double.IsFinite(fontSize))
+					textBlock.FontSize = fontSize;
+				SetContent(documentControl, maxWith);
+				StaysOpen = true;
 			}
-
-			internal bool IsPointerInside => isPointerInside;
-
-			internal bool CloseWhenMouseMovesAway => !this.IsKeyboardFocusWithin && !isPointerInside;
 
 			protected override void OnLostFocus(Avalonia.Interactivity.RoutedEventArgs e)
 			{
 				base.OnLostFocus(e);
-				// Avoid closing immediately on open when focus doesn't move into the popup.
-				if (CloseWhenMouseMovesAway && !isPointerInside)
-					this.IsOpen = false;
+				IsOpen = false;
 			}
 
-			// PointerLeave override is not available for Popup in all Avalonia versions; use event subscription instead
-			private void OnPointerEnterHandler(object? sender, PointerEventArgs e)
+			protected override void OnPointerInsideChanged(bool isInside)
 			{
-				isPointerInside = true;
-			}
-
-			private void OnPointerLeaveHandler(object? sender, PointerEventArgs e)
-			{
-				isPointerInside = false;
-				if (CloseWhenMouseMovesAway)
-					this.IsOpen = false;
-			}
-
-			static double GetSafeMaxWidth(double maxWidth)
-			{
-				if (double.IsNaN(maxWidth) || double.IsInfinity(maxWidth) || maxWidth <= 0)
-					return DefaultMaxWidth;
-				return maxWidth;
+				if (!isInside && CloseWhenMouseMovesAway)
+					IsOpen = false;
 			}
 		}
+
+
+		readonly struct TooltipSegmentKey : IEquatable<TooltipSegmentKey>
+		{
+			public TooltipSegmentKey(int startOffset, int endOffset, Type? referenceType)
+			{
+				StartOffset = startOffset;
+				EndOffset = endOffset;
+				ReferenceType = referenceType;
+			}
+
+			public int StartOffset { get; }
+			public int EndOffset { get; }
+			public Type? ReferenceType { get; }
+
+			public static TooltipSegmentKey FromSegment(ReferenceSegment segment)
+			{
+				return new TooltipSegmentKey(segment.StartOffset, segment.EndOffset, segment.Reference?.GetType());
+			}
+
+			public bool Equals(TooltipSegmentKey other)
+			{
+				return StartOffset == other.StartOffset
+					&& EndOffset == other.EndOffset
+					&& ReferenceType == other.ReferenceType;
+			}
+
+			public override bool Equals(object? obj)
+			{
+				return obj is TooltipSegmentKey other && Equals(other);
+			}
+
+			public override int GetHashCode()
+			{
+				return HashCode.Combine(StartOffset, EndOffset, ReferenceType);
+			}
+		}
+
 		#endregion
 
 		#region Highlight brackets
