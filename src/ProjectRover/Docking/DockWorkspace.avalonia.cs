@@ -18,6 +18,7 @@ using Dock.Model.TomsToolbox;
 using Dock.Model.TomsToolbox.Core;
 using ProjectRover.Settings;
 using System.Windows.Threading;
+using ICSharpCode.ILSpy.Analyzers;
 
 namespace ICSharpCode.ILSpy.Docking
 {
@@ -91,6 +92,8 @@ namespace ICSharpCode.ILSpy.Docking
 
         var assemblyTreeModel = viewModel.AssemblyTreeModel;
         var searchPaneModel = viewModel.SearchPaneModel;
+        var analyzerPane = this.ToolPanes.FirstOrDefault(t => t.ContentId == AnalyzerTreeViewModel.PaneContentId);
+        log.Debug("DockWorkspace.InitializeLayout: ToolPanes count={Count} analyzerFound={AnalyzerFound}", this.ToolPanes.Count, analyzerPane != null);
 
         // Create Dock Structure
         var documentDock = this.CreateDocumentDock() ?? new DocumentDock
@@ -106,7 +109,26 @@ namespace ICSharpCode.ILSpy.Docking
         searchPaneModel.IsActive = false;
         this.RegisterTool(searchPaneModel);
 
-        var layout = DefaultDockLayoutBuilder.Build(assemblyTreeModel, documentDock);
+        if (analyzerPane != null)
+        {
+          analyzerPane.IsVisible = false;
+          analyzerPane.IsActive = false;
+          this.RegisterTool(analyzerPane);
+          log.Debug("DockWorkspace.InitializeLayout: Registered analyzer pane with Id={Id}", analyzerPane.Id);
+        }
+        else
+        {
+          log.Debug("DockWorkspace.InitializeLayout: Analyzer pane not found in ToolPanes");
+        }
+
+        var leftTools = new System.Collections.Generic.List<ITool> { assemblyTreeModel };
+        if (analyzerPane is ITool analyzerTool)
+        {
+          leftTools.Add(analyzerTool);
+          log.Debug("DockWorkspace.InitializeLayout: Added analyzer to LeftDock");
+        }
+
+        var layout = DefaultDockLayoutBuilder.Build(leftTools, documentDock);
         documentDock = layout.DocumentDock;
 
         var factory = new Factory();
@@ -114,6 +136,11 @@ namespace ICSharpCode.ILSpy.Docking
         dockHost.InitializeFactory = true;
         dockHost.InitializeLayout = true;
         dockHost.Layout = layout.Root;
+
+        if (analyzerPane != null && !layout.ToolDock.VisibleDockables.Contains(analyzerPane))
+        {
+          layout.ToolDock.VisibleDockables.Add(analyzerPane);
+        }
 
         AttachToDockHost(dockHost, factory, documentDock);
         HookUpToolListeners(dockHost);
@@ -125,6 +152,14 @@ namespace ICSharpCode.ILSpy.Docking
       catch (Exception ex)
       {
         log.Error(ex, "DockWorkspace.InitializeLayout error");
+      }
+    }
+
+    partial void ActivateToolCrossPlatform(string contentId)
+    {
+      if (dockHost != null)
+      {
+        ActivateTool(dockHost, contentId);
       }
     }
 
@@ -182,6 +217,7 @@ namespace ICSharpCode.ILSpy.Docking
         RegisterKnownTools();
         ReplaceToolDockables(layout);
         ResetDocumentDock(layout);
+        EnsureAnalyzerDock(layout);
 
         if (FindDockableById(layout, "SearchDock") is IDockable searchDock)
         {
@@ -223,6 +259,47 @@ namespace ICSharpCode.ILSpy.Docking
       {
         log.Error(ex, "InitializeLayout: Failed to restore layout");
         return false;
+      }
+    }
+
+    private void EnsureAnalyzerDock(IDockable layout)
+    {
+      var analyzer = ToolPanes.FirstOrDefault(t => t.ContentId == AnalyzerTreeViewModel.PaneContentId);
+      if (analyzer == null)
+      {
+        log.Debug("EnsureAnalyzerDock: Analyzer tool not found in ToolPanes.");
+        return;
+      }
+
+      analyzer.Owner = analyzer.Owner ?? layout;
+      analyzer.Factory = analyzer.Factory ?? (layout as IDockable)?.Factory;
+
+      var leftDock = FindDockById(layout, "LeftDock") as ToolDock;
+      if (leftDock == null)
+      {
+        log.Debug("EnsureAnalyzerDock: LeftDock missing, creating a new one with analyzer");
+        leftDock = new ToolDock
+        {
+          Id = "LeftDock",
+          Title = "LeftDock",
+          Alignment = Alignment.Left,
+          VisibleDockables = new ObservableCollection<IDockable>()
+        };
+        RegisterDockable(leftDock);
+        leftDock.VisibleDockables.Add(analyzer);
+        return;
+      }
+
+      if (!leftDock.VisibleDockables.Contains(analyzer))
+      {
+        log.Debug("EnsureAnalyzerDock: Inserting analyzer pane into LeftDock");
+        analyzer.Owner = analyzer.Owner ?? leftDock;
+        analyzer.Factory = analyzer.Factory ?? leftDock.Factory;
+        leftDock.VisibleDockables.Add(analyzer);
+      }
+      else
+      {
+        log.Debug("EnsureAnalyzerDock: Analyzer already present in LeftDock");
       }
     }
 

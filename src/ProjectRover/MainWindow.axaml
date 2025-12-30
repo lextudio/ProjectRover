@@ -10,6 +10,7 @@
         xmlns:viewModels="clr-namespace:ICSharpCode.ILSpy.ViewModels;assembly=ProjectRover"
         xmlns:assemblyTree="clr-namespace:ICSharpCode.ILSpy.AssemblyTree;assembly=ProjectRover"
         xmlns:search="clr-namespace:ICSharpCode.ILSpy.Search;assembly=ProjectRover"
+        xmlns:analyzers="clr-namespace:ICSharpCode.ILSpy.Analyzers;assembly=ProjectRover"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="ICSharpCode.ILSpy.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -34,6 +35,10 @@
 
                     <DataTemplate DataType="{x:Type search:SearchPaneModel}">
                         <search:SearchPane DataContext="{Binding}" />
+                    </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type analyzers:AnalyzerTreeViewModel}">
+                        <analyzers:AnalyzerTreeView DataContext="{Binding}" />
                     </DataTemplate>
                 </dock:DockControl.DataTemplates>
             </dock:DockControl>

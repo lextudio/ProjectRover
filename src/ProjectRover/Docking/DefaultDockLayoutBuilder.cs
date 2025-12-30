@@ -1,7 +1,11 @@
 using System.Collections.ObjectModel;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dock.Model.Core;
 using DockOrientation = Dock.Model.Core.Orientation;
 using Dock.Model.TomsToolbox.Controls;
+using Dock.Model.Controls;
 
 namespace ICSharpCode.ILSpy.Docking;
 
@@ -12,8 +16,17 @@ public sealed record DefaultDockLayout(
 
 public static class DefaultDockLayoutBuilder
 {
-    public static DefaultDockLayout Build(IDockable leftTool, DocumentDock? documentDock = null)
+    public static DefaultDockLayout Build(ITool leftTool, DocumentDock? documentDock = null)
     {
+        return Build(new[] { leftTool }, documentDock);
+    }
+
+    public static DefaultDockLayout Build(IEnumerable<ITool> leftTools, DocumentDock? documentDock = null)
+    {
+        var tools = leftTools?.Where(t => t != null).ToList() ?? [];
+        if (tools.Count == 0)
+            throw new ArgumentException("At least one tool is required to build the default dock layout.", nameof(leftTools));
+
         var document = documentDock ?? new DocumentDock
         {
             Id = "DocumentDock",
@@ -21,14 +34,16 @@ public static class DefaultDockLayoutBuilder
             VisibleDockables = new ObservableCollection<IDockable>()
         };
 
+        var primaryTool = tools[0];
+
         var toolDock = new ToolDock
         {
             Id = "LeftDock",
             Title = "LeftDock",
             Alignment = Alignment.Left,
-            VisibleDockables = new ObservableCollection<IDockable> { leftTool },
-            ActiveDockable = leftTool,
-            DefaultDockable = leftTool,
+            VisibleDockables = new ObservableCollection<IDockable>(tools),
+            ActiveDockable = primaryTool,
+            DefaultDockable = primaryTool,
             Proportion = 0.3
         };
 

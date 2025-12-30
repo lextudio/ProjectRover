@@ -188,6 +188,7 @@ namespace ICSharpCode.ILSpy
 
 	internal class ContextMenuProvider
 	{
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("ContextMenu");
 		private static readonly WeakEventSource<EventArgs> ContextMenuClosedEventSource = new();
 
 		public static event EventHandler<EventArgs> ContextMenuClosed {
@@ -273,6 +274,7 @@ namespace ICSharpCode.ILSpy
 			var context = TextViewContext.Create(e, treeView: treeView);
 			if (context.SelectedTreeNodes.Length == 0)
 			{
+				log.Debug("Context menu suppressed for {Control}: no selection", control.GetType().Name);
 				e.Handled = true; // don't show the menu
 				return;
 			}
@@ -317,9 +319,18 @@ namespace ICSharpCode.ILSpy
 		bool ShowContextMenu(TextViewContext context, out ContextMenu menu)
 		{
 			menu = new ContextMenu();
+			if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+			{
+				log.Debug("Context menu request for {Control}: selection={SelectionCount} reference={Reference} source={Source}",
+					control.GetType().Name,
+					context.SelectedTreeNodes?.Length ?? 0,
+					DescribeReference(context.Reference?.Reference),
+					context.OriginalSource?.GetType().Name ?? "(null)");
+			}
 
 			var menuGroups = new Dictionary<string, IExport<IContextMenuEntry, IContextMenuEntryMetadata>[]>();
 			IExport<IContextMenuEntry, IContextMenuEntryMetadata>[] topLevelGroup = null;
+			var visibleByCategory = new Dictionary<string, int>();
 			foreach (var group in entries.OrderBy(c => c.Metadata.Order).GroupBy(c => c.Metadata.ParentMenuID))
 			{
 				if (group.Key == null)
@@ -340,7 +351,21 @@ namespace ICSharpCode.ILSpy
 				ContextMenuClosedEventSource.Raise(this, EventArgs.Empty);
 			}
 
-			return menu.Items.Count > 0;
+			if (menu.Items.Count == 0)
+			{
+				log.Debug("Context menu suppressed for {Control}: no visible entries", control.GetType().Name);
+				return false;
+			}
+
+			if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+			{
+				var categories = visibleByCategory.Count == 0
+					? "(none)"
+					: string.Join(", ", visibleByCategory.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+				log.Debug("Context menu built for {Control}: items={ItemCount}, categories={Categories}", control.GetType().Name, menu.Items.Count, categories);
+			}
+
+			return true;
 
 			void BuildMenu(IExport<IContextMenuEntry, IContextMenuEntryMetadata>[] menuGroup, ItemCollection parent)
 			{
@@ -357,6 +382,10 @@ namespace ICSharpCode.ILSpy
 								parent.Add(new Separator());
 								needSeparatorForCategory = false;
 							}
+							var categoryName = category.Key ?? "(none)";
+							visibleByCategory[categoryName] = visibleByCategory.TryGetValue(categoryName, out var count)
+								? count + 1
+								: 1;
 							var menuItem = new MenuItem();
 							menuItem.Header = ResourceHelper.GetString(entryPair.Metadata.Header);
 							ApplyGesture(menuItem, entryPair.Metadata.InputGestureText);
@@ -404,6 +433,11 @@ namespace ICSharpCode.ILSpy
 					}
 				}
 			}
+		}
+
+		static string DescribeReference(object reference)
+		{
+			return reference?.GetType().Name ?? "(null)";
 		}
 	}
 }

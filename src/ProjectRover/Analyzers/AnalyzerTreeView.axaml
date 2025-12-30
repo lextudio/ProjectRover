@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:converters="clr-namespace:ICSharpCode.ILSpy.Converters;assembly=ProjectRover"
+             xmlns:treeView="clr-namespace:ICSharpCode.ILSpyX.TreeView;assembly=ICSharpCode.ILSpyX"
+             xmlns:analyzers="clr-namespace:ICSharpCode.ILSpy.Analyzers;assembly=ProjectRover"
+             x:Class="ICSharpCode.ILSpy.Analyzers.AnalyzerTreeView"
+             x:DataType="analyzers:AnalyzerTreeViewModel">
+  <UserControl.Resources>
+    <converters:NodeForegroundConverter x:Key="NodeForegroundConverter" />
+    <converters:IconKeyThemeToImageConverter x:Key="IconKeyThemeToImageConverter" />
+  </UserControl.Resources>
+
+  <Border Background="Transparent" BorderThickness="0">
+    <TreeView x:Name="tree"
+              ItemsSource="{Binding Root.Children}"
+              SelectionMode="Single">
+      <TreeView.Styles>
+        <Style Selector="TreeViewItem" x:DataType="treeView:SharpTreeNode">
+          <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+          <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+        </Style>
+      </TreeView.Styles>
+      <TreeView.ItemTemplate>
+        <TreeDataTemplate DataType="treeView:SharpTreeNode" ItemsSource="{Binding ViewChildren}">
+          <StackPanel Orientation="Horizontal" Background="Transparent">
+            <Panel Width="16" Height="16" Margin="0,0,5,0">
+              <Image Width="16" Height="16" VerticalAlignment="Center">
+                <Image.Source>
+                  <MultiBinding Converter="{StaticResource IconKeyThemeToImageConverter}">
+                    <Binding Path="Icon" />
+                    <Binding Path="ActualThemeVariant" Source="{x:Static Application.Current}" />
+                  </MultiBinding>
+                </Image.Source>
+                <Image.IsVisible>
+                  <Binding Path="Icon" Converter="{x:Static cv:ObjectConverters.IsNotNull}" />
+                </Image.IsVisible>
+              </Image>
+            </Panel>
+            <TextBlock Text="{Binding Text}"
+                       VerticalAlignment="Center"
+                       Foreground="{Binding ., Converter={StaticResource NodeForegroundConverter}}" />
+          </StackPanel>
+        </TreeDataTemplate>
+      </TreeView.ItemTemplate>
+      <TreeView.KeyBindings>
+        <KeyBinding Gesture="Ctrl+R" Command="{Binding AnalyzeCommand}" />
+      </TreeView.KeyBindings>
+    </TreeView>
+  </Border>
+</UserControl>
