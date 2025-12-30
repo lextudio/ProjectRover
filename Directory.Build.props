@@ -1,0 +1,13 @@
+<Project>
+	<!--
+		Enable building projects that target Windows on non-Windows OS (macOS/Linux).
+		The .NET SDK requires this flag to be set when a project lists Windows-only
+		framework references or targets windows-specific workloads while running on
+		a non-Windows host. Setting this here applies it to all projects in the
+		repository; change to a per-project property if you prefer a narrower scope.
+	-->
+	<PropertyGroup>
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+	</PropertyGroup>
+
+</Project>
