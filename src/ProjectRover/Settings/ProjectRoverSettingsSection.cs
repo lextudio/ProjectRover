@@ -11,6 +11,8 @@ namespace ProjectRover.Settings
     {
         private bool showAvaloniaMainMenuOnMac;
         private string? dockLayout;
+        private string? preferredTerminalApp;
+        private string? customTerminalPath;
         private bool useDefaultDockLayoutOnly = true;
 
         public XName SectionName => "ProjectRover";
@@ -33,10 +35,24 @@ namespace ProjectRover.Settings
             set => SetProperty(ref dockLayout, value);
         }
 
+        public string? PreferredTerminalApp
+        {
+            get => preferredTerminalApp;
+            set => SetProperty(ref preferredTerminalApp, value);
+        }
+
+        public string? CustomTerminalPath
+        {
+            get => customTerminalPath;
+            set => SetProperty(ref customTerminalPath, value);
+        }
+
         public void LoadFromXml(XElement section)
         {
             ShowAvaloniaMainMenuOnMac = (bool?)section.Attribute(nameof(ShowAvaloniaMainMenuOnMac)) ?? false;
             UseDefaultDockLayoutOnly = (bool?)section.Attribute(nameof(UseDefaultDockLayoutOnly)) ?? true;
+            PreferredTerminalApp = (string?)section.Attribute(nameof(PreferredTerminalApp)) ?? string.Empty;
+            CustomTerminalPath = (string?)section.Attribute(nameof(CustomTerminalPath)) ?? string.Empty;
             var dockLayoutElement = section.Element(nameof(DockLayout));
             if (dockLayoutElement != null)
             {
@@ -67,6 +83,8 @@ namespace ProjectRover.Settings
                     element.Add(new XElement(nameof(DockLayout), DockLayout));
                 }
             }
+            element.SetAttributeValue(nameof(PreferredTerminalApp), PreferredTerminalApp);
+            element.SetAttributeValue(nameof(CustomTerminalPath), CustomTerminalPath);
             return element;
         }
 

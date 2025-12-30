@@ -162,6 +162,16 @@
         <CheckBox IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}"
           IsChecked="{Binding Source={StaticResource DisplayMacSettings}, Path=ShowAvaloniaMainMenuOnMac, Mode=TwoWay}"
           Content="Keep main menu visible on macOS (takes effect after restart)" />
+        <StackPanel IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}" Orientation="Horizontal" Margin="0,6,0,0">
+          <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Preferred terminal:</TextBlock>
+          <ComboBox ItemsSource="{Binding Source={StaticResource DisplayMacSettings}, Path=AvailableTerminals}"
+                    SelectedItem="{Binding Source={StaticResource DisplayMacSettings}, Path=PreferredTerminalApp, Mode=TwoWay}"
+                    Width="180"/>
+        </StackPanel>
+        <StackPanel IsVisible="{OnPlatform macOS='True', Windows='False', Linux='False'}" Orientation="Horizontal" Margin="0,6,0,0">
+          <TextBlock VerticalAlignment="Center" Margin="0,0,6,0" IsVisible="{Binding Source={StaticResource DisplayMacSettings}, Path=IsCustomSelected}">Custom path:</TextBlock>
+          <TextBox Width="360" IsVisible="{Binding Source={StaticResource DisplayMacSettings}, Path=IsCustomSelected}" Text="{Binding Source={StaticResource DisplayMacSettings}, Path=CustomTerminalPath, Mode=TwoWay}"/>
+        </StackPanel>
       </StackPanel>
     </controls:GroupBox>
   </StackPanel>

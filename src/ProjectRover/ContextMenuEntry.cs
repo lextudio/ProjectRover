@@ -316,16 +316,6 @@ namespace ICSharpCode.ILSpy
 
 		bool ShowContextMenu(TextViewContext context, out ContextMenu menu)
 		{
-			// Closing event is raised on the control where mouse is clicked, not on the control that opened the menu, so we hook on the global window event.
-			var window = Window.GetWindow(control)!;
-			window.ContextMenuClosing += ContextMenu_Closing;
-
-			void ContextMenu_Closing(object sender, EventArgs e)
-			{
-				window.ContextMenuClosing -= ContextMenu_Closing;
-				ContextMenuClosedEventSource.Raise(this, EventArgs.Empty);
-			}
-
 			menu = new ContextMenu();
 
 			var menuGroups = new Dictionary<string, IExport<IContextMenuEntry, IContextMenuEntryMetadata>[]>();
@@ -342,6 +332,14 @@ namespace ICSharpCode.ILSpy
 				}
 			}
 			BuildMenu(topLevelGroup ?? Array.Empty<IExport<IContextMenuEntry, IContextMenuEntryMetadata>>(), menu.Items);
+			menu.Closed += ContextMenu_Closing;
+
+			void ContextMenu_Closing(object sender, EventArgs e)
+			{
+				((ContextMenu)sender).Closed -= ContextMenu_Closing;
+				ContextMenuClosedEventSource.Raise(this, EventArgs.Empty);
+			}
+
 			return menu.Items.Count > 0;
 
 			void BuildMenu(IExport<IContextMenuEntry, IContextMenuEntryMetadata>[] menuGroup, ItemCollection parent)
@@ -361,7 +359,7 @@ namespace ICSharpCode.ILSpy
 							}
 							var menuItem = new MenuItem();
 							menuItem.Header = ResourceHelper.GetString(entryPair.Metadata.Header);
-							menuItem.InputGestureText = entryPair.Metadata.InputGestureText;
+							ApplyGesture(menuItem, entryPair.Metadata.InputGestureText);
 							if (!string.IsNullOrEmpty(entryPair.Metadata.Icon))
 							{
 								menuItem.Icon = new Image {
@@ -383,6 +381,26 @@ namespace ICSharpCode.ILSpy
 								BuildMenu(group, menuItem.Items);
 							}
 						}
+					}
+				}
+			}
+
+			void ApplyGesture(MenuItem menuItem, string? gestureText)
+			{
+				if (string.IsNullOrWhiteSpace(gestureText) || gestureText == "MMB") // IMPORTANT: "MMB" is a special case we use to indicate middle-mouse-button actions. We don't want to show that in the menu.
+					return;
+
+				try
+				{
+					var parsed = KeyGesture.Parse(gestureText);
+					menuItem.HotKey = parsed;
+					menuItem.InputGesture = parsed;
+				}
+				catch
+				{
+					if (menuItem.Header is string headerText)
+					{
+						menuItem.Header = $"{headerText}\t{gestureText}";
 					}
 				}
 			}
