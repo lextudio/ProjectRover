@@ -1,6 +1,7 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using ICSharpCode.ILSpy;
 using ICSharpCode.ILSpy.TreeNodes;
 using ICSharpCode.ILSpyX.TreeView;
 
@@ -11,6 +12,9 @@ namespace ICSharpCode.ILSpy.AssemblyTree
         public AssemblyListPane()
         {
             InitializeComponent();
+            var treeView = ExplorerTreeView;
+            if (treeView != null)
+                ContextMenuProvider.Add(treeView);
         }
 
         protected override void OnDataContextChanged(EventArgs e)

@@ -397,13 +397,14 @@ namespace ICSharpCode.ILSpy.Controls
                 {
                     log.Debug("TabPages.Remove event fired, count={Count}", args.OldItems.Count);
                     var toRemove = windowMenuItem.Items.OfType<MenuItem>().Where(mi => {
-                        var tabPage = (ICSharpCode.ILSpy.ViewModels.TabPageModel?)mi.Tag;
-                        return args.OldItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>().Any(tp => tp == tabPage);
+                        var tabPage = mi.Tag as ICSharpCode.ILSpy.ViewModels.TabPageModel;
+                        return tabPage != null
+                            && args.OldItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>().Any(tp => tp == tabPage);
                     }).ToArray();
                     
                     foreach (var item in toRemove)
                     {
-                        var tabPage = (ICSharpCode.ILSpy.ViewModels.TabPageModel?)item.Tag;
+                        var tabPage = item.Tag as ICSharpCode.ILSpy.ViewModels.TabPageModel;
                         log.Debug("Removing menu item for tab: {Title}", tabPage?.Title ?? "unknown");
                         windowMenuItem.Items.Remove(item);
                         tabPageMenuItems.Remove(item);

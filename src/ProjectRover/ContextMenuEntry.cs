@@ -201,7 +201,7 @@ namespace ICSharpCode.ILSpy
 		public static void Add(TreeView treeView)
 		{
 			var provider = new ContextMenuProvider(treeView);
-			// TODO: treeView.ContextMenuOpening += provider.treeView_ContextMenuOpening;
+			treeView.ContextRequested += provider.treeView_ContextMenuOpening;
 			// Context menu is shown only when the ContextMenu property is not null before the
 			// ContextMenuOpening event handler is called.
 			treeView.ContextMenu = new ContextMenu();
@@ -210,7 +210,7 @@ namespace ICSharpCode.ILSpy
 		public static void Add(DecompilerTextView textView)
 		{
 			var provider = new ContextMenuProvider(textView);
-			//textView.ContextMenuOpening += provider.textView_ContextMenuOpening;
+			textView.ContextRequested += provider.textView_ContextMenuOpening;
 			// Context menu is shown only when the ContextMenu property is not null before the
 			// ContextMenuOpening event handler is called.
 			textView.ContextMenu = new ContextMenu();
@@ -219,7 +219,7 @@ namespace ICSharpCode.ILSpy
 		public static void Add(ListBox listBox)
 		{
 			var provider = new ContextMenuProvider(listBox);
-			//listBox.ContextMenuOpening += provider.listBox_ContextMenuOpening;
+			listBox.ContextRequested += provider.listBox_ContextMenuOpening;
 			listBox.ContextMenu = new ContextMenu();
 		}
 
@@ -317,14 +317,14 @@ namespace ICSharpCode.ILSpy
 		bool ShowContextMenu(TextViewContext context, out ContextMenu menu)
 		{
 			// Closing event is raised on the control where mouse is clicked, not on the control that opened the menu, so we hook on the global window event.
-			// TODO: var window = Window.GetWindow(control)!;
-			//window.ContextMenuClosing += ContextMenu_Closing;
+			var window = Window.GetWindow(control)!;
+			window.ContextMenuClosing += ContextMenu_Closing;
 
-			// void ContextMenu_Closing(object sender, EventArgs e)
-			// {
-			// 	window.ContextMenuClosing -= ContextMenu_Closing;
-			// 	ContextMenuClosedEventSource.Raise(this, EventArgs.Empty);
-			// }
+			void ContextMenu_Closing(object sender, EventArgs e)
+			{
+				window.ContextMenuClosing -= ContextMenu_Closing;
+				ContextMenuClosedEventSource.Raise(this, EventArgs.Empty);
+			}
 
 			menu = new ContextMenu();
 
@@ -361,7 +361,7 @@ namespace ICSharpCode.ILSpy
 							}
 							var menuItem = new MenuItem();
 							menuItem.Header = ResourceHelper.GetString(entryPair.Metadata.Header);
-							// TODO: menuItem.InputGestureText = entryPair.Metadata.InputGestureText;
+							menuItem.InputGestureText = entryPair.Metadata.InputGestureText;
 							if (!string.IsNullOrEmpty(entryPair.Metadata.Icon))
 							{
 								menuItem.Icon = new Image {
