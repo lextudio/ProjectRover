@@ -21,6 +21,7 @@ using Avalonia;
 using System;
 using Serilog;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using ICSharpCode.ILSpy.Util;
 
 namespace ProjectRover;
@@ -38,9 +39,15 @@ sealed class Program
     {
         log.Information("Main started. Console output is working.");
 
-        // Configure Serilog (console + file) - settings can be controlled via configuration later.
+        // Configure Serilog from configuration (appsettings.json + environment variables).
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .Build();
+
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .ReadFrom.Configuration(configuration)
+            .Enrich.FromLogContext()
             .WriteTo.Console()
             .WriteTo.File("projectrover.log", rollingInterval: RollingInterval.Day)
             .CreateLogger();

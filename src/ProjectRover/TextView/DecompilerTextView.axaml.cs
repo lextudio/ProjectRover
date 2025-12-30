@@ -293,7 +293,20 @@ namespace ICSharpCode.ILSpy.TextView
 			textMarkerService = new TextMarkerService(textEditor.TextArea.TextView);
 			textEditor.TextArea.TextView.BackgroundRenderers.Add(textMarkerService);
 			textEditor.TextArea.TextView.LineTransformers.Add(textMarkerService);
+			// Force show line numbers for easier diagnostics during hover debugging and log margin info
 			textEditor.ShowLineNumbers = true;
+			log.Debug("DisplaySettings.ShowLineNumbers = {ShowLineNumbers}", settingsService.DisplaySettings.ShowLineNumbers);
+			int mi = 0;
+			foreach (var margin in this.textEditor.TextArea.LeftMargins)
+			{
+				mi++;
+				log.Debug("LeftMargin[{Index}]: Type={Type} IsVisible={IsVisible}", mi, margin.GetType().Name, margin.IsVisible);
+				if (margin is LineNumberMargin || margin is Avalonia.Controls.Shapes.Line)
+				{
+					margin.IsVisible = true;
+					log.Debug("LeftMargin[{Index}] forced visible", mi);
+				}
+			}
 
 			MessageBus<SettingsChangedEventArgs>.Subscribers += Settings_Changed;
 
@@ -374,9 +387,20 @@ namespace ICSharpCode.ILSpy.TextView
 		{
 			foreach (var margin in this.textEditor.TextArea.LeftMargins)
 			{
-				if (margin is LineNumberMargin || margin is Avalonia.Controls.Shapes.Line)
+				// For diagnostics we force visibility and set a contrasting foreground
+				try
 				{
-					margin.IsVisible = settingsService.DisplaySettings.ShowLineNumbers;
+					if (margin is LineNumberMargin || margin is Avalonia.Controls.Shapes.Line)
+					{
+						margin.IsVisible = true; // force visible regardless of settings
+						// set foreground to editor foreground to ensure contrast
+						try { margin.SetValue(Avalonia.Controls.TextBlock.ForegroundProperty, textEditor.Foreground); } catch { }
+						log.Debug("ShowLineMargin: forced visible LeftMargin type={Type}", margin.GetType().Name);
+					}
+				}
+				catch (Exception ex)
+				{
+					log.Debug(ex, "ShowLineMargin: failed to force margin visibility for {Type}", margin.GetType().Name);
 				}
 			}
 		}
@@ -394,29 +418,118 @@ namespace ICSharpCode.ILSpy.TextView
 		ToolTip? toolTip;
 		Popup? popupToolTip;
 
-		void TextViewMouseHover(object sender, Avalonia.Input.PointerEventArgs e)
+			void TextViewMouseHover(object sender, Avalonia.Input.PointerEventArgs e)
 		{
+			var mousePos = e.GetPosition(this);
+			log.Debug("TextViewMouseHover triggered at ({X}, {Y}) relative to DecompilerTextView", mousePos.X, mousePos.Y);
+			log.Debug("DecompilerTextView bounds: Width={Width}, Height={Height}, IsVisible={IsVisible}", Bounds.Width, Bounds.Height, IsVisible);
+			log.Debug("TextEditor: IsInitialized={IsInit}, Document={HasDoc}, TextView={HasView}", 
+				textEditor != null, 
+				textEditor?.Document != null, 
+				textEditor?.TextArea?.TextView != null);
+			
 			if (!TryCloseExistingPopup(false))
 			{
+				log.Debug("Cannot close existing popup, aborting tooltip");
 				return;
 			}
-			TextViewPosition? position = GetPositionFromMousePosition(e.GetPosition(this));
+			
+			TextViewPosition? position = GetPositionFromMousePosition(mousePos);
 			if (position == null)
+			{
+				log.Warning("GetPositionFromMousePosition returned null for mouse at ({X}, {Y})", mousePos.X, mousePos.Y);
 				return;
+			}
+			
 			int offset = textEditor.Document.GetOffset(position.Value.Location);
+			log.Debug("Mouse hover at offset {Offset}, line {Line}, column {Column}", offset, position.Value.Line, position.Value.Column);
+			
+			// Log the line text and a surrounding snippet so we can see what the cursor is over
+			var docLine = textEditor.Document.GetLineByNumber(position.Value.Line);
+			var lineText = textEditor.Document.GetText(docLine.Offset, docLine.Length);
+			int indexInLine = offset - docLine.Offset;
+			int snippetStart = Math.Max(0, indexInLine - 40);
+			int snippetLen = Math.Min(80, Math.Max(0, Math.Min(docLine.Length - snippetStart, 80)));
+			var snippet = snippetLen > 0 ? lineText.Substring(snippetStart, snippetLen) : string.Empty;
+			char? charUnderCursor = (indexInLine >= 0 && indexInLine < lineText.Length) ? lineText[indexInLine] : (char?)null;
+			log.Debug("Line {Line} (len={Len}) indexInLine={Index} charUnderCursor={Char} snippet=\"{Snippet}\"", position.Value.Line, docLine.Length, indexInLine, charUnderCursor?.ToString() ?? "(none)", snippet);
+
+			// Log document contents intelligently: full text when small, otherwise a focused excerpt
+			int docLength = textEditor.Document.TextLength;
+			const int fullDumpLimit = 20000; // characters
+			if (docLength <= fullDumpLimit)
+			{
+				var fullText = textEditor.Document.Text;
+				log.Verbose("Document full text (len={Len}): {DocText}", docLength, fullText);
+			}
+			else
+			{
+				int startLine = Math.Max(1, position.Value.Line - 10);
+				int endLine = Math.Min(textEditor.Document.LineCount, position.Value.Line + 10);
+				var excerpt = new System.Text.StringBuilder();
+				for (int ln = startLine; ln <= endLine; ln++)
+				{
+					var lobj = textEditor.Document.GetLineByNumber(ln);
+					var txt = textEditor.Document.GetText(lobj.Offset, lobj.Length);
+					excerpt.AppendLine($"{ln,5}: {txt}");
+				}
+				log.Verbose("Document excerpt lines {Start}-{End} around line {Line}:\n{Excerpt}", startLine, endLine, position.Value.Line, excerpt.ToString());
+			}
+			
 			if (referenceElementGenerator.References == null)
+			{
+				log.Debug("referenceElementGenerator.References is null, aborting tooltip");
 				return;
+			}
+			
 			ReferenceSegment? seg = referenceElementGenerator.References.FindSegmentsContaining(offset).FirstOrDefault();
 			if (seg == null)
+			{
+				log.Debug("No reference segment found at offset {Offset}", offset);
 				return;
+			}
+			
+			var refText = textEditor.Document.GetText(seg.StartOffset, seg.Length);
+			log.Debug("Found reference segment: {SegmentType} at {Start}-{End} (len={Len}) text=\"{RefText}\"", seg.Reference?.GetType().Name ?? "null", seg.StartOffset, seg.EndOffset, seg.Length, refText);
 			object? content = GenerateTooltip(seg);
+			
+			// Also log the identifier/token under or near the cursor by scanning word characters
+			string lineFullText = lineText;
+			int start = indexInLine;
+			int end = indexInLine;
+			// if cursor is at end of line, move back one char for token detection
+			if (start >= lineFullText.Length && lineFullText.Length > 0)
+				start = end = lineFullText.Length - 1;
+			// expand start left while word chars
+			while (start > 0 && IsIdentifierChar(lineFullText[start - 1])) start--;
+			// expand end right while word chars
+			while (end < lineFullText.Length && IsIdentifierChar(lineFullText[end])) end++;
+			string token = (start < end && start >= 0 && end <= lineFullText.Length) ? lineFullText.Substring(start, end - start) : string.Empty;
+			log.Debug("Token under/near cursor: \"{Token}\" (startInLine={Start}, endInLine={End})", token, start, end);
+			
+			// Log up to 3 nearby reference segments overlapping a small neighborhood (±10 chars)
+			int neighborhoodStart = Math.Max(docLine.Offset, offset - 10);
+			int neighborhoodEnd = Math.Min(docLine.EndOffset, offset + 10);
+			var nearby = referenceElementGenerator.References
+				.Where(s => s.StartOffset < neighborhoodEnd && s.EndOffset > neighborhoodStart)
+				.Take(3)
+				.ToArray();
+			for (int i = 0; i < nearby.Length; i++)
+			{
+				var n = nearby[i];
+				var nText = textEditor.Document.GetText(n.StartOffset, n.Length);
+				log.Verbose("Nearby ref[{Index}]: {Type} {Start}-{End} len={Len} text=\"{Text}\"", i, n.Reference?.GetType().Name ?? "null", n.StartOffset, n.EndOffset, n.Length, nText);
+			}
 
 			if (content != null)
 			{
+				log.Information("Generated tooltip content: {ContentType}", content.GetType().FullName);
 				popupToolTip = content as Popup;
+				log.Debug("Popup cast result: {IsPopup}", popupToolTip != null);
 
 				if (popupToolTip != null)
 				{
+					log.Information("Showing Popup tooltip");
 					var popupPosition = GetPopupPosition(e);
 					popupToolTip.Closed += ToolTipClosed;
 					popupToolTip.Placement = PlacementMode.Pointer; // PlacementMode.Relative;
@@ -424,33 +537,59 @@ namespace ICSharpCode.ILSpy.TextView
 					popupToolTip.HorizontalOffset = popupPosition.X;
 					popupToolTip.VerticalOffset = popupPosition.Y;
 					// popupToolTip.StaysOpen = true;  // We will close it ourselves // TODO: need to migrate to Flyout or just Popup
-
-					e.Handled = true;
-					popupToolTip.IsOpen = true;
-					distanceToPopupLimit = double.PositiveInfinity; // reset limit; we'll re-calculate it on the next mouse movement
+					try
+					{
+						e.Handled = true;
+						popupToolTip.IsOpen = true;
+						log.Information("Popup IsOpen set to true");
+						log.Debug("Popup child present: {HasChild}, childRoot={ChildRoot}", popupToolTip.Child != null, popupToolTip.Child?.GetVisualRoot() != null);
+						distanceToPopupLimit = double.PositiveInfinity; // reset limit; we'll re-calculate it on the next mouse movement
+					}
+					catch (Exception ex)
+					{
+						log.Debug(ex, "Failed to open popup with PlacementTarget=this; trying fallback PlacementTarget=textEditor");
+						try
+						{
+							popupToolTip.PlacementTarget = textEditor;
+							popupToolTip.IsOpen = true;
+							log.Information("Popup IsOpen set to true with fallback PlacementTarget=textEditor");
+							log.Debug("Popup child present: {HasChild}, childRoot={ChildRoot}", popupToolTip.Child != null, popupToolTip.Child?.GetVisualRoot() != null);
+						}
+						catch (Exception ex2)
+						{
+							log.Debug(ex2, "Fallback popup open failed");
+						}
+					}
 				}
 				else
 				{
+					log.Information("Showing ToolTip (not Popup)");
 					if (toolTip == null)
 					{
 						toolTip = new ToolTip();
+						log.Debug("Created new ToolTip instance");
 						//toolTip.Closed += ToolTipClosed;
 					}
-					this.SetValue(ToolTip.TipProperty, toolTip); // required for property inheritance
-
+					
+					// Use Avalonia's proper API to set tooltip
 					if (content is string s)
 					{
-						toolTip.Content = new TextBlock {
-							Text = s,
-							TextWrapping = TextWrapping.Wrap
-						};
+						ToolTip.SetTip(this, s);
+						log.Debug("Set tooltip to string via ToolTip.SetTip: {Text}", s.Substring(0, Math.Min(50, s.Length)));
 					}
 					else
-						toolTip.Content = content;
+					{
+						ToolTip.SetTip(this, content);
+						log.Debug("Set tooltip to object via ToolTip.SetTip: {ContentType}", content.GetType().Name);
+					}
 
 					e.Handled = true;
-					//toolTip.IsOpen = true;
+					log.Information("ToolTip set via ToolTip.SetTip, Avalonia should show it automatically");
 				}
+			}
+			else
+			{
+				log.Debug("GenerateTooltip returned null");
 			}
 		}
 
@@ -573,10 +712,12 @@ namespace ICSharpCode.ILSpy.TextView
 
 		object? GenerateTooltip(ReferenceSegment segment)
 		{
+			log.Debug("GenerateTooltip called for segment reference type: {RefType}", segment.Reference?.GetType().Name ?? "null");
 			var fontSize = settingsService.DisplaySettings.SelectedFontSize;
 
 			if (segment.Reference is ICSharpCode.Decompiler.Disassembler.OpCodeInfo code)
 			{
+				log.Debug("Generating OpCode tooltip for: {OpCodeName}", code.Name);
 				XmlDocumentationProvider docProvider = XmlDocLoader.MscorlibDocumentation;
 				DocumentationUIBuilder renderer = new DocumentationUIBuilder(new CSharpAmbience(), languageService.Language.SyntaxHighlighting, settingsService.DisplaySettings, MainWindowInstance);
 				renderer.AddSignatureBlock($"{code.Name} (0x{code.Code:x})");
@@ -588,14 +729,22 @@ namespace ICSharpCode.ILSpy.TextView
 						renderer.AddXmlDocumentation(documentation, null, null);
 					}
 				}
-				return new FlowDocumentTooltip(renderer.CreateDocument(), fontSize, MainWindowInstance.Width);
+				var tooltip = new FlowDocumentTooltip(renderer.CreateDocument(), fontSize, MainWindowInstance.Width);
+				log.Debug("Created FlowDocumentTooltip for OpCode");
+				return tooltip;
 			}
 			else if (segment.Reference is IEntity entity)
 			{
+				log.Debug("Generating entity tooltip for: {EntityName}", entity.Name);
 				var documentControl = CreateTooltipForEntity(entity);
 					if (documentControl == null)
+					{
+						log.Debug("CreateTooltipForEntity returned null");
 						return null;
-					return new FlowDocumentTooltip(documentControl, fontSize, MainWindowInstance.Width);
+					}
+					var tooltip = new FlowDocumentTooltip(documentControl, fontSize, MainWindowInstance.Width);
+					log.Debug("Created FlowDocumentTooltip for entity");
+					return tooltip;
 			}
 			else if (segment.Reference is EntityReference unresolvedEntity)
 			{
@@ -1427,28 +1576,160 @@ namespace ICSharpCode.ILSpy.TextView
 			if (position == null)
 				return null;
 			int offset = textEditor.Document.GetOffset(position.Value.Location);
-			return referenceElementGenerator.References.FindSegmentsContaining(offset).FirstOrDefault();
+			log.Debug("GetReferenceSegmentAtMousePosition: computed offset {Offset} for Line={Line}, Column={Column}", offset, position.Value.Line, position.Value.Column);
+			var seg = referenceElementGenerator.References.FindSegmentsContaining(offset).FirstOrDefault();
+			if (seg != null)
+			{
+				var refText = textEditor.Document.GetText(seg.StartOffset, seg.Length);
+				log.Debug("GetReferenceSegmentAtMousePosition: found segment {Type} at {Start}-{End} text=\"{RefText}\"", seg.Reference?.GetType().Name ?? "null", seg.StartOffset, seg.EndOffset, refText);
+			}
+			return seg;
 		}
 
 		internal TextViewPosition? GetPositionFromMousePosition(Point mousePosition)
 		{
+			log.Debug("GetPositionFromMousePosition: input mouse position = ({X}, {Y})", mousePosition.X, mousePosition.Y);
+			
+			if (textEditor == null)
+			{
+				log.Warning("GetPositionFromMousePosition: textEditor is null");
+				return null;
+			}
+			
 			var editorPoint = this.TranslatePoint(mousePosition, textEditor);
 			if (editorPoint == null)
+			{
+				log.Warning("GetPositionFromMousePosition: TranslatePoint returned null. Mouse ({X}, {Y}) could not be translated to textEditor coordinates", mousePosition.X, mousePosition.Y);
+				log.Debug("DecompilerTextView visual parent: {Parent}, textEditor visual parent: {EditorParent}", 
+					this.GetVisualParent()?.GetType().Name ?? "null",
+					textEditor.GetVisualParent()?.GetType().Name ?? "null");
 				return null;
+			}
+			
+			log.Debug("GetPositionFromMousePosition: translated to editor point = ({X}, {Y})", editorPoint.Value.X, editorPoint.Value.Y);
+			log.Debug("TextEditor bounds: Width={Width}, Height={Height}", textEditor.Bounds.Width, textEditor.Bounds.Height);
+			
 			TextViewPosition? position = textEditor.GetPositionFromPoint(editorPoint.Value);
-			if (position == null || !IsValidTextViewPosition(position.Value))
+			if (position == null)
+			{
+				log.Warning("GetPositionFromMousePosition: textEditor.GetPositionFromPoint returned null for editor point ({X}, {Y})", editorPoint.Value.X, editorPoint.Value.Y);
 				return null;
+			}
+			
+			log.Debug("GetPositionFromMousePosition: got TextViewPosition Line={Line}, Column={Column}, VisualColumn={VisCol}", 
+				position.Value.Line, position.Value.Column, position.Value.VisualColumn);
+			// Additional diagnostics: log the document line text and surrounding context
+			try
+			{
+				var docLine = textEditor.Document.GetLineByNumber(position.Value.Line);
+				var docLineText = textEditor.Document.GetText(docLine.Offset, docLine.Length);
+				int posOffset = textEditor.Document.GetOffset(position.Value.Location);
+				int indexInLine = posOffset - docLine.Offset;
+				char? charUnder = (indexInLine >= 0 && indexInLine < docLineText.Length) ? docLineText[indexInLine] : (char?)null;
+				log.Debug("GetPositionFromMousePosition: docLine {Line} offset={Offset} len={Len} indexInLine={Index} charUnder={Char}", position.Value.Line, docLine.Offset, docLine.Length, indexInLine, charUnder?.ToString() ?? "(none)");
+				
+				// Log a small excerpt around the line for context
+				int startLine = Math.Max(1, position.Value.Line - 2);
+				int endLine = Math.Min(textEditor.Document.LineCount, position.Value.Line + 2);
+				var sb = new System.Text.StringBuilder();
+				for (int ln = startLine; ln <= endLine; ln++)
+				{
+					var l = textEditor.Document.GetLineByNumber(ln);
+					var txt = textEditor.Document.GetText(l.Offset, l.Length).Replace("\t", "\\t");
+					sb.AppendLine($"{ln,5}: {txt}");
+				}
+				log.Debug("GetPositionFromMousePosition: surrounding lines {Start}-{End}:\n{Excerpt}", startLine, endLine, sb.ToString());
+				
+				// Visual line mapping diagnostics
+				var tv = textEditor.TextArea.TextView;
+				if (tv != null)
+				{
+					var visualLine = tv.GetVisualLineFromVisualTop(editorPoint.Value.Y + tv.VerticalOffset);
+					if (visualLine != null)
+					{
+						log.Debug("GetPositionFromMousePosition: visualLine firstDocLine={FirstDocLine} lastDocLine={LastDocLine} visualLinesCount={VisCount}", visualLine.FirstDocumentLine.LineNumber, visualLine.LastDocumentLine.LineNumber, tv.VisualLines.Count);
+					}
+					else
+					{
+						log.Debug("GetPositionFromMousePosition: visualLine is null for editorPoint Y={Y}", editorPoint.Value.Y);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				log.Debug(ex, "GetPositionFromMousePosition: failed while collecting line/visual diagnostics");
+			}
+			
+			if (!IsValidTextViewPosition(position.Value))
+			{
+				log.Warning("GetPositionFromMousePosition: position validation failed for Line={Line}, Column={Column}", position.Value.Line, position.Value.Column);
+				// Recovery: if the position falls on an empty line (common when clicking between wrapped/visual lines),
+				// try probing slightly below/above the Y coordinate to find the intended line.
+				try
+				{
+					var docLine = textEditor.Document.GetLineByNumber(position.Value.Line);
+					if (docLine.Length == 0)
+					{
+						var tv = textEditor.TextArea.TextView;
+						if (tv != null)
+						{
+							double[] probes = { 1.0, 3.0, 8.0, -1.0, -3.0, -8.0 };
+							foreach (var d in probes)
+							{
+								var probePoint = new Point(editorPoint.Value.X, editorPoint.Value.Y + d);
+								TextViewPosition? probePos = textEditor.GetPositionFromPoint(probePoint);
+								log.Debug("GetPositionFromMousePosition: probe at dy={Delta} gave position {Pos}", d, probePos?.ToString() ?? "null");
+								if (probePos != null && IsValidTextViewPosition(probePos.Value))
+								{
+									log.Debug("GetPositionFromMousePosition: probe succeeded at dy={Delta} -> Line={Line}, Column={Column}", d, probePos.Value.Line, probePos.Value.Column);
+									return probePos;
+								}
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					log.Debug(ex, "GetPositionFromMousePosition: probe attempt failed");
+				}
+				return null;
+			}
+			
+			log.Debug("GetPositionFromMousePosition: returning valid position Line={Line}, Column={Column}", position.Value.Line, position.Value.Column);
 			return position;
 		}
 
 		bool IsValidTextViewPosition(TextViewPosition textViewPosition)
 		{
 			if (textEditor.Document == null)
+			{
+				log.Debug("IsValidTextViewPosition: Document is null");
 				return false;
-			if (textViewPosition.Line <= 0 || textViewPosition.Line > textEditor.Document.LineCount)
+			}
+			
+			var lineCount = textEditor.Document.LineCount;
+			if (textViewPosition.Line <= 0 || textViewPosition.Line > lineCount)
+			{
+				log.Debug("IsValidTextViewPosition: Line {Line} out of range (1-{LineCount})", textViewPosition.Line, lineCount);
 				return false;
-			var lineLength = textEditor.Document.GetLineByNumber(textViewPosition.Line).Length + 1;
-			return textViewPosition.Column != lineLength;
+			}
+			
+			var line = textEditor.Document.GetLineByNumber(textViewPosition.Line);
+			var lineLength = line.Length + 1;
+			bool valid = textViewPosition.Column != lineLength;
+			
+			if (!valid)
+			{
+				log.Debug("IsValidTextViewPosition: Column {Column} equals line length+1 ({Length}), invalid", textViewPosition.Column, lineLength);
+			}
+			
+			return valid;
+		}
+
+		// Helper to determine identifier characters (letters, digits, underscore, and '.')
+		private static bool IsIdentifierChar(char c)
+		{
+			return char.IsLetterOrDigit(c) || c == '_' || c == '.';
 		}
 
 		public DecompilerTextViewState? GetState()
