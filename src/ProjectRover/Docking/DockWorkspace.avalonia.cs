@@ -156,14 +156,6 @@ namespace ICSharpCode.ILSpy.Docking
       }
     }
 
-    partial void ActivateToolCrossPlatform(string contentId)
-    {
-      if (dockHost != null)
-      {
-        ActivateTool(dockHost, contentId);
-      }
-    }
-
     public void SaveLayout()
     {
       try
@@ -760,6 +752,19 @@ namespace ICSharpCode.ILSpy.Docking
       return docDock;
     }
 
+    public void ActivateToolPane(string contentId)
+    {
+      var host = dockHost;
+      if (host?.Layout == null || host.Factory == null)
+      {
+        log.Debug("ActivateToolPane: Dock host not ready for {ContentId}", contentId);
+        return;
+      }
+
+      log.Debug("ActivateToolPane: invoking ActivateTool for {ContentId}", contentId);
+      ActivateTool(host, contentId);
+    }
+
     /// <summary>
     /// Connects DockWorkspace to an existing DockControl layout (used by MainWindow).
     /// </summary>
@@ -1103,6 +1108,7 @@ namespace ICSharpCode.ILSpy.Docking
       }
       catch (Exception ex)
       {
+        log.Error(ex, "ActivateTool: Failed for {ContentId}", contentId);
       }
     }
 
