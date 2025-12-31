@@ -20,6 +20,7 @@ namespace ProjectRover.Settings
         private string? customTerminalPathMac;
         private string? customTerminalPathLinux;
         private bool useDefaultDockLayoutOnly = true;
+        private bool showDecompilerLineNumbers = false;
 
         public XName SectionName => "ProjectRover";
 
@@ -89,6 +90,15 @@ namespace ProjectRover.Settings
             set => SetProperty(ref customTerminalPathLinux, value);
         }
 
+        /// <summary>
+        /// Rover-specific toggle for decompiled text line numbers.
+        /// </summary>
+        public bool ShowDecompilerLineNumbers
+        {
+            get => showDecompilerLineNumbers;
+            set => SetProperty(ref showDecompilerLineNumbers, value);
+        }
+
         public void LoadFromXml(XElement section)
         {
             ShowAvaloniaMainMenuOnMac = (bool?)section.Attribute(nameof(ShowAvaloniaMainMenuOnMac)) ?? false;
@@ -101,6 +111,7 @@ namespace ProjectRover.Settings
             CustomTerminalPathWindows = (string?)section.Attribute(nameof(CustomTerminalPathWindows)) ?? CustomTerminalPath;
             CustomTerminalPathMac = (string?)section.Attribute(nameof(CustomTerminalPathMac)) ?? CustomTerminalPath;
             CustomTerminalPathLinux = (string?)section.Attribute(nameof(CustomTerminalPathLinux)) ?? CustomTerminalPath;
+            ShowDecompilerLineNumbers = (bool?)section.Attribute(nameof(ShowDecompilerLineNumbers)) ?? false;
             var dockLayoutElement = section.Element(nameof(DockLayout));
             if (dockLayoutElement != null)
             {
@@ -139,6 +150,7 @@ namespace ProjectRover.Settings
             element.SetAttributeValue(nameof(CustomTerminalPathWindows), CustomTerminalPathWindows);
             element.SetAttributeValue(nameof(CustomTerminalPathMac), CustomTerminalPathMac);
             element.SetAttributeValue(nameof(CustomTerminalPathLinux), CustomTerminalPathLinux);
+            element.SetAttributeValue(nameof(ShowDecompilerLineNumbers), ShowDecompilerLineNumbers);
             return element;
         }
 

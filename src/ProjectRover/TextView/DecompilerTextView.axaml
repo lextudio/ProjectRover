@@ -22,7 +22,7 @@
                                     IsVisible="True"
  /> -->
         <editing:TextEditor x:Name="textEditor"
-                             ShowLineNumbers="True"
+                             ShowLineNumbers="False"
                              FontFamily="Consolas,Menlo,Courier New,Monospace"
                              IsReadOnly="True"
                              IsVisible="True" />

@@ -87,6 +87,7 @@ using System.Windows.Threading;
 using TextMateSharp.Grammars;
 using RegistryOptions = TextMateSharp.Grammars.RegistryOptions;
 using Popup = ICSharpCode.ILSpy.Controls.Popup;
+using ProjectRover.Settings;
 
 namespace ICSharpCode.ILSpy.TextView
 {
@@ -105,6 +106,7 @@ namespace ICSharpCode.ILSpy.TextView
 		readonly UIElementGenerator uiElementGenerator;
 		readonly List<VisualLineElementGenerator?> activeCustomElementGenerators = new List<VisualLineElementGenerator?>();
 		readonly BracketHighlightRenderer bracketHighlightRenderer;
+		readonly ProjectRoverSettingsSection roverSettings;
 
 		RichTextColorizer? activeRichTextColorizer;
 		RichTextModel? activeRichTextModel;
@@ -207,6 +209,8 @@ namespace ICSharpCode.ILSpy.TextView
 			this.exportProvider = exportProvider;
 			settingsService = exportProvider.GetExportedValue<SettingsService>();
 			languageService = exportProvider.GetExportedValue<LanguageService>();
+			roverSettings = settingsService.GetSettings<ProjectRoverSettingsSection>();
+			roverSettings.PropertyChanged += RoverSettings_PropertyChanged;
 
 			RegisterHighlighting();
 			// TextMate installation is optional and may be initialized elsewhere.
@@ -295,20 +299,7 @@ namespace ICSharpCode.ILSpy.TextView
 			textMarkerService = new TextMarkerService(textEditor.TextArea.TextView);
 			textEditor.TextArea.TextView.BackgroundRenderers.Add(textMarkerService);
 			textEditor.TextArea.TextView.LineTransformers.Add(textMarkerService);
-			// Force show line numbers for easier diagnostics during hover debugging and log margin info
-			textEditor.ShowLineNumbers = true;
-			log.Debug("DisplaySettings.ShowLineNumbers = {ShowLineNumbers}", settingsService.DisplaySettings.ShowLineNumbers);
-			int mi = 0;
-			foreach (var margin in this.textEditor.TextArea.LeftMargins)
-			{
-				mi++;
-				log.Debug("LeftMargin[{Index}]: Type={Type} IsVisible={IsVisible}", mi, margin.GetType().Name, margin.IsVisible);
-				if (margin is LineNumberMargin || margin is Avalonia.Controls.Shapes.Line)
-				{
-					margin.IsVisible = true;
-					log.Debug("LeftMargin[{Index}] forced visible", mi);
-				}
-			}
+			ShowLineMargin();
 
 			MessageBus<SettingsChangedEventArgs>.Subscribers += Settings_Changed;
 
@@ -360,14 +351,22 @@ namespace ICSharpCode.ILSpy.TextView
 			if (commandBinding != null)
 				handler.CommandBindings.Remove(commandBinding);
 		}
-		#endregion
+			#endregion
 
-		#region Line margin
+			#region Line margin
 
-		private void Settings_Changed(object? sender, SettingsChangedEventArgs e)
-		{
-			Settings_PropertyChanged(sender, e);
-		}
+			private void RoverSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+			{
+				if (e.PropertyName == nameof(ProjectRoverSettingsSection.ShowDecompilerLineNumbers))
+				{
+					ShowLineMargin();
+				}
+			}
+
+			private void Settings_Changed(object? sender, SettingsChangedEventArgs e)
+			{
+				Settings_PropertyChanged(sender, e);
+			}
 
 		private void Settings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 		{
@@ -385,27 +384,40 @@ namespace ICSharpCode.ILSpy.TextView
 			}
 		}
 
-		void ShowLineMargin()
-		{
-			foreach (var margin in this.textEditor.TextArea.LeftMargins)
+			void ShowLineMargin()
 			{
-				// For diagnostics we force visibility and set a contrasting foreground
-				try
+				bool showLineNumbers = GetShowLineNumbers();
+				textEditor.ShowLineNumbers = showLineNumbers;
+				log.Debug("ShowLineMargin: ShowLineNumbers={Show} (RoverSetting={RoverSetting}, DisplaySetting={DisplaySetting})",
+					showLineNumbers, roverSettings.ShowDecompilerLineNumbers, settingsService.DisplaySettings.ShowLineNumbers);
+
+				int mi = 0;
+				foreach (var margin in this.textEditor.TextArea.LeftMargins)
 				{
-					if (margin is LineNumberMargin || margin is Avalonia.Controls.Shapes.Line)
+					mi++;
+					try
 					{
-						margin.IsVisible = true; // force visible regardless of settings
-						// set foreground to editor foreground to ensure contrast
-						try { margin.SetValue(Avalonia.Controls.TextBlock.ForegroundProperty, textEditor.Foreground); } catch { }
-						log.Debug("ShowLineMargin: forced visible LeftMargin type={Type}", margin.GetType().Name);
+						if (margin is LineNumberMargin || margin is Avalonia.Controls.Shapes.Line)
+						{
+							margin.IsVisible = showLineNumbers;
+							if (showLineNumbers)
+							{
+								try { margin.SetValue(Avalonia.Controls.TextBlock.ForegroundProperty, textEditor.Foreground); } catch { }
+							}
+							log.Debug("ShowLineMargin: LeftMargin[{Index}] type={Type} visible={Visible}", mi, margin.GetType().Name, margin.IsVisible);
+						}
+					}
+					catch (Exception ex)
+					{
+						log.Debug(ex, "ShowLineMargin: failed to update margin {Type}", margin.GetType().Name);
 					}
 				}
-				catch (Exception ex)
-				{
-					log.Debug(ex, "ShowLineMargin: failed to force margin visibility for {Type}", margin.GetType().Name);
-				}
 			}
-		}
+
+			bool GetShowLineNumbers()
+			{
+				return roverSettings?.ShowDecompilerLineNumbers ?? settingsService.DisplaySettings.ShowLineNumbers;
+			}
 
 
 
