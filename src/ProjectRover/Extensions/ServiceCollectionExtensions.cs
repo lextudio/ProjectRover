@@ -22,6 +22,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ICSharpCode.ILSpy.ViewModels;
+using ICSharpCode.ILSpyX;
 
 namespace ProjectRover.Extensions;
 
@@ -59,7 +60,8 @@ public static class ServiceCollectionExtensions
                 sp.GetRequiredService<ICSharpCode.ILSpy.Util.SettingsService>(),
                 sp.GetRequiredService<ICSharpCode.ILSpy.LanguageService>(),
                 ProjectRover.App.ExportProvider
-            ));
+            ))
+            .AddSingleton<AssemblyList>(sp => sp.GetRequiredService<ICSharpCode.ILSpy.AssemblyTree.AssemblyTreeModel>().AssemblyList);
 
     private static IConfigurationRoot GetConfiguration() =>
         new ConfigurationBuilder()
