@@ -1,37 +1,68 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Avalonia.Media;
 
 namespace System.Windows.Media
 {
-    // Minimal shim for FontFamily used by DisplaySettingsViewModel.
-    public class FontFamily
+    public static class Fonts
     {
-        public string Source { get; }
-        public string Name => Source;
-        public FontFamily(string source) => Source = source;
-        public override string ToString() => Source;
-        public IEnumerable<Typeface> GetTypefaces() => new[] { new Typeface() };
-        public static implicit operator Avalonia.Media.FontFamily(FontFamily f) => new Avalonia.Media.FontFamily(f?.Source ?? string.Empty);
-    }
+        // Prefer Avalonia's font manager to enumerate installed fonts on the current platform.
+        public static FontFamily[] SystemFontFamilies {
+            get {
+                try {
+                    var fm = FontManager.Current;
+                    if (fm != null) {
+                        try {
+                            var names = fm.SystemFonts;
+                            if (names != null)
+                                return names.ToArray();
+                        }
+                        catch {
+                            // If the Avalonia font manager call fails for any reason, fall back below.
+                        }
+                    }
+                }
+                catch {
+                    // fall through to fallback
+                }
 
-    public class Typeface {
-        public bool TryGetGlyphTypeface(out GlyphTypeface glyph)
-        {
-            glyph = new GlyphTypeface();
-            return true;
+                // Fallback small sample list to keep UI working when Avalonia font manager is unavailable.
+                return new[] { new FontFamily("Segoe UI"), new FontFamily("Courier New") };
+            }
         }
     }
 
-    public class GlyphTypeface { public bool Symbol => false; }
-
-    public static class Fonts
+    public static class FontFamilyExtensions
     {
-        // Return a small sample list to keep UI working.
-        public static FontFamily[] SystemFontFamilies => new[] { new FontFamily("Segoe UI"), new FontFamily("Courier New") };
+        extension(FontFamily fontFamily)
+        {
+            public string Source => fontFamily.Name;
+
+            public IEnumerable<Typeface> GetTypefaces()
+            {
+                return fontFamily.FamilyTypefaces;
+            }
+        }
+
+        extension(Typeface typeface)
+        {
+            public bool TryGetGlyphTypeface(out IGlyphTypeface glyphTypeface)
+            {
+                if (typeface.GlyphTypeface != null)
+                {
+                    glyphTypeface = typeface.GlyphTypeface;
+                    return true;
+                }
+                glyphTypeface = null;
+                return false;
+            }
+        }
+
+        extension(IGlyphTypeface glyphTypeface)
+        {
+            public bool Symbol {
+                get {
+                    return false; // No reliable way yet to determine this in Avalonia
+                }
+            }
+        }
     }
-
-    public class TypefaceInfo { }
 }
-
-// Note: MessageBox and other System.Windows shims are provided in SystemWindowsShim.cs
