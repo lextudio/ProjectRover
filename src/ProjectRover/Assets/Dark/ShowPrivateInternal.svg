@@ -30,7 +30,7 @@
   <sodipodi:namedview
      pagecolor="#2d2d2d"
      bordercolor="#cfcfcf"
-     borderopacity="0.35"
+     borderopacity="1"
      objecttolerance="10"
      gridtolerance="10"
      guidetolerance="10"
@@ -51,7 +51,7 @@
      inkscape:current-layer="svg8" />
   <style
      type="text/css"
-     id="style2">.icon-canvas-transparent{opacity:0.35;fill:#1f1f1f;} .icon-vs-out{fill:#1f1f1f;} .icon-vs-bg{fill:#bdbdbd;} .icon-vs-action-blue{fill:#8ab4f8;}</style>
+     id="style2">.icon-canvas-transparent{opacity:0.35;fill:#1f1f1f;} .icon-vs-out{fill:#dcdcdc;} .icon-vs-bg{fill:#dcdcdc;} .icon-vs-action-blue{fill:#8ab4f8;}</style>
   <path
      inkscape:connector-curvature="0"
      class="icon-canvas-transparent"
@@ -76,7 +76,7 @@
      class="icon-vs-fg"
      d="m 11.225748,5.9905541 h 1.193349 v 1.1933495 h -1.193349 z"
      id="notificationFg"
-     style="fill:#bdbdbd;fill-opacity:0.35;stroke-width:1.19334948" />
+     style="fill:#bdbdbd;fill-opacity:1;stroke-width:1.19334948" />
   <path
      inkscape:connector-curvature="0"
      class="icon-canvas-transparent"
@@ -87,7 +87,7 @@
   <path
      inkscape:connector-curvature="0"
      class="icon-vs-out"
-     d="M 3.8573369,15.612069 C 3.7427632,15.490599 1.053978,12.636318 0.62326331,12.153621 0.22914866,11.681002 -1.1167907e-7,11.029625 -1.1167907e-7,10.397344 -1.1167907e-7,9.0256336 1.239631,7.8220729 2.6521847,7.8220729 c 0.460419,0 1.061404,0.1628442 1.5913099,0.8274816 0.5299071,-0.6646374 1.130892,-0.8274816 1.5913111,-0.8274816 1.4125543,0 2.6521848,1.2035607 2.6521848,2.5752711 0,0.63175 -0.2296792,1.283658 -0.6137153,1.743016 -0.4418546,0.495428 -3.129248,3.349708 -3.2430914,3.471178 l -0.3866892,0.410559 z"
+     d="M 3.8573369,15.612069 C 3.7427632,15.490599 1.053978,12.636318 0.62326331,12.153621 0.22914866,11.681002 -1.1167907e-7,11.029625 -1.1167907e-7,10.397344 -1.1167907e-7,9.0256336 1.239631,7.8220729 2.6521847,7.8220729 c 0.460419,0 1.061404,0.1628442 1.5913099,0.8274816 0.5299071,-0.6646374 1.130892,-0.8274816 1.5913111,-0.8274816 1.4125543,0 2.6521848,1.2035607 2.6521848,2.5752711 0,0.63175 -0.2296792,1.283658 -0.6137153,1.743016 -0.4418546,0.495428 -3.129048,3.349708 -3.2430914,3.471178 l -0.3866892,0.410559 z"
      id="outline-2"
      style="fill:#1f1f1f;stroke-width:0.53043687"
      inkscape:label="outline" />

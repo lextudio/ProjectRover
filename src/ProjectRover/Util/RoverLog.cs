@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
@@ -15,17 +16,45 @@ namespace ICSharpCode.ILSpy.Util
             try
             {
                 var config = new ConfigurationBuilder()
+                    .SetBasePath(AppContext.BaseDirectory)
                     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
                     .Build();
+
+                // Enable Serilog internal diagnostics to a file for troubleshooting
+                try
+                {
+                    var selfLogPath = Path.Combine(AppContext.BaseDirectory, "serilog-selflog.txt");
+                    Serilog.Debugging.SelfLog.Enable(TextWriter.Synchronized(File.CreateText(selfLogPath)));
+                }
+                catch
+                {
+                    // ignore selflog failures
+                }
 
                 var logger = new LoggerConfiguration()
                     .ReadFrom.Configuration(config)
                     .Enrich.FromLogContext()
                     .Enrich.WithProperty("App", "ProjectRover")
+                    .WriteTo.Console()
+                    .WriteTo.File("projectrover.log", rollingInterval: RollingInterval.Day)
                     .CreateLogger();
 
                 logger.Information("Rover logging initialized");
+
+                try
+                {
+                    // Log configured overrides for diagnosis
+                    var overrides = config.GetSection("Serilog:MinimumLevel:Override").GetChildren();
+                    foreach (var o in overrides)
+                    {
+                        logger.Debug("Serilog override: {Name} = {Level}", o.Key, o.Value);
+                    }
+                }
+                catch
+                {
+                    // ignore
+                }
                 return logger;
             }
             catch (Exception ex)

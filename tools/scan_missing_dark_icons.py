@@ -10,6 +10,7 @@ Rules (canonical light -> dark mapping):
 
 If a light SVG uses any of these light colors, we expect a dark counterpart.
 With --generate, a dark SVG is created by copying the light file and applying the mapping.
+Additional colors are normalized and low-opacity layers are boosted to improve legibility on dark backgrounds.
 """
 
 import argparse
@@ -22,15 +23,43 @@ DEFAULT_ASSETS_ROOT = os.path.normpath(os.path.join(HERE, "..", "src", "ProjectR
 
 LIGHT_TO_DARK = {
     "#212121": "#dcdcdc",
+    "#424242": "#bdbdbd",
+    "#272727": "#bdbdbd",
     "#005dba": "#8ab4f8",
     "#00539c": "#8ab4f8",  # blue variant seen in some svgs
+    "#0077a0": "#8ab4f8",
+    "#0000ff": "#8ab4f8",
+    "#1ba1e2": "#8ab4f8",
+    "#03a5ef": "#8ab4f8",
+    "#0095d7": "#8ab4f8",
     "#6936aa": "#c3a5ff",
+    "#652d90": "#c3a5ff",
     "#996f00": "#e0b44c",
+    "#c27d1a": "#e0b44c",
+    "#ffcc00": "#e0b44c",
+    "#ffb803": "#e0b44c",
+    "#dcb67a": "#e0b44c",
+    "#388a34": "#6bd46b",
+    "#218022": "#6bd46b",
+    "#339933": "#6bd46b",
+    "#7fbb03": "#6bd46b",
     "#f6f6f6": "#1f1f1f",  # toolbar background light -> dark counterpart
-    "#f0eff1": "#424242",
+    "#f0eff1": "#bdbdbd",
+    "#d1d1d1": "#dcdcdc",
 }
 
 HEX_RE = re.compile(r"#(?:[0-9a-fA-F]{3}){1,2}")
+OPACITY_RE = re.compile(r'(opacity\s*[:=]\s*["\']?)(0?\.\d+|\d+)(["\']?)', re.IGNORECASE)
+
+STRICT_FOREGROUND_CLASSES = [
+    "icon-vs-fg",
+    "icon-vs-out",
+    "icon-vs-bg",
+]
+
+PREFERRED_FOREGROUND_HEX = "#dcdcdc"
+LOW_OPACITY_THRESHOLD = 0.2
+STANDARD_MUTED_ALPHA = 0.35
 
 
 def hex_to_rgb(hexstr: str):
@@ -97,26 +126,31 @@ def perceived_luminance(r: int, g: int, b: int) -> float:
     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0
 
 
+def normalize_hex(hexstr: str) -> str:
+    s = hexstr.lower()
+    if len(s) == 4:
+        s = "#" + "".join(ch * 2 for ch in s[1:])
+    return s
+
+
 def find_light_icons(assets_root: str):
     return sorted(f for f in os.listdir(assets_root) if f.lower().endswith(".svg"))
 
 
 def needs_dark_variant(svg_path: str) -> bool:
     text = read_text(svg_path)
-    lowered = text.lower()
     # If it contains any explicitly configured color that we know should have a dark counterpart
-    if any(k in lowered for k in LIGHT_TO_DARK.keys()):
-        return True
-
-    # Otherwise, scan for any very-light hex colors (likely to blend with light toolbar)
     for m in HEX_RE.findall(text):
+        norm = normalize_hex(m)
+        if norm in LIGHT_TO_DARK:
+            return True
         try:
-            r, g, b = hex_to_rgb(m)
+            r, g, b = hex_to_rgb(norm)
         except Exception:
             continue
         lum = perceived_luminance(r, g, b)
-        # consider colors with very high luminance as needing dark variants
-        if lum >= 0.88:
+        # consider colors with very high or very low luminance as needing dark variants
+        if lum >= 0.88 or lum <= 0.35:
             return True
 
     return False
@@ -132,33 +166,56 @@ def write_text(path: str, content: str):
         f.write(content)
 
 
+def auto_dark_color(norm_hex: str) -> str:
+    r, g, b = hex_to_rgb(norm_hex)
+    h, s, l = rgb_to_hsl(r, g, b)
+    # Neutral greys get standardized to readable foreground greys.
+    if s < 0.15:
+        return "#bdbdbd" if l < 0.6 else "#dcdcdc"
+    # Saturated accents get a pastel lift for dark backgrounds.
+    if l < 0.45:
+        target_l = 0.72
+    elif l > 0.8:
+        target_l = 0.68
+    else:
+        target_l = max(0.62, min(0.78, l + 0.2))
+    target_s = min(s, 0.7)
+    nr, ng, nb = hsl_to_rgb(h, target_s, target_l)
+    return rgb_to_hex(nr, ng, nb)
+
+
 def generate_dark(light_path: str, dark_path: str):
     content = read_text(light_path)
-    lowered = content.lower()
-    replaced = set()
-    # First apply canonical replacements
-    for light, dark in LIGHT_TO_DARK.items():
-        if light in lowered:
-            content = re.sub(light, dark, content, flags=re.IGNORECASE)
-            replaced.add(light)
+    # Build a per-color mapping from the light SVG.
+    color_map = {}
+    for raw_hex in set(HEX_RE.findall(content)):
+        norm_hex = normalize_hex(raw_hex)
+        if norm_hex in LIGHT_TO_DARK:
+            target = LIGHT_TO_DARK[norm_hex]
+        else:
+            target = auto_dark_color(norm_hex)
+        color_map[raw_hex] = target
 
-    # Then find remaining hex colors and darken any very-light colors using HSL fallback
-    found_hexes = set(m.lower() for m in HEX_RE.findall(content))
-    for hx in found_hexes:
-        if hx in replaced:
-            continue
-        try:
-            r, g, b = hex_to_rgb(hx)
-        except Exception:
-            continue
-        lum = perceived_luminance(r, g, b)
-        if lum >= 0.88:
-            # darken by flipping lightness: new_l = max(0.06, 1 - l)
-            h, s, l = rgb_to_hsl(r, g, b)
-            new_l = max(0.06, 1.0 - l)
-            nr, ng, nb = hsl_to_rgb(h, s, new_l)
-            dark_hex = rgb_to_hex(nr, ng, nb)
-            content = re.sub(re.escape(hx), dark_hex, content, flags=re.IGNORECASE)
+    for raw_hex, target in color_map.items():
+        content = re.sub(re.escape(raw_hex), target, content, flags=re.IGNORECASE)
+
+    # Enforce strict foreground classes to readable greys.
+    for cls in STRICT_FOREGROUND_CLASSES:
+        content = re.sub(
+            r"(\." + re.escape(cls) + r"\s*\{[^}]*fill\s*:\s*)(?:#[0-9a-fA-F]{3,6})",
+            r"\1" + PREFERRED_FOREGROUND_HEX,
+            content,
+            flags=re.IGNORECASE,
+        )
+
+    # Boost very low opacities for dark legibility.
+    def bump_opacity(match: re.Match) -> str:
+        value = float(match.group(2))
+        if value < LOW_OPACITY_THRESHOLD:
+            return f"{match.group(1)}{STANDARD_MUTED_ALPHA}{match.group(3)}"
+        return match.group(0)
+
+    content = OPACITY_RE.sub(bump_opacity, content)
     os.makedirs(os.path.dirname(dark_path), exist_ok=True)
     write_text(dark_path, content)
 
@@ -167,6 +224,7 @@ def main():
     parser = argparse.ArgumentParser(description="Scan for missing dark icon variants based on palette usage.")
     parser.add_argument("--assets-root", default=DEFAULT_ASSETS_ROOT, help=f"Path to Assets/ (default: {DEFAULT_ASSETS_ROOT})")
     parser.add_argument("--generate", action="store_true", help="Generate missing dark icons using the canonical mapping.")
+    parser.add_argument("--regenerate", action="store_true", help="Regenerate existing dark icons from light sources.")
     args = parser.parse_args()
 
     assets_root = args.assets_root
@@ -176,22 +234,33 @@ def main():
     dark_icons = set(f for f in os.listdir(dark_root) if f.lower().endswith(".svg")) if os.path.isdir(dark_root) else set()
 
     missing = []
+    updated = []
     for name in light_icons:
         light_path = os.path.join(assets_root, name)
         if not needs_dark_variant(light_path):
             continue
+        label = None
         if name not in dark_icons:
             missing.append(name)
-            print(f"[missing] {name}")
-            if args.generate:
-                dark_path = os.path.join(dark_root, name)
-                generate_dark(light_path, dark_path)
-                print(f"  -> generated {dark_path}")
+            label = "missing"
+        elif args.regenerate:
+            updated.append(name)
+            label = "update"
+        else:
+            continue
+        print(f"[{label}] {name}")
+        if args.generate:
+            dark_path = os.path.join(dark_root, name)
+            generate_dark(light_path, dark_path)
+            print(f"  -> generated {dark_path}")
 
-    if not missing:
+    if not missing and not updated:
         print("No missing dark icons detected.")
     else:
-        print(f"Total missing dark variants: {len(missing)}")
+        if missing:
+            print(f"Total missing dark variants: {len(missing)}")
+        if updated:
+            print(f"Total regenerated dark variants: {len(updated)}")
 
 
 if __name__ == "__main__":

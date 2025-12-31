@@ -14,11 +14,14 @@ namespace ICSharpCode.ILSpy.Converters
         {
             if (values == null || values.Count == 0) return null;
 
-            var iconKey = values.Count > 0 ? values[0] as string : null;
+            var iconKey = values[0];
+            if (iconKey is string s && string.IsNullOrWhiteSpace(s))
+                return null;
 
             try
             {
-                // Delegate to the Images shim which already handles theme-preferring logic
+                // Delegate to the Images shim which already handles theme-preferring logic.
+                // Pass through the raw icon object (string key or composite icon) instead of forcing string.
                 var img = ICSharpCode.ILSpy.Images.LoadImage(iconKey);
                 return img as IImage;
             }

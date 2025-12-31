@@ -18,15 +18,15 @@
 -->
 
 <Application xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:editing="https://github.com/avaloniaui/avaloniaedit"
-             xmlns:converters="clr-namespace:ProjectRover.Converters"
-             xmlns:ilspyConv="clr-namespace:ICSharpCode.ILSpy.Converters;assembly=ProjectRover"
-             xmlns:dockThemes="clr-namespace:Dock.Avalonia.Themes.Fluent;assembly=Dock.Avalonia.Themes.Fluent"
-             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
-             x:Class="ProjectRover.App"
-             RequestedThemeVariant="Light"
-             Name="Project Rover">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:editing="https://github.com/avaloniaui/avaloniaedit"
+    xmlns:converters="clr-namespace:ProjectRover.Converters"
+    xmlns:ilspyConv="clr-namespace:ICSharpCode.ILSpy.Converters;assembly=ProjectRover"
+    xmlns:dockThemes="clr-namespace:Dock.Avalonia.Themes.Fluent;assembly=Dock.Avalonia.Themes.Fluent"
+    xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
+    x:Class="ProjectRover.App"
+    RequestedThemeVariant="Light"
+    Name="Project Rover">
 
     <NativeMenu.Menu>
         <NativeMenu />
@@ -34,25 +34,25 @@
     <Application.Styles>
         <FluentTheme />
         <dockThemes:DockFluentTheme />
-        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <StyleInclude Source="avares://ProjectRover/Controls/GroupBox.axaml" />
         <StyleInclude Source="avares://ProjectRover/Styles/MenuStyles.axaml" />
-        
+
         <Style Selector="TreeViewItem">
             <Setter Property="MinHeight" Value="24" />
         </Style>
-        
+
         <Style Selector="editing|TextArea">
             <Setter Property="SelectionBrush" Value="#9ECCFD" />
         </Style>
-        
+
         <Style Selector="GridSplitter">
             <Setter Property="Width" Value="1" />
             <Setter Property="MinWidth" Value="1" />
             <Setter Property="Background" Value="#DFDFDF" />
         </Style>
-        
+
         <Style Selector="Button:disabled">
             <Setter Property="Opacity" Value="0.5" />
         </Style>
@@ -88,103 +88,89 @@
                     <x:String x:Key="AssemblyIcon">/Assets/Assembly.svg</x:String>
                     <x:String x:Key="SearchIcon">/Assets/Search.svg</x:String>
                     <x:String x:Key="NamespaceIcon">/Assets/Namespace.svg</x:String>
-                    <x:String x:Key="PropertyIconPublic">/Assets/PropertyPublic.svg</x:String>
-                    <x:String x:Key="PropertyIconProtected">/Assets/PropertyProtected.svg</x:String>
-                    <x:String x:Key="PropertyIconInternal">/Assets/PropertyInternal.svg</x:String>
-                    <x:String x:Key="PropertyIconPrivate">/Assets/PropertyPrivate.svg</x:String>
-                    <x:String x:Key="PropertyIcon">/Assets/PropertyPublic.svg</x:String>
-                    <x:String x:Key="ReferenceGroupIcon">/Assets/ReferenceGroup.svg</x:String>
-                    <x:String x:Key="ReferenceIcon">/Assets/Reference.svg</x:String>
-                    <x:String x:Key="ReferenceWarningIcon">/Assets/ReferenceWarning.svg</x:String>
+                    <x:String x:Key="PropertyIcon">/Assets/Property.svg</x:String>
                     <x:String x:Key="BackIcon">/Assets/Back.svg</x:String>
                     <x:String x:Key="ForwardIcon">/Assets/Forward.svg</x:String>
                     <x:String x:Key="OpenIcon">/Assets/Open.svg</x:String>
-                    <x:String x:Key="ClearIcon">/Assets/Clear.svg</x:String>
                     <x:String x:Key="CloseIcon">/Assets/Close.svg</x:String>
-                    <x:String x:Key="SortIcon">/Assets/SortAssemblies.svg</x:String>
                     <x:String x:Key="AssemblyListIcon">/Assets/AssemblyList.svg</x:String>
                     <x:String x:Key="AssemblyLoadingIcon">/Assets/AssemblyLoading.svg</x:String>
                     <x:String x:Key="ShowPublicOnlyIcon">/Assets/ShowPublicOnly.svg</x:String>
                     <x:String x:Key="ShowPrivateInternalIcon">/Assets/ShowPrivateInternal.svg</x:String>
                     <x:String x:Key="ShowAllIcon">/Assets/ShowAll.svg</x:String>
-                    <x:String x:Key="CollapseIcon">/Assets/CollapseAll.svg</x:String>
+                    <x:String x:Key="CollapseAllIcon">/Assets/CollapseAll.svg</x:String>
                     <x:String x:Key="MetadataIcon">/Assets/Metadata.svg</x:String>
                     <x:String x:Key="DebugMetadataIcon">/Assets/Metadata.svg</x:String>
                     <x:String x:Key="HeaderIcon">/Assets/Header.svg</x:String>
-                    <x:String x:Key="ResourcesIcon">/Assets/Resources.svg</x:String>
-                    <x:String x:Key="ResourcesIconClosed">/Assets/FolderClosed.svg</x:String>
-                    <x:String x:Key="ResourcesIconOpen">/Assets/FolderOpened.svg</x:String>
-                    <x:String x:Key="DirectoryTableIcon">/Assets/DirectoryTable.svg</x:String>
-                    <x:String x:Key="FileDialogReportIcon">/Assets/FileDialogReport.svg</x:String>
-                    <x:String x:Key="TablesIcon">/Assets/Tables.svg</x:String>
-                    <x:String x:Key="DataTableIcon">/Assets/DataTable.svg</x:String>
                     <x:String x:Key="HeapIcon">/Assets/Heap.svg</x:String>
-                    <x:String x:Key="ResourceFileIcon">/Assets/ResourceFile.svg</x:String>
-                    <x:String x:Key="EnumIcon">/Assets/EnumerationItemPublic.svg</x:String>
-                    <x:String x:Key="EnumInternalIcon">/Assets/EnumerationItemPublic.svg</x:String>
-                    <x:String x:Key="EnumProtectedIcon">/Assets/EnumerationItemPublic.svg</x:String>
-                    <x:String x:Key="EnumPrivateIcon">/Assets/EnumerationItemPublic.svg</x:String>
-                    <x:String x:Key="StructIcon">/Assets/StructurePublic.svg</x:String>
-                    <x:String x:Key="StructInternalIcon">/Assets/StructurePublic.svg</x:String>
-                    <x:String x:Key="StructProtectedIcon">/Assets/StructurePublic.svg</x:String>
-                    <x:String x:Key="StructPrivateIcon">/Assets/StructurePublic.svg</x:String>
-                    <x:String x:Key="ClassIcon">/Assets/ClassPublic.svg</x:String>
-                    <x:String x:Key="ClassInternalIcon">/Assets/ClassInternal.svg</x:String>
-                    <x:String x:Key="ClassProtectedIcon">/Assets/ClassProtected.svg</x:String>
-                    <x:String x:Key="ClassPrivateIcon">/Assets/ClassPrivate.svg</x:String>
-                    <x:String x:Key="ClassSealedIcon">/Assets/ClassSealed.svg</x:String>
-                    <x:String x:Key="InterfaceIcon">/Assets/InterfacePublic.svg</x:String>
-                    <x:String x:Key="ConstantIconPublic">/Assets/ConstantPublic.svg</x:String>
-                    <x:String x:Key="ConstantIconProtected">/Assets/ConstantProtected.svg</x:String>
-                    <x:String x:Key="ConstantIconInternal">/Assets/ConstantInternal.svg</x:String>
-                    <x:String x:Key="ConstantIconPrivate">/Assets/ConstantPrivate.svg</x:String>
-                    <x:String x:Key="ConstantIcon">/Assets/ConstantPublic.svg</x:String>
-                    <x:String x:Key="FieldIconPublic">/Assets/FieldPublic.svg</x:String>
-                    <x:String x:Key="FieldIconProtected">/Assets/FieldProtected.svg</x:String>
-                    <x:String x:Key="FieldIconInternal">/Assets/FieldInternal.svg</x:String>
-                    <x:String x:Key="FieldIconPrivate">/Assets/FieldPrivate.svg</x:String>
-                    <x:String x:Key="FieldStaticIconPublic">/Assets/FieldPublic.svg</x:String>
-                    <x:String x:Key="FieldStaticIconProtected">/Assets/FieldProtected.svg</x:String>
-                    <x:String x:Key="FieldStaticIconInternal">/Assets/FieldInternal.svg</x:String>
-                    <x:String x:Key="FieldStaticIconPrivate">/Assets/FieldPrivate.svg</x:String>
-                    <x:String x:Key="FieldIcon">/Assets/FieldPublic.svg</x:String>
-                    <x:String x:Key="MethodIconPublic">/Assets/MethodPublic.svg</x:String>
-                    <x:String x:Key="MethodIconProtected">/Assets/MethodProtected.svg</x:String>
-                    <x:String x:Key="MethodIconInternal">/Assets/MethodInternal.svg</x:String>
-                    <x:String x:Key="MethodIconPrivate">/Assets/MethodPrivate.svg</x:String>
-                    <x:String x:Key="MethodStaticIconPublic">/Assets/MethodPublic.svg</x:String>
-                    <x:String x:Key="MethodStaticIconProtected">/Assets/MethodProtected.svg</x:String>
-                    <x:String x:Key="MethodStaticIconInternal">/Assets/MethodInternal.svg</x:String>
-                    <x:String x:Key="MethodStaticIconPrivate">/Assets/MethodPrivate.svg</x:String>
-                    <x:String x:Key="MethodIcon">/Assets/MethodPublic.svg</x:String>
-                    <x:String x:Key="ConstructorIcon">/Assets/MethodInstance.svg</x:String>
-                    <x:String x:Key="ConstructorIconPublic">/Assets/MethodInstance.svg</x:String>
-                    <x:String x:Key="ConstructorIconProtected">/Assets/MethodInstance.svg</x:String>
-                    <x:String x:Key="ConstructorIconInternal">/Assets/MethodInstance.svg</x:String>
-                    <x:String x:Key="ConstructorIconPrivate">/Assets/MethodInstance.svg</x:String>
-                    <x:String x:Key="EventIconPublic">/Assets/EventPublic.svg</x:String>
-                    <x:String x:Key="EventIconProtected">/Assets/EventProtected.svg</x:String>
-                    <x:String x:Key="EventIconInternal">/Assets/EventInternal.svg</x:String>
-                    <x:String x:Key="EventIconPrivate">/Assets/EventPrivate.svg</x:String>
-                    <x:String x:Key="EventStaticIconPublic">/Assets/EventPublic.svg</x:String>
-                    <x:String x:Key="EventStaticIconProtected">/Assets/EventProtected.svg</x:String>
-                    <x:String x:Key="EventStaticIconInternal">/Assets/EventInternal.svg</x:String>
-                    <x:String x:Key="EventStaticIconPrivate">/Assets/EventPrivate.svg</x:String>
-                    <x:String x:Key="EventIcon">/Assets/EventPublic.svg</x:String>
-                    <x:String x:Key="PropertyStaticIconPublic">/Assets/PropertyPublic.svg</x:String>
-                    <x:String x:Key="PropertyStaticIconProtected">/Assets/PropertyProtected.svg</x:String>
-                    <x:String x:Key="PropertyStaticIconInternal">/Assets/PropertyInternal.svg</x:String>
-                    <x:String x:Key="PropertyStaticIconPrivate">/Assets/PropertyPrivate.svg</x:String>
-                    <x:String x:Key="ParameterIcon">/Assets/Parameter.svg</x:String>
-                    <x:String x:Key="LocalVariableIcon">/Assets/LocalVariable.svg</x:String>
-                    <x:String x:Key="StringIcon">/Assets/String.svg</x:String>
-                    <x:String x:Key="ClearSearchIcon">/Assets/ClearSearch.svg</x:String>
+                    <x:String x:Key="ClassIcon">/Assets/Class.svg</x:String>
+                    <x:String x:Key="InterfaceIcon">/Assets/Interface.svg</x:String>
+                    <x:String x:Key="FieldIcon">/Assets/Field.svg</x:String>
+                    <x:String x:Key="MethodIcon">/Assets/Method.svg</x:String>
+                    <x:String x:Key="EventIcon">/Assets/Event.svg</x:String>
                     <x:String x:Key="RefreshIcon">/Assets/Refresh.svg</x:String>
-                    <x:String x:Key="SortSimpleIcon">/Assets/Sort.svg</x:String>
-                    <x:String x:Key="StatusInformationOutlineIcon">/Assets/StatusInformationOutline.svg</x:String>
-                    <x:String x:Key="StatusWarningOutlineIcon">/Assets/StatusWarningOutline.svg</x:String>
+                    <x:String x:Key="SortIcon">/Assets/Sort.svg</x:String>
                     <x:String x:Key="SubTypesIcon">/Assets/SubTypes.svg</x:String>
                     <x:String x:Key="SuperTypesIcon">/Assets/SuperTypes.svg</x:String>
+
+                    <x:String x:Key="AssemblyListGACIcon">/Assets/AssemblyListGAC.svg</x:String>
+                    <x:String x:Key="AssemblyWarningIcon">/Assets/AssemblyWarning.svg</x:String>
+                    <x:String x:Key="ConstructorIcon">/Assets/Constructor.svg</x:String>
+                    <x:String x:Key="CopyIcon">/Assets/Copy.svg</x:String>
+                    <x:String x:Key="DelegateIcon">/Assets/Delegate.svg</x:String>
+                    <x:String x:Key="DeleteIcon">/Assets/Delete.svg</x:String>
+                    <x:String x:Key="DictionaryContainIcon">/Assets/DictionaryContain.svg</x:String>
+                    <x:String x:Key="EnumIcon">/Assets/Enum.svg</x:String>
+                    <x:String x:Key="EnumValueIcon">/Assets/EnumValue.svg</x:String>
+                    <x:String x:Key="ExpandAllIcon">/Assets/ExpandAll.svg</x:String>
+                    <x:String x:Key="ExportOverlayIcon">/Assets/ExportOverlay.svg</x:String>
+                    <x:String x:Key="ExtensionMethodIcon">/Assets/ExtensionMethod.svg</x:String>
+                    <x:String x:Key="FieldReadOnlyIcon">/Assets/FieldReadOnly.svg</x:String>
+                    <x:String x:Key="FindAssemblyIcon">/Assets/FindAssembly.svg</x:String>
+                    <x:String x:Key="FolderClosedIcon">/Assets/Folder.Closed.svg</x:String>
+                    <x:String x:Key="FolderOpenIcon">/Assets/FolderOpen.svg</x:String>
+                    <x:String x:Key="IndexerIcon">/Assets/Indexer.svg</x:String>
+                    <x:String x:Key="LibraryIcon">/Assets/Library.svg</x:String>
+                    <x:String x:Key="ListFolderOpenIcon">/Assets/ListFolder.Open.svg</x:String>
+                    <x:String x:Key="ListFolderIcon">/Assets/ListFolder.svg</x:String>
+                    <x:String x:Key="LiteralIcon">/Assets/Literal.svg</x:String>
+                    <x:String x:Key="MetadataFileIcon">/Assets/MetadataFile.svg</x:String>
+                    <x:String x:Key="MetadataTableIcon">/Assets/MetadataTable.svg</x:String>
+                    <x:String x:Key="MetadataTableGroupIcon">/Assets/MetadataTableGroup.svg</x:String>
+                    <x:String x:Key="OKIcon">/Assets/OK.svg</x:String>
+                    <x:String x:Key="OperatorIcon">/Assets/Operator.svg</x:String>
+                    <x:String x:Key="PInvokeMethodIcon">/Assets/PInvokeMethod.svg</x:String>
+                    <x:String x:Key="ProgramDebugDatabaseIcon">/Assets/ProgramDebugDatabase.svg</x:String>
+                    <x:String x:Key="ReferenceFolderIcon">/Assets/ReferenceFolder.svg</x:String>
+                    <x:String x:Key="ReferenceOverlayIcon">/Assets/ReferenceOverlay.svg</x:String>
+                    <x:String x:Key="ResourceIcon">/Assets/Resource.svg</x:String>
+                    <x:String x:Key="ResourceImageIcon">/Assets/ResourceImage.svg</x:String>
+                    <x:String x:Key="ResourceResourcesFileIcon">/Assets/ResourceResourcesFile.svg</x:String>
+                    <x:String x:Key="ResourceXmlIcon">/Assets/ResourceXml.svg</x:String>
+                    <x:String x:Key="ResourceXsdIcon">/Assets/ResourceXsd.svg</x:String>
+                    <x:String x:Key="ResourceXslIcon">/Assets/ResourceXsl.svg</x:String>
+                    <x:String x:Key="ResourceXsltIcon">/Assets/ResourceXslt.svg</x:String>
+                    <x:String x:Key="ResultToJSONIcon">/Assets/ResultToJSON.svg</x:String>
+                    <x:String x:Key="SaveIcon">/Assets/Save.svg</x:String>
+                    <x:String x:Key="SearchmsdnIcon">/Assets/SearchMsdn.svg</x:String>
+                    <x:String x:Key="StructIcon">/Assets/Struct.svg</x:String>
+                    <x:String x:Key="SwitchSourceOrTargetIcon">/Assets/SwitchSourceOrTarget.svg</x:String>
+                    <x:String x:Key="ViewCodeIcon">/Assets/ViewCode.svg</x:String>
+                    <x:String x:Key="VirtualMethodIcon">/Assets/VirtualMethod.svg</x:String>
+                    <x:String x:Key="WarningIcon">/Assets/Warning.svg</x:String>
+                    <x:String x:Key="WebAssemblyIcon">/Assets/WebAssembly.svg</x:String>
+                    <x:String x:Key="ZoomInIcon">/Assets/ZoomIn.svg</x:String>
+                    <x:String x:Key="ZoomOutIcon">/Assets/ZoomOut.svg</x:String>
+
+                    <!-- Overlay assets used by the Images shim for composition -->
+                    <x:String x:Key="OverlayPrivateIcon">/Assets/OverlayPrivate.svg</x:String>
+                    <x:String x:Key="OverlayProtectedIcon">/Assets/OverlayProtected.svg</x:String>
+                    <x:String x:Key="OverlayInternalIcon">/Assets/OverlayInternal.svg</x:String>
+                    <x:String x:Key="OverlayProtectedInternalIcon">/Assets/OverlayProtectedInternal.svg</x:String>
+                    <x:String x:Key="OverlayPrivateProtectedIcon">/Assets/OverlayPrivateProtected.svg</x:String>
+                    <x:String x:Key="OverlayCompilerControlledIcon">
+                        /Assets/OverlayCompilerControlled.svg</x:String>
+                    <x:String x:Key="OverlayStaticIcon">/Assets/OverlayStatic.svg</x:String>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="BracketHighlightBackgroundBrush" Color="#33278BC1" />
@@ -210,111 +196,91 @@
                     <x:String x:Key="AssemblyIcon">/Assets/Dark/Assembly.svg</x:String>
                     <x:String x:Key="SearchIcon">/Assets/Dark/Search.svg</x:String>
                     <x:String x:Key="NamespaceIcon">/Assets/Dark/Namespace.svg</x:String>
-                    <x:String x:Key="PropertyIconPublic">/Assets/Dark/PropertyPublic.svg</x:String>
-                    <x:String x:Key="PropertyIconProtected">/Assets/Dark/PropertyProtected.svg</x:String>
-                    <x:String x:Key="PropertyIconInternal">/Assets/Dark/PropertyInternal.svg</x:String>
-                    <x:String x:Key="PropertyIconPrivate">/Assets/Dark/PropertyPrivate.svg</x:String>
-                    <x:String x:Key="PropertyIcon">/Assets/Dark/PropertyPublic.svg</x:String>
-                    <x:String x:Key="ReferenceGroupIcon">/Assets/Dark/ReferenceGroup.svg</x:String>
-                    <x:String x:Key="ReferenceIcon">/Assets/Dark/Reference.svg</x:String>
-                    <x:String x:Key="ReferenceWarningIcon">/Assets/Dark/ReferenceWarning.svg</x:String>
+                    <x:String x:Key="PropertyIcon">/Assets/Dark/Property.svg</x:String>
                     <x:String x:Key="BackIcon">/Assets/Dark/Back.svg</x:String>
                     <x:String x:Key="ForwardIcon">/Assets/Dark/Forward.svg</x:String>
                     <x:String x:Key="OpenIcon">/Assets/Dark/Open.svg</x:String>
-                    <x:String x:Key="ClearIcon">/Assets/Dark/Clear.svg</x:String>
                     <x:String x:Key="CloseIcon">/Assets/Dark/Close.svg</x:String>
-                    <x:String x:Key="SortIcon">/Assets/Dark/SortAssemblies.svg</x:String>
                     <x:String x:Key="AssemblyListIcon">/Assets/Dark/AssemblyList.svg</x:String>
                     <x:String x:Key="AssemblyLoadingIcon">/Assets/Dark/AssemblyLoading.svg</x:String>
                     <x:String x:Key="ShowPublicOnlyIcon">/Assets/Dark/ShowPublicOnly.svg</x:String>
                     <x:String x:Key="ShowPrivateInternalIcon">/Assets/Dark/ShowPrivateInternal.svg</x:String>
                     <x:String x:Key="ShowAllIcon">/Assets/Dark/ShowAll.svg</x:String>
-                    <x:String x:Key="CollapseIcon">/Assets/Dark/CollapseAll.svg</x:String>
+                    <x:String x:Key="CollapseAllIcon">/Assets/Dark/CollapseAll.svg</x:String>
                     <x:String x:Key="MetadataIcon">/Assets/Dark/Metadata.svg</x:String>
                     <x:String x:Key="DebugMetadataIcon">/Assets/Dark/Metadata.svg</x:String>
                     <x:String x:Key="HeaderIcon">/Assets/Dark/Header.svg</x:String>
-                    <x:String x:Key="ResourcesIcon">/Assets/Dark/Resources.svg</x:String>
-                    <x:String x:Key="ResourcesIconClosed">/Assets/Dark/FolderClosed.svg</x:String>
-                    <x:String x:Key="ResourcesIconOpen">/Assets/Dark/FolderOpened.svg</x:String>
-                    <x:String x:Key="DirectoryTableIcon">/Assets/Dark/DirectoryTable.svg</x:String>
-                    <x:String x:Key="FileDialogReportIcon">/Assets/Dark/FileDialogReport.svg</x:String>
-                    <x:String x:Key="TablesIcon">/Assets/Dark/Tables.svg</x:String>
-                    <x:String x:Key="DataTableIcon">/Assets/Dark/DataTable.svg</x:String>
                     <x:String x:Key="HeapIcon">/Assets/Dark/Heap.svg</x:String>
-                    <x:String x:Key="ResourceFileIcon">/Assets/Dark/ResourceFile.svg</x:String>
-                    <x:String x:Key="EnumIcon">/Assets/Dark/EnumerationItemPublic.svg</x:String>
-                    <x:String x:Key="EnumInternalIcon">/Assets/Dark/EnumerationItemPublic.svg</x:String>
-                    <x:String x:Key="EnumProtectedIcon">/Assets/Dark/EnumerationItemPublic.svg</x:String>
-                    <x:String x:Key="EnumPrivateIcon">/Assets/Dark/EnumerationItemPublic.svg</x:String>
-                    <x:String x:Key="StructIcon">/Assets/Dark/StructurePublic.svg</x:String>
-                    <x:String x:Key="StructInternalIcon">/Assets/Dark/StructurePublic.svg</x:String>
-                    <x:String x:Key="StructProtectedIcon">/Assets/Dark/StructurePublic.svg</x:String>
-                    <x:String x:Key="StructPrivateIcon">/Assets/Dark/StructurePublic.svg</x:String>
-                    <x:String x:Key="ClassIcon">/Assets/Dark/ClassPublic.svg</x:String>
-                    <x:String x:Key="ClassInternalIcon">/Assets/Dark/ClassInternal.svg</x:String>
-                    <x:String x:Key="ClassProtectedIcon">/Assets/Dark/ClassProtected.svg</x:String>
-                    <x:String x:Key="ClassPrivateIcon">/Assets/Dark/ClassPrivate.svg</x:String>
-                    <x:String x:Key="ClassSealedIcon">/Assets/Dark/ClassSealed.svg</x:String>
-                    <x:String x:Key="InterfaceIcon">/Assets/Dark/InterfacePublic.svg</x:String>
-                    <x:String x:Key="InterfaceInternalIcon">/Assets/Dark/InterfacePublic.svg</x:String>
-                    <x:String x:Key="InterfaceProtectedIcon">/Assets/Dark/InterfacePublic.svg</x:String>
-                    <x:String x:Key="InterfacePrivateIcon">/Assets/Dark/InterfacePublic.svg</x:String>
-                    <x:String x:Key="DelegateIcon">/Assets/Dark/ClassPublic.svg</x:String>
-                    <x:String x:Key="DelegateIconPublic">/Assets/Dark/ClassPublic.svg</x:String>
-                    <x:String x:Key="DelegateIconInternal">/Assets/Dark/ClassPublic.svg</x:String>
-                    <x:String x:Key="DelegateIconProtected">/Assets/Dark/ClassPublic.svg</x:String>
-                    <x:String x:Key="DelegateIconPrivate">/Assets/Dark/ClassPublic.svg</x:String>
-                    <x:String x:Key="ConstantIconPublic">/Assets/Dark/ConstantPublic.svg</x:String>
-                    <x:String x:Key="ConstantIconProtected">/Assets/Dark/ConstantProtected.svg</x:String>
-                    <x:String x:Key="ConstantIconInternal">/Assets/Dark/ConstantInternal.svg</x:String>
-                    <x:String x:Key="ConstantIconPrivate">/Assets/Dark/ConstantPrivate.svg</x:String>
-                    <x:String x:Key="ConstantIcon">/Assets/Dark/ConstantPublic.svg</x:String>
-                    <x:String x:Key="FieldIconPublic">/Assets/Dark/FieldPublic.svg</x:String>
-                    <x:String x:Key="FieldIconProtected">/Assets/Dark/FieldProtected.svg</x:String>
-                    <x:String x:Key="FieldIconInternal">/Assets/Dark/FieldInternal.svg</x:String>
-                    <x:String x:Key="FieldIconPrivate">/Assets/Dark/FieldPrivate.svg</x:String>
-                    <x:String x:Key="FieldStaticIconPublic">/Assets/Dark/FieldPublic.svg</x:String>
-                    <x:String x:Key="FieldStaticIconProtected">/Assets/Dark/FieldProtected.svg</x:String>
-                    <x:String x:Key="FieldStaticIconInternal">/Assets/Dark/FieldInternal.svg</x:String>
-                    <x:String x:Key="FieldStaticIconPrivate">/Assets/Dark/FieldPrivate.svg</x:String>
-                    <x:String x:Key="FieldIcon">/Assets/Dark/FieldPublic.svg</x:String>
-                    <x:String x:Key="MethodIconPublic">/Assets/Dark/MethodPublic.svg</x:String>
-                    <x:String x:Key="MethodIconProtected">/Assets/Dark/MethodProtected.svg</x:String>
-                    <x:String x:Key="MethodIconInternal">/Assets/Dark/MethodInternal.svg</x:String>
-                    <x:String x:Key="MethodIconPrivate">/Assets/Dark/MethodPrivate.svg</x:String>
-                    <x:String x:Key="MethodStaticIconPublic">/Assets/Dark/MethodPublic.svg</x:String>
-                    <x:String x:Key="MethodStaticIconProtected">/Assets/Dark/MethodProtected.svg</x:String>
-                    <x:String x:Key="MethodStaticIconInternal">/Assets/Dark/MethodInternal.svg</x:String>
-                    <x:String x:Key="MethodStaticIconPrivate">/Assets/Dark/MethodPrivate.svg</x:String>
-                    <x:String x:Key="MethodIcon">/Assets/Dark/MethodPublic.svg</x:String>
-                    <x:String x:Key="ConstructorIcon">/Assets/Dark/MethodInstance.svg</x:String>
-                    <x:String x:Key="ConstructorIconPublic">/Assets/Dark/MethodInstance.svg</x:String>
-                    <x:String x:Key="ConstructorIconProtected">/Assets/Dark/MethodInstance.svg</x:String>
-                    <x:String x:Key="ConstructorIconInternal">/Assets/Dark/MethodInstance.svg</x:String>
-                    <x:String x:Key="ConstructorIconPrivate">/Assets/Dark/MethodInstance.svg</x:String>
-                    <x:String x:Key="EventIconPublic">/Assets/Dark/EventPublic.svg</x:String>
-                    <x:String x:Key="EventIconProtected">/Assets/Dark/EventProtected.svg</x:String>
-                    <x:String x:Key="EventIconInternal">/Assets/Dark/EventInternal.svg</x:String>
-                    <x:String x:Key="EventIconPrivate">/Assets/Dark/EventPrivate.svg</x:String>
-                    <x:String x:Key="EventStaticIconPublic">/Assets/Dark/EventPublic.svg</x:String>
-                    <x:String x:Key="EventStaticIconProtected">/Assets/Dark/EventProtected.svg</x:String>
-                    <x:String x:Key="EventStaticIconInternal">/Assets/Dark/EventInternal.svg</x:String>
-                    <x:String x:Key="EventStaticIconPrivate">/Assets/Dark/EventPrivate.svg</x:String>
-                    <x:String x:Key="EventIcon">/Assets/Dark/EventPublic.svg</x:String>
-                    <x:String x:Key="PropertyStaticIconPublic">/Assets/Dark/PropertyPublic.svg</x:String>
-                    <x:String x:Key="PropertyStaticIconProtected">/Assets/Dark/PropertyProtected.svg</x:String>
-                    <x:String x:Key="PropertyStaticIconInternal">/Assets/Dark/PropertyInternal.svg</x:String>
-                    <x:String x:Key="PropertyStaticIconPrivate">/Assets/Dark/PropertyPrivate.svg</x:String>
-                    <x:String x:Key="ParameterIcon">/Assets/Dark/Parameter.svg</x:String>
-                    <x:String x:Key="LocalVariableIcon">/Assets/Dark/LocalVariable.svg</x:String>
-                    <x:String x:Key="StringIcon">/Assets/Dark/String.svg</x:String>
-                    <x:String x:Key="ClearSearchIcon">/Assets/Dark/ClearSearch.svg</x:String>
+                    <x:String x:Key="ClassIcon">/Assets/Dark/Class.svg</x:String>
+                    <x:String x:Key="InterfaceIcon">/Assets/Dark/Interface.svg</x:String>
+                    <x:String x:Key="FieldIcon">/Assets/Dark/Field.svg</x:String>
+                    <x:String x:Key="MethodIcon">/Assets/Dark/Method.svg</x:String>
+                    <x:String x:Key="EventIcon">/Assets/Dark/Event.svg</x:String>
                     <x:String x:Key="RefreshIcon">/Assets/Dark/Refresh.svg</x:String>
-                    <x:String x:Key="SortSimpleIcon">/Assets/Dark/Sort.svg</x:String>
-                    <x:String x:Key="StatusInformationOutlineIcon">/Assets/Dark/StatusInformationOutline.svg</x:String>
-                    <x:String x:Key="StatusWarningOutlineIcon">/Assets/Dark/StatusWarningOutline.svg</x:String>
+                    <x:String x:Key="SortIcon">/Assets/Dark/Sort.svg</x:String>
                     <x:String x:Key="SubTypesIcon">/Assets/Dark/SubTypes.svg</x:String>
                     <x:String x:Key="SuperTypesIcon">/Assets/Dark/SuperTypes.svg</x:String>
+
+                    <x:String x:Key="AssemblyListGACIcon">/Assets/Dark/AssemblyListGAC.svg</x:String>
+                    <x:String x:Key="AssemblyWarningIcon">/Assets/Dark/AssemblyWarning.svg</x:String>
+                    <x:String x:Key="ConstructorIcon">/Assets/Dark/Constructor.svg</x:String>
+                    <x:String x:Key="CopyIcon">/Assets/Dark/Copy.svg</x:String>
+                    <x:String x:Key="DelegateIcon">/Assets/Dark/Delegate.svg</x:String>
+                    <x:String x:Key="DeleteIcon">/Assets/Dark/Delete.svg</x:String>
+                    <x:String x:Key="DictionaryContainIcon">/Assets/Dark/DictionaryContain.svg</x:String>
+                    <x:String x:Key="EnumIcon">/Assets/Dark/Enum.svg</x:String>
+                    <x:String x:Key="EnumValueIcon">/Assets/Dark/EnumValue.svg</x:String>
+                    <x:String x:Key="ExpandAllIcon">/Assets/Dark/ExpandAll.svg</x:String>
+                    <x:String x:Key="ExportOverlayIcon">/Assets/Dark/ExportOverlay.svg</x:String>
+                    <x:String x:Key="ExtensionMethodIcon">/Assets/Dark/ExtensionMethod.svg</x:String>
+                    <x:String x:Key="FieldReadOnlyIcon">/Assets/Dark/FieldReadOnly.svg</x:String>
+                    <x:String x:Key="FindAssemblyIcon">/Assets/Dark/FindAssembly.svg</x:String>
+                    <x:String x:Key="FolderClosedIcon">/Assets/Dark/Folder.Closed.svg</x:String>
+                    <x:String x:Key="FolderOpenIcon">/Assets/Dark/FolderOpen.svg</x:String>
+                    <x:String x:Key="IndexerIcon">/Assets/Dark/Indexer.svg</x:String>
+                    <x:String x:Key="LibraryIcon">/Assets/Dark/Library.svg</x:String>
+                    <x:String x:Key="ListFolderOpenIcon">/Assets/Dark/ListFolder.Open.svg</x:String>
+                    <x:String x:Key="ListFolderIcon">/Assets/Dark/ListFolder.svg</x:String>
+                    <x:String x:Key="LiteralIcon">/Assets/Dark/Literal.svg</x:String>
+                    <x:String x:Key="MetadataFileIcon">/Assets/Dark/MetadataFile.svg</x:String>
+                    <x:String x:Key="MetadataTableIcon">/Assets/Dark/MetadataTable.svg</x:String>
+                    <x:String x:Key="MetadataTableGroupIcon">/Assets/Dark/MetadataTableGroup.svg</x:String>
+                    <x:String x:Key="OKIcon">/Assets/Dark/OK.svg</x:String>
+                    <x:String x:Key="OperatorIcon">/Assets/Dark/Operator.svg</x:String>
+                    <x:String x:Key="PInvokeMethodIcon">/Assets/Dark/PInvokeMethod.svg</x:String>
+                    <x:String x:Key="ProgramDebugDatabaseIcon">/Assets/Dark/ProgramDebugDatabase.svg</x:String>
+                    <x:String x:Key="ReferenceFolderIcon">/Assets/Dark/ReferenceFolder.svg</x:String>
+                    <x:String x:Key="ReferenceOverlayIcon">/Assets/Dark/ReferenceOverlay.svg</x:String>
+                    <x:String x:Key="ResourceIcon">/Assets/Dark/Resource.svg</x:String>
+                    <x:String x:Key="ResourceImageIcon">/Assets/Dark/ResourceImage.svg</x:String>
+                    <x:String x:Key="ResourceResourcesFileIcon">/Assets/Dark/ResourceResourcesFile.svg</x:String>
+                    <x:String x:Key="ResourceXmlIcon">/Assets/Dark/ResourceXml.svg</x:String>
+                    <x:String x:Key="ResourceXsdIcon">/Assets/Dark/ResourceXsd.svg</x:String>
+                    <x:String x:Key="ResourceXslIcon">/Assets/Dark/ResourceXsl.svg</x:String>
+                    <x:String x:Key="ResourceXsltIcon">/Assets/Dark/ResourceXslt.svg</x:String>
+                    <x:String x:Key="ResultToJSONIcon">/Assets/Dark/ResultToJSON.svg</x:String>
+                    <x:String x:Key="SaveIcon">/Assets/Dark/Save.svg</x:String>
+                    <x:String x:Key="SearchmsdnIcon">/Assets/Dark/SearchMsdn.svg</x:String>
+                    <x:String x:Key="StructIcon">/Assets/Dark/Struct.svg</x:String>
+                    <x:String x:Key="SwitchSourceOrTargetIcon">/Assets/Dark/SwitchSourceOrTarget.svg</x:String>
+                    <x:String x:Key="ViewCodeIcon">/Assets/Dark/ViewCode.svg</x:String>
+                    <x:String x:Key="VirtualMethodIcon">/Assets/Dark/VirtualMethod.svg</x:String>
+                    <x:String x:Key="WarningIcon">/Assets/Dark/Warning.svg</x:String>
+                    <x:String x:Key="WebAssemblyIcon">/Assets/Dark/WebAssembly.svg</x:String>
+                    <x:String x:Key="ZoomInIcon">/Assets/Dark/ZoomIn.svg</x:String>
+                    <x:String x:Key="ZoomOutIcon">/Assets/Dark/ZoomOut.svg</x:String>
+
+                    <!-- Overlay assets used by the Images shim for composition -->
+                    <x:String x:Key="OverlayPrivateIcon">/Assets/Dark/OverlayPrivate.svg</x:String>
+                    <x:String x:Key="OverlayProtectedIcon">/Assets/Dark/OverlayProtected.svg</x:String>
+                    <x:String x:Key="OverlayInternalIcon">/Assets/Dark/OverlayInternal.svg</x:String>
+                    <x:String x:Key="OverlayProtectedInternalIcon">
+                        /Assets/Dark/OverlayProtectedInternal.svg</x:String>
+                    <x:String x:Key="OverlayPrivateProtectedIcon">
+                        /Assets/Dark/OverlayPrivateProtected.svg</x:String>
+                    <x:String x:Key="OverlayCompilerControlledIcon">
+                        /Assets/Dark/OverlayCompilerControlled.svg</x:String>
+                    <x:String x:Key="OverlayStaticIcon">/Assets/Dark/OverlayStatic.svg</x:String>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <converters:ApiVisibilityToBrushConverter x:Key="ApiVisibilityToBrushConverter" />
@@ -325,3 +291,4 @@
         </ResourceDictionary>
     </Application.Resources>
 </Application>
+        

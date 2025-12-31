@@ -1,17 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <defs>
-    <style>.canvas{fill: none; opacity: 0.35;}.light-defaultgrey-10{fill: #dcdcdc; opacity: 0.35;}.light-defaultgrey{fill: #dcdcdc; opacity: 1;}.cls-1{opacity:0.75;}</style>
-  </defs>
-  <title>CollapseAll</title>
-  <g id="canvas">
-    <path class="canvas" d="M16,16H0V0H16Z" />
-  </g>
-  <g id="level-1">
-    <g class="cls-1">
-      <path class="light-defaultgrey-10" d="M15.5.5v12h-2V2.5H3.5V.5Z" />
-      <path class="light-defaultgrey" d="M16,.5v12l-.5.5h-2V12H15V1H4V2.5H3V.5L3.5,0h12Z" />
-    </g>
-    <path class="light-defaultgrey-10" d="M13.5,2.5v12H1.5V2.5Z" />
-    <path class="light-defaultgrey" d="M11,9H4V8h7Zm3-6.5v12l-.5.5H1.5L1,14.5V2.5L1.5,2h12ZM13,3H2V14H13Z" />
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><style type="text/css">.icon-canvas-transparent{opacity:0.35;fill:#1f1f1f;} .icon-vs-out{fill:#dcdcdc;} .icon-vs-bg{fill:#dcdcdc;} .icon-vs-fg{fill:#dcdcdc;} .icon-vs-action-blue{fill:#8ab4f8;}</style><path class="icon-canvas-transparent" d="M16 16h-16v-16h16v16z" id="canvas"/><path class="icon-vs-out" d="M15 10h-2v2h-2v2h-9v-9h2v-2h2v-2h9v9z" id="outline"/><path class="icon-vs-bg" d="M14 2v7h-1v-6h-6v-1h7zm-9 2v1h6v6h1v-7h-7zm5 2v7h-7v-7h7zm-1 1h-5v5h5v-5z" id="iconBg"/><path class="icon-vs-fg" d="M4 7v5h5v-5h-5zm4 3h-3v-1h3v1z" id="iconFg"/><path class="icon-vs-action-blue" d="M8 10h-3v-1.031l3 .031v1z" id="colorAction"/></svg>

@@ -1,16 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <defs>
-    <style>.canvas{fill: none; opacity: 0.35;}.light-defaultgrey-10{fill: #dcdcdc; opacity: 0.35;}.light-defaultgrey{fill: #dcdcdc; opacity: 1;}.cls-1{opacity:0.75;}</style>
-  </defs>
-  <title>IconLightFirstOfFourRows</title>
-  <g id="canvas" class="canvas">
-    <path class="canvas" d="M16,16H0V0H16Z" />
-  </g>
-  <g id="level-1">
-    <path class="light-defaultgrey-10" d="M1.5,14.5V2.5h12v12Z" />
-    <path class="light-defaultgrey" d="M14,14.5V2.5L13.5,2H1.5L1,2.5v12l.5.5h12ZM13,9v2H2V9ZM2,8V6H13V8ZM13,3V5H2V3ZM2,14V12H13v2Z" />
-    <g class="cls-1">
-      <path class="light-defaultgrey" d="M1.5,5.5v-3h12v3Z" />
-    </g>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><style>.icon-canvas-transparent{opacity:0.35;fill:#1f1f1f}.icon-vs-out{fill:#dcdcdc}.icon-vs-bg{fill:#dcdcdc}.icon-vs-fg{fill:#dcdcdc}</style><path class="icon-canvas-transparent" d="M15.993 16h-16V0h16v16z" id="canvas"/><path class="icon-vs-out" d="M16 15H1V1h15v14z" id="outline"/><path class="icon-vs-fg" d="M14 13H3v-2h11v2zm0-3H3V8h11v2zm0-3H3V5h11v2z" id="iconFg"/><g id="iconBg"><path class="icon-vs-bg" d="M2 2v12h13V2H2zm12 11H3v-2h11v2zm0-3H3V8h11v2zm0-3H3V5h11v2z"/></g></svg>

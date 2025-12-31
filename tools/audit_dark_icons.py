@@ -20,12 +20,34 @@ import re
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_ASSETS_ROOT = os.path.normpath(os.path.join(HERE, "..", "src", "ProjectRover", "Assets"))
 
-LIGHT_TO_DARK = {
+CANONICAL_LIGHT_TO_DARK = {
     "#212121": "#dcdcdc",
+    "#424242": "#bdbdbd",
+    "#272727": "#bdbdbd",
     "#005dba": "#8ab4f8",
+    "#00539c": "#8ab4f8",
+    "#0077a0": "#8ab4f8",
+    "#0000ff": "#8ab4f8",
+    "#1ba1e2": "#8ab4f8",
+    "#03a5ef": "#8ab4f8",
+    "#0095d7": "#8ab4f8",
     "#6936aa": "#c3a5ff",
+    "#652d90": "#c3a5ff",
     "#996f00": "#e0b44c",
+    "#c27d1a": "#e0b44c",
+    "#ffcc00": "#e0b44c",
+    "#ffb803": "#e0b44c",
+    "#dcb67a": "#e0b44c",
+    "#388a34": "#6bd46b",
+    "#218022": "#6bd46b",
+    "#339933": "#6bd46b",
+    "#7fbb03": "#6bd46b",
+    "#f6f6f6": "#1f1f1f",
+    "#f0eff1": "#bdbdbd",
+    "#d1d1d1": "#dcdcdc",
 }
+
+LIGHT_TO_DARK = dict(CANONICAL_LIGHT_TO_DARK)
 
 # Additional mappings for accents we observed
 ACCENT_DARK_MAP = {
@@ -37,6 +59,8 @@ NORMALIZE_DARK = {
     "#005dba": "#8ab4f8",  # encourage lightened blue
     "#0000ff": "#8ab4f8",
     "#0077a0": "#8ab4f8",
+    "#424242": "#bdbdbd",
+    "#272727": "#bdbdbd",
 }
 
 # Grey normalization: make mid greys lighter for foreground roles on dark theme
@@ -60,6 +84,9 @@ LOW_OPACITY_THRESHOLD = 0.2
 STANDARD_MUTED_ALPHA = 0.35
 OPACITY_RE = re.compile(r'(opacity\s*[:=]\s*["\']?)(0?\.\d+|\d+)(["\']?)', re.IGNORECASE)
 HEX_RE = re.compile(r"#(?:[0-9a-fA-F]{3}){1,2}")
+
+ROLE_MAPPINGS = {}
+LEARNED_MAPPINGS = {}
 
 
 def hex_to_rgb(hexstr: str):
@@ -135,9 +162,64 @@ def write_text(path: str, content: str):
         f.write(content)
 
 
+def normalize_hex(hexstr: str) -> str:
+    s = hexstr.lower()
+    if len(s) == 4:
+        s = "#" + "".join(ch * 2 for ch in s[1:])
+    return s
+
+
+def auto_dark_color(norm_hex: str) -> str:
+    r, g, b = hex_to_rgb(norm_hex)
+    h, s, l = rgb_to_hsl(r, g, b)
+    if s < 0.15:
+        return "#bdbdbd" if l < 0.6 else "#dcdcdc"
+    if l < 0.45:
+        target_l = 0.72
+    elif l > 0.8:
+        target_l = 0.68
+    else:
+        target_l = max(0.62, min(0.78, l + 0.2))
+    target_s = min(s, 0.7)
+    nr, ng, nb = hsl_to_rgb(h, target_s, target_l)
+    return rgb_to_hex(nr, ng, nb)
+
+
+def generate_dark_from_light(light_path: str) -> str:
+    content = read_text(light_path)
+    color_map = {}
+    for raw_hex in set(HEX_RE.findall(content)):
+        norm_hex = normalize_hex(raw_hex)
+        if norm_hex in CANONICAL_LIGHT_TO_DARK:
+            target = CANONICAL_LIGHT_TO_DARK[norm_hex]
+        else:
+            target = auto_dark_color(norm_hex)
+        color_map[raw_hex] = target
+
+    for raw_hex, target in color_map.items():
+        content = re.sub(re.escape(raw_hex), target, content, flags=re.IGNORECASE)
+
+    for cls in STRICT_FOREGROUND_CLASSES:
+        content = re.sub(
+            r"(\." + re.escape(cls) + r"\s*\{[^}]*fill\s*:\s*)(?:#[0-9a-fA-F]{3,6})",
+            r"\1" + PREFERRED_FOREGROUND_HEX,
+            content,
+            flags=re.IGNORECASE,
+        )
+
+    def bump_opacity(match: re.Match) -> str:
+        value = float(match.group(2))
+        if value < LOW_OPACITY_THRESHOLD:
+            return f"{match.group(1)}{STANDARD_MUTED_ALPHA}{match.group(3)}"
+        return match.group(0)
+
+    content = OPACITY_RE.sub(bump_opacity, content)
+    return content
+
+
 def audit_file(path: str):
     text = read_text(path)
-    colors = set(m.lower() for m in HEX_RE.findall(text))
+    colors = set(normalize_hex(m) for m in HEX_RE.findall(text))
 
     issues = []
     for light, dark in LIGHT_TO_DARK.items():
@@ -180,7 +262,9 @@ def learn_mappings(assets_root: str):
                 except ValueError:
                     continue
                 if li < len(dcolors):
-                    learned[lc] = dcolors[li]
+                    mapped = dcolors[li]
+                    if mapped != lc:
+                        learned[lc] = mapped
     return learned
 
 
@@ -227,29 +311,29 @@ def learn_role_mappings(assets_root: str):
 
 
 def fix_file(path: str):
+    assets_root = os.path.normpath(os.path.join(HERE, '..', 'src', 'ProjectRover', 'Assets'))
+    light_path = os.path.join(assets_root, os.path.basename(path))
+    if os.path.exists(light_path):
+        content = generate_dark_from_light(light_path)
+        write_text(path, content)
+        return
+
     content = read_text(path)
     # quick normalization for known problematic blues and accents
     for src, dst in {"#0077a0": "#8ab4f8", "#0000ff": "#8ab4f8"}.items():
         content = re.sub(re.escape(src), dst, content, flags=re.IGNORECASE)
     # Try to refine using the paired light file if present
-    assets_root = os.path.normpath(os.path.join(HERE, '..', 'src', 'ProjectRover', 'Assets'))
-    light_path = os.path.join(assets_root, os.path.basename(path))
     if os.path.exists(light_path):
         ltext = read_text(light_path).lower()
-        dtext = content.lower()
         lcolors = [m for m in HEX_RE.findall(ltext)]
-        dcolors = [m for m in HEX_RE.findall(dtext)]
         for i, lc in enumerate(lcolors):
-            # prefer canonical mapping if it exists, else try to use learned mapping
             lc_l = lc.lower()
             if lc_l in LIGHT_TO_DARK:
                 preferred = LIGHT_TO_DARK[lc_l]
-            elif lc_l in learned:
-                preferred = learned[lc_l]
+            elif lc_l in LEARNED_MAPPINGS:
+                preferred = LEARNED_MAPPINGS[lc_l]
             else:
-                # default to a readable light grey for fg roles
                 preferred = PREFERRED_FOREGROUND_HEX
-            # replace occurrences of the lc in the dark content
             content = re.sub(re.escape(lc_l), preferred, content, flags=re.IGNORECASE)
     # Replace light colors with canonical dark
     for light, dark in LIGHT_TO_DARK.items():
@@ -338,7 +422,7 @@ def fix_file(path: str):
 def main():
     parser = argparse.ArgumentParser(description="Audit dark SVG icons for palette compliance.")
     parser.add_argument("--assets-root", default=DEFAULT_ASSETS_ROOT, help=f"Path to Assets/ (default: {DEFAULT_ASSETS_ROOT})")
-    parser.add_argument("--fix", action="store_true", help="Rewrite non-compliant dark SVGs using the canonical palette.")
+    parser.add_argument("--fix", action="store_true", help="Regenerate from light sources when available, otherwise rewrite non-compliant dark SVGs.")
     args = parser.parse_args()
 
     dark_root = os.path.join(args.assets_root, "Dark")
@@ -356,6 +440,8 @@ def main():
         for k, v in learned.items():
             if k not in LIGHT_TO_DARK:
                 LIGHT_TO_DARK[k] = v
+    global LEARNED_MAPPINGS
+    LEARNED_MAPPINGS = learned
     # learn role-based mappings
     global ROLE_MAPPINGS
     ROLE_MAPPINGS = learn_role_mappings(args.assets_root)
