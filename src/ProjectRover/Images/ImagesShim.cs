@@ -247,6 +247,7 @@ namespace ICSharpCode.ILSpy
 		public static object Assembly => "AssemblyIcon";
 		public static object ViewCode => "ViewCodeIcon"; // Missing?
 		public static object AssemblyWarning => "ReferenceWarningIcon";
+		public static object AssemblyLoading => "AssemblyLoadingIcon";
 		public static object MetadataFile => "MetadataIcon";
 		public static object FindAssembly => "OpenIcon";
 		public static object SuperTypes => "SuperTypesIcon"; // Missing?

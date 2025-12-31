@@ -103,6 +103,7 @@
                     <x:String x:Key="CloseIcon">/Assets/Close.svg</x:String>
                     <x:String x:Key="SortIcon">/Assets/SortAssemblies.svg</x:String>
                     <x:String x:Key="AssemblyListIcon">/Assets/AssemblyList.svg</x:String>
+                    <x:String x:Key="AssemblyLoadingIcon">/Assets/AssemblyLoading.svg</x:String>
                     <x:String x:Key="ShowPublicOnlyIcon">/Assets/ShowPublicOnly.svg</x:String>
                     <x:String x:Key="ShowPrivateInternalIcon">/Assets/ShowPrivateInternal.svg</x:String>
                     <x:String x:Key="ShowAllIcon">/Assets/ShowAll.svg</x:String>
@@ -224,6 +225,7 @@
                     <x:String x:Key="CloseIcon">/Assets/Dark/Close.svg</x:String>
                     <x:String x:Key="SortIcon">/Assets/Dark/SortAssemblies.svg</x:String>
                     <x:String x:Key="AssemblyListIcon">/Assets/Dark/AssemblyList.svg</x:String>
+                    <x:String x:Key="AssemblyLoadingIcon">/Assets/Dark/AssemblyLoading.svg</x:String>
                     <x:String x:Key="ShowPublicOnlyIcon">/Assets/Dark/ShowPublicOnly.svg</x:String>
                     <x:String x:Key="ShowPrivateInternalIcon">/Assets/Dark/ShowPrivateInternal.svg</x:String>
                     <x:String x:Key="ShowAllIcon">/Assets/Dark/ShowAll.svg</x:String>

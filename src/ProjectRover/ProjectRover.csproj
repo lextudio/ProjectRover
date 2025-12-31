@@ -207,6 +207,10 @@
       <Link>Commands\BrowseForwardCommand.cs</Link>
     </Compile>
 
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Commands\SimpleCommand.cs">
+      <Link>Commands\SimpleCommand.cs</Link>
+    </Compile>
+
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\Commands\CheckForUpdatesCommand.cs">
       <Link>Commands\CheckForUpdatesCommand.cs</Link>
     </Compile>
