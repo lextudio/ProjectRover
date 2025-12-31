@@ -109,6 +109,8 @@ namespace ICSharpCode.ILSpy
 
                         try
                         {
+                            // Ensure layout is saved into Rover settings before snapshot is persisted.
+                            viewModel?.Workspace.SaveLayout();
                             snapshot.Save();
                         }
                         catch (Exception ex)
@@ -123,7 +125,6 @@ namespace ICSharpCode.ILSpy
                 log.Error(ex, "Failed applying session settings on close");
             }
 
-            viewModel?.Workspace.SaveLayout();
             base.OnClosing(e);
         }
 

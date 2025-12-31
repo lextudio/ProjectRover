@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Xml.Linq;
 using Avalonia.Controls;
 using Dock.Model.Core;
 using Dock.Model.Core.Events;
@@ -93,7 +94,7 @@ namespace ICSharpCode.ILSpy.Docking
         var assemblyTreeModel = viewModel.AssemblyTreeModel;
         var searchPaneModel = viewModel.SearchPaneModel;
         var analyzerPane = this.ToolPanes.FirstOrDefault(t => t.ContentId == AnalyzerTreeViewModel.PaneContentId);
-        log.Debug("DockWorkspace.InitializeLayout: ToolPanes count={Count} analyzerFound={AnalyzerFound}", this.ToolPanes.Count, analyzerPane != null);
+        log.Debug("DockWorkspace.InitializeLayout: ToolPanes count={Count} analyzerFound={AnalyzerFound} analyzerVisible={AnalyzerVisible}", this.ToolPanes.Count, analyzerPane != null, analyzerPane?.IsVisible);
 
         // Create Dock Structure
         var documentDock = this.CreateDocumentDock() ?? new DocumentDock
@@ -177,7 +178,21 @@ namespace ICSharpCode.ILSpy.Docking
           return;
         }
 
-        var snapshot = BuildLayoutSnapshot(rootLayout);
+        // Log invisible tools that will be excluded from snapshot
+        try
+        {
+          var invisibleTools = this.ToolPanes.Where(tp => !tp.IsVisible).Select(tp => tp.ContentId).ToArray();
+          if (invisibleTools.Any())
+          {
+            log.Debug("SaveLayout: Excluding invisible tools from snapshot: {InvisibleTools}", string.Join(", ", invisibleTools));
+          }
+        }
+        catch (Exception ex)
+        {
+          log.Debug(ex, "SaveLayout: Failed to log invisible tools");
+        }
+
+        var snapshot = BuildLayoutSnapshot(rootLayout, this.ToolPanes);
         if (snapshot == null)
           return;
 
@@ -217,7 +232,9 @@ namespace ICSharpCode.ILSpy.Docking
         RegisterKnownTools();
         ReplaceToolDockables(layout);
         ResetDocumentDock(layout);
-        EnsureAnalyzerDock(layout);
+        // Don't call EnsureAnalyzerDock here - if analyzer was excluded from snapshot
+        // (because it was closed), we shouldn't force it back into the layout.
+        // EnsureAnalyzerDock is only for default layout creation.
 
         if (FindDockableById(layout, "SearchDock") is IDockable searchDock)
         {
@@ -274,6 +291,13 @@ namespace ICSharpCode.ILSpy.Docking
       analyzer.Owner = analyzer.Owner ?? layout;
       analyzer.Factory = analyzer.Factory ?? (layout as IDockable)?.Factory;
 
+      // Only inject the analyzer if it is currently marked visible (e.g., user has shown it).
+      if (!analyzer.IsVisible)
+      {
+        log.Debug("EnsureAnalyzerDock: Analyzer not injected because IsVisible is false");
+        return;
+      }
+
       var leftDock = FindDockById(layout, "LeftDock") as ToolDock;
       if (leftDock == null)
       {
@@ -292,6 +316,14 @@ namespace ICSharpCode.ILSpy.Docking
 
       if (!leftDock.VisibleDockables.Contains(analyzer))
       {
+        // Respect the current tool model visibility: if the user closed the analyzer pane,
+        // do not re-insert it into the restored layout.
+        if (!analyzer.IsVisible)
+        {
+          log.Debug("EnsureAnalyzerDock: Analyzer pane is present in ToolPanes but IsVisible==false; skipping insertion into LeftDock");
+          return;
+        }
+
         log.Debug("EnsureAnalyzerDock: Inserting analyzer pane into LeftDock");
         analyzer.Owner = analyzer.Owner ?? leftDock;
         analyzer.Factory = analyzer.Factory ?? leftDock.Factory;
@@ -453,11 +485,16 @@ namespace ICSharpCode.ILSpy.Docking
       }
     }
 
-    private static RootDock? BuildLayoutSnapshot(IRootDock layout)
+    private static RootDock? BuildLayoutSnapshot(IRootDock layout, IEnumerable<ToolPaneModel>? toolPanes = null)
     {
       // Clone the layout with stub dockables so we don't serialize view-model types.
       var map = new Dictionary<IDockable, IDockable>();
-      return CloneDockable(layout, map) as RootDock;
+      var invisibleToolIds = toolPanes?
+        .Where(tp => !tp.IsVisible)
+        .Select(tp => tp.Id)
+        .Where(id => !string.IsNullOrEmpty(id))
+        .ToHashSet(StringComparer.Ordinal);
+      return CloneDockable(layout, map, invisibleToolIds) as RootDock;
     }
 
     private static DockLayoutXmlSerializer CreateLayoutSerializer()
@@ -465,10 +502,16 @@ namespace ICSharpCode.ILSpy.Docking
       return new DockLayoutXmlSerializer(typeof(ObservableCollection<>), dockLayoutKnownTypes);
     }
 
-    private static IDockable? CloneDockable(IDockable source, IDictionary<IDockable, IDockable> map)
+    private static IDockable? CloneDockable(IDockable source, IDictionary<IDockable, IDockable> map, HashSet<string>? invisibleToolIds = null)
     {
       if (map.TryGetValue(source, out var existing))
         return existing;
+
+      // Skip tools that are marked invisible in the current session
+      if (source is ITool tool && tool.Id != null && invisibleToolIds != null && invisibleToolIds.Contains(tool.Id))
+      {
+        return null;
+      }
 
       IDockable? clone = source switch
       {
@@ -518,13 +561,13 @@ namespace ICSharpCode.ILSpy.Docking
       {
         cloneRoot.IsFocusableRoot = sourceRoot.IsFocusableRoot;
         cloneRoot.EnableAdaptiveGlobalDockTargets = sourceRoot.EnableAdaptiveGlobalDockTargets;
-        cloneRoot.HiddenDockables = CloneDockablesList(sourceRoot.HiddenDockables, map);
-        cloneRoot.LeftPinnedDockables = CloneDockablesList(sourceRoot.LeftPinnedDockables, map);
-        cloneRoot.RightPinnedDockables = CloneDockablesList(sourceRoot.RightPinnedDockables, map);
-        cloneRoot.TopPinnedDockables = CloneDockablesList(sourceRoot.TopPinnedDockables, map);
-        cloneRoot.BottomPinnedDockables = CloneDockablesList(sourceRoot.BottomPinnedDockables, map);
+        cloneRoot.HiddenDockables = CloneDockablesList(sourceRoot.HiddenDockables, map, invisibleToolIds);
+        cloneRoot.LeftPinnedDockables = CloneDockablesList(sourceRoot.LeftPinnedDockables, map, invisibleToolIds);
+        cloneRoot.RightPinnedDockables = CloneDockablesList(sourceRoot.RightPinnedDockables, map, invisibleToolIds);
+        cloneRoot.TopPinnedDockables = CloneDockablesList(sourceRoot.TopPinnedDockables, map, invisibleToolIds);
+        cloneRoot.BottomPinnedDockables = CloneDockablesList(sourceRoot.BottomPinnedDockables, map, invisibleToolIds);
         if (sourceRoot.PinnedDock != null)
-          cloneRoot.PinnedDock = CloneDockable(sourceRoot.PinnedDock, map) as IToolDock;
+          cloneRoot.PinnedDock = CloneDockable(sourceRoot.PinnedDock, map, invisibleToolIds) as IToolDock;
       }
 
       if (source is IDock sourceDock && clone is IDock cloneDock)
@@ -534,7 +577,7 @@ namespace ICSharpCode.ILSpy.Docking
           var visibleDockables = new ObservableCollection<IDockable>();
           foreach (var dockable in sourceDock.VisibleDockables)
           {
-            var dockableClone = CloneDockable(dockable, map);
+            var dockableClone = CloneDockable(dockable, map, invisibleToolIds);
             if (dockableClone != null)
               visibleDockables.Add(dockableClone);
           }
@@ -549,7 +592,7 @@ namespace ICSharpCode.ILSpy.Docking
       return clone;
     }
 
-    private static IList<IDockable>? CloneDockablesList(IList<IDockable>? source, IDictionary<IDockable, IDockable> map)
+    private static IList<IDockable>? CloneDockablesList(IList<IDockable>? source, IDictionary<IDockable, IDockable> map, HashSet<string>? invisibleToolIds = null)
     {
       if (source == null)
         return null;
@@ -557,7 +600,7 @@ namespace ICSharpCode.ILSpy.Docking
       var list = new ObservableCollection<IDockable>();
       foreach (var dockable in source)
       {
-        var clone = CloneDockable(dockable, map);
+        var clone = CloneDockable(dockable, map, invisibleToolIds);
         if (clone != null)
           list.Add(clone);
       }
@@ -652,7 +695,8 @@ namespace ICSharpCode.ILSpy.Docking
 
     private void OnDockableClosed(object? sender, DockableClosedEventArgs e)
     {
-      var pane = e?.Dockable?.Id is { } dockableId
+      string? dockableId = e?.Dockable?.Id;
+      var pane = dockableId != null
           ? this.ToolPanes.FirstOrDefault(p => p.ContentId == dockableId)
           : null;
 
