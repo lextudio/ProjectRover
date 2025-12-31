@@ -76,5 +76,14 @@
           Content="Keep main menu visible on macOS (takes effect after restart)" />
       </StackPanel>
     </controls:GroupBox>
+
+    <controls:GroupBox Header="Rover">
+      <StackPanel Margin="12">
+        <CheckBox IsChecked="{Binding RecentFontsEnabled, Mode=TwoWay}"
+          Content="Enable recent fonts (show last used fonts at top of font list)" />
+        <CheckBox IsChecked="{Binding ShowDecompilerLineNumbers, Mode=TwoWay}"
+          Content="Show line numbers in decompiled text view (Rover-only override)" />
+      </StackPanel>
+    </controls:GroupBox>
   </StackPanel>
 </UserControl>

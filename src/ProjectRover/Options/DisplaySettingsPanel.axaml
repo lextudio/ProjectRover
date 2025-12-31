@@ -34,12 +34,10 @@
         </Grid.RowDefinitions>
 
         <TextBlock Margin="0,6,6,0" Text="{x:Static properties:Resources.DisplaySettingsPanel_Font}" />
-        <ComboBox Grid.Row="0"
+        <ComboBox x:Name="FontComboBox" Grid.Row="0"
             Grid.Column="1"
             HorizontalAlignment="Stretch"
             Margin="0,0,6,0"
-            ItemsSource="{Binding FontFamilies}"
-            SelectedItem="{Binding Settings.SelectedFont}"
             VerticalContentAlignment="Center">
           <ComboBox.ItemTemplate>
             <DataTemplate>

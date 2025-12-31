@@ -10,7 +10,7 @@ namespace ICSharpCode.ILSpy.Options
         public OptionsDialog()
         {
             InitializeComponent();
-            var settingsService = new SettingsService();
+            var settingsService = ProjectRover.App.ExportProvider?.GetExportedValue<SettingsService>() ?? new SettingsService();
             DataContext = new OptionsDialogViewModel(settingsService);
         }
 

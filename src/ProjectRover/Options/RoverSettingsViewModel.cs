@@ -128,6 +128,28 @@ namespace ICSharpCode.ILSpy.Options
 
 		public bool IsCustomSelectedLinux => string.Equals(PreferredTerminalAppLinux, "Custom", StringComparison.OrdinalIgnoreCase);
 
+		public bool RecentFontsEnabled {
+			get => settings.RecentFontsEnabled;
+			set {
+				if (settings.RecentFontsEnabled != value)
+				{
+					settings.RecentFontsEnabled = value;
+					OnPropertyChanged();
+				}
+			}
+		}
+
+		public bool ShowDecompilerLineNumbers {
+			get => settings.ShowDecompilerLineNumbers;
+			set {
+				if (settings.ShowDecompilerLineNumbers != value)
+				{
+					settings.ShowDecompilerLineNumbers = value;
+					OnPropertyChanged();
+				}
+			}
+		}
+
 		public void Load(SettingsSnapshot snapshot)
 		{
 			settings = snapshot.GetSettings<ProjectRoverSettingsSection>();
@@ -142,6 +164,9 @@ namespace ICSharpCode.ILSpy.Options
 			OnPropertyChanged(nameof(IsCustomSelectedWindows));
 			OnPropertyChanged(nameof(IsCustomSelectedMac));
 			OnPropertyChanged(nameof(IsCustomSelectedLinux));
+
+			OnPropertyChanged(nameof(RecentFontsEnabled));
+			OnPropertyChanged(nameof(ShowDecompilerLineNumbers));
 		}
 
 		public void LoadDefaults()
@@ -160,6 +185,9 @@ namespace ICSharpCode.ILSpy.Options
 			settings.CustomTerminalPathMac = defaults.CustomTerminalPathMac;
 			settings.CustomTerminalPathLinux = defaults.CustomTerminalPathLinux;
 			settings.DockLayout = defaults.DockLayout;
+
+			settings.RecentFontsEnabled = defaults.RecentFontsEnabled;
+			settings.ShowDecompilerLineNumbers = defaults.ShowDecompilerLineNumbers;
 
 			OnPropertyChanged(nameof(ShowAvaloniaMainMenuOnMac));
 			OnPropertyChanged(nameof(UseDefaultDockLayoutOnly));

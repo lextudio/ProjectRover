@@ -21,6 +21,7 @@ namespace ProjectRover.Settings
         private string? customTerminalPathLinux;
         private bool useDefaultDockLayoutOnly = true;
         private bool showDecompilerLineNumbers = false;
+        private bool recentFontsEnabled = true;
 
         public XName SectionName => "ProjectRover";
 
@@ -99,6 +100,15 @@ namespace ProjectRover.Settings
             set => SetProperty(ref showDecompilerLineNumbers, value);
         }
 
+        /// <summary>
+        /// Enable Rover-specific recent fonts feature.
+        /// </summary>
+        public bool RecentFontsEnabled
+        {
+            get => recentFontsEnabled;
+            set => SetProperty(ref recentFontsEnabled, value);
+        }
+
         public void LoadFromXml(XElement section)
         {
             ShowAvaloniaMainMenuOnMac = (bool?)section.Attribute(nameof(ShowAvaloniaMainMenuOnMac)) ?? false;
@@ -112,6 +122,7 @@ namespace ProjectRover.Settings
             CustomTerminalPathMac = (string?)section.Attribute(nameof(CustomTerminalPathMac)) ?? CustomTerminalPath;
             CustomTerminalPathLinux = (string?)section.Attribute(nameof(CustomTerminalPathLinux)) ?? CustomTerminalPath;
             ShowDecompilerLineNumbers = (bool?)section.Attribute(nameof(ShowDecompilerLineNumbers)) ?? false;
+            RecentFontsEnabled = (bool?)section.Attribute(nameof(RecentFontsEnabled)) ?? true;
             var dockLayoutElement = section.Element(nameof(DockLayout));
             if (dockLayoutElement != null)
             {
@@ -151,6 +162,7 @@ namespace ProjectRover.Settings
             element.SetAttributeValue(nameof(CustomTerminalPathMac), CustomTerminalPathMac);
             element.SetAttributeValue(nameof(CustomTerminalPathLinux), CustomTerminalPathLinux);
             element.SetAttributeValue(nameof(ShowDecompilerLineNumbers), ShowDecompilerLineNumbers);
+            element.SetAttributeValue(nameof(RecentFontsEnabled), RecentFontsEnabled);
             return element;
         }
 
