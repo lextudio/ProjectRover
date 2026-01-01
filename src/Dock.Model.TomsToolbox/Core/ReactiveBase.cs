@@ -7,6 +7,6 @@ namespace Dock.Model.TomsToolbox.Core;
 /// Reactive base class.
 /// </summary>
 [DataContract(IsReference = true)]
-public abstract class ReactiveBase : ObservableObject
+public abstract class ReactiveBase : ObservableObjectBase
 {
 }
