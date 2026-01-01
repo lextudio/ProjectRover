@@ -136,13 +136,14 @@ namespace ICSharpCode.ILSpy
 				var crop = NormalizeSourceRect(sourceRect, Size);
 				if (baseImage != null)
 				{
+					// WPF ILSpy parity: scale the base image to 80% and center it in the dest rect,
+					// then draw the overlay at full size on top of that.
 					var baseDest = destRect;
-					if (overlayImage != null)
-					{
-						var baseWidth = Math.Max(1.0, Math.Round(destRect.Width * 0.8));
-						var baseHeight = Math.Max(1.0, Math.Round(destRect.Height * 0.8));
-						baseDest = new Rect(destRect.X, destRect.Y, baseWidth, baseHeight);
-					}
+					var baseWidth = Math.Max(1.0, Math.Round(destRect.Width * 0.8));
+					var baseHeight = Math.Max(1.0, Math.Round(destRect.Height * 0.8));
+					var baseX = destRect.X + Math.Round((destRect.Width - baseWidth) / 2.0);
+					var baseY = destRect.Y + Math.Round((destRect.Height - baseHeight) / 2.0);
+					baseDest = new Rect(baseX, baseY, baseWidth, baseHeight);
 					baseImage.Draw(context, MapSourceRect(baseImage.Size, crop), baseDest);
 				}
 

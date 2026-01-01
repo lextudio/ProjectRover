@@ -40,9 +40,11 @@ sealed class Program
         log.Information("Main started. Console output is working.");
 
         // Configure Serilog from configuration (appsettings.json + environment variables).
+        var environmentName = System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true)
             .Build();
 
         Log.Logger = new LoggerConfiguration()
