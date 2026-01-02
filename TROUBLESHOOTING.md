@@ -1,5 +1,28 @@
+Linux Installation Troubleshooting
+==================================
+
+If somehow neither the following commands launch this tool on your Linux distribution,
+
+``` sh
+./ProjectRover
+dotnet ProjectRover.dll
+```
+
+Then you are likely hitting certain .NET runtime packaging issues and you should switch to a custom .NET runtime installation outside of the package system (Snap or another). To do so, you might refer to the example below,
+
+``` sh
+# install to ~/.dotnet
+curl -sSL https://dot.net/v1/dotnet-install.sh -o ~/dotnet-install.sh
+chmod +x ~/dotnet-install.sh
+~/dotnet-install.sh --channel 10.0 --install-dir ~/.dotnet
+
+# Use it to run the app
+~/.dotnet/dotnet --info
+~/.dotnet/dotnet ~/Downloads/ProjectRover-linux-x64/ProjectRover.dll
+```
+
 Enabling Categorized Logging (for shipped binaries)
-=================================================
+===================================================
 
 This guide explains how end users of Project Rover (the packaged binaries produced by CI) can enable or adjust categorized logging without rebuilding the app.
 
