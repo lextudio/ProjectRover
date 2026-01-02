@@ -17,6 +17,7 @@ using Dock.Avalonia.Controls;
 using Dock.Model.TomsToolbox.Controls;
 using Dock.Model.TomsToolbox;
 using Dock.Model.TomsToolbox.Core;
+using Avalonia.VisualTree;
 using ProjectRover.Settings;
 using System.Windows.Threading;
 using ICSharpCode.ILSpy.Analyzers;
@@ -811,13 +812,47 @@ namespace ICSharpCode.ILSpy.Docking
       if (documentDock?.VisibleDockables == null)
         return;
 
+      try
+      {
+        var hasFactory = factory != null || dockHost?.Factory != null;
+        log.Debug("TabPages_CollectionChangedForDock: Action={Action}, NewCount={NewCount}, OldCount={OldCount}, DocDockCount={DocCount}, HasFactory={HasFactory}",
+          e.Action, e.NewItems?.Count ?? 0, e.OldItems?.Count ?? 0, documentDock.VisibleDockables.Count, hasFactory);
+      }
+      catch { }
+
+      var targetDock = documentDock;
+      var currentFactory = factory ?? dockHost?.Factory;
+
       if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
       {
         int insertIndex = e.NewStartingIndex >= 0 ? e.NewStartingIndex : documentDock.VisibleDockables.Count;
         foreach (TabPageModel tab in e.NewItems)
         {
           var doc = CreateDocument(tab);
-          documentDock.VisibleDockables.Insert(insertIndex++, doc);
+          if (currentFactory != null)
+          {
+            log.Debug($"[Dock] TabPages_CollectionChangedForDock: Inserting via factory at {insertIndex} Id={doc.Id}, Title={doc.Title}");
+            currentFactory.InsertDockable(targetDock, doc, insertIndex++);
+            currentFactory.SetActiveDockable(doc);
+            currentFactory.SetFocusedDockable(targetDock, doc);
+          }
+          else
+          {
+            log.Debug($"[Dock] TabPages_CollectionChangedForDock: Inserting directly at {insertIndex} Id={doc.Id}, Title={doc.Title}");
+            documentDock.VisibleDockables.Insert(insertIndex++, doc);
+            documentDock.ActiveDockable = doc;
+          }
+
+          try
+          {
+            var tabStrip = dockHost?.FindDescendantOfType<DocumentTabStrip>();
+            if (tabStrip != null)
+            {
+              tabStrip.SelectedItem = doc;
+              log.Debug($"[Dock] TabPages_CollectionChangedForDock: Forced TabStrip.SelectedItem to Id={doc.Id}, Title={doc.Title}");
+            }
+          }
+          catch { }
         }
       }
       else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
@@ -847,7 +882,15 @@ namespace ICSharpCode.ILSpy.Docking
       {
         if (documentDock.VisibleDockables.Contains(tab))
           continue;
-        documentDock.VisibleDockables.Add(CreateDocument(tab));
+        var doc = CreateDocument(tab);
+        if (factory != null)
+        {
+          factory.AddDockable(documentDock, doc);
+        }
+        else
+        {
+          documentDock.VisibleDockables.Add(doc);
+        }
       }
     }
 
@@ -876,14 +919,42 @@ namespace ICSharpCode.ILSpy.Docking
       }
 
       tabPage.Id = tabPage.ContentId ?? $"Tab{TabPages.Count + 1}";
+      if (string.IsNullOrWhiteSpace(tabPage.Id))
+      {
+        tabPage.Id = $"Tab{TabPages.Count + 1}";
+      }
+      if (string.IsNullOrWhiteSpace(tabPage.Title))
+      {
+        tabPage.Title = "New Tab";
+      }
       tabPage.CanFloat = false;
       tabPage.CanPin = false;
+      try
+      {
+        log.Debug("CreateDocument: For Tab Id={Id}, Title={Title}, ContentType={ContentType}", tabPage.Id, tabPage.Title, content?.GetType().Name ?? "(null)");
+      }
+      catch { }
       return tabPage;
     }
 
     private void RemoveDocument(TabPageModel tabPage)
     {
-      documentDock?.VisibleDockables?.Remove(tabPage);
+      if (documentDock == null)
+        return;
+
+      if (factory != null)
+      {
+        factory.RemoveDockable(tabPage, collapse: false);
+      }
+      else
+      {
+        documentDock.VisibleDockables?.Remove(tabPage);
+      }
+      try
+      {
+        log.Debug("RemoveDocument: Tab Id={Id}, Title={Title}", tabPage.Id, tabPage.Title);
+      }
+      catch { }
     }
 
     private void HookDocumentDockListeners(IDocumentDock docDock)
@@ -921,6 +992,11 @@ namespace ICSharpCode.ILSpy.Docking
       documentDock.ActiveDockable = targetTab;
       factory.SetActiveDockable(targetTab);
       factory.SetFocusedDockable(documentDock, targetTab);
+      try
+      {
+        log.Debug("SyncActiveDocument: ActiveTabPage Id={Id}, Title={Title}", targetTab.Id, targetTab.Title);
+      }
+      catch { }
     }
 
     private void EnsureTabPage()
