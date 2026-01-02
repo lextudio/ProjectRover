@@ -26,7 +26,9 @@
             <dock:DockControl x:Name="DockHost" IsVisible="False">
                 <dock:DockControl.DataTemplates>
                     <DataTemplate DataType="{x:Type viewModels:TabPageModel}">
-                        <ContentPresenter Content="{Binding Content}" />
+                        <ContentPresenter Content="{Binding Content}"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch" />
                     </DataTemplate>
 
                     <DataTemplate DataType="{x:Type assemblyTree:AssemblyTreeModel}">
