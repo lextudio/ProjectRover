@@ -35,6 +35,7 @@
     <PackageVersion Include="Dock.Model.Avalonia" Version="11.3.8" />
     <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="11.3.8" />
     <PackageVersion Include="SkiaSharp" Version="3.119.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.1" /> 
     <PackageVersion Include="Octokit" Version="14.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.1" />

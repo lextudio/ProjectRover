@@ -240,7 +240,6 @@ namespace ICSharpCode.ILSpy
         public static object Load(object owner, string path)
         {
              if (string.IsNullOrEmpty(path)) return null;
-             if (path == "Images/Warning") return GetUri("StatusWarningOutline.svg");
              if (path.EndsWith(".svg")) return GetUri(path);
              return path;
         }

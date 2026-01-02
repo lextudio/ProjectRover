@@ -21,6 +21,12 @@
     <FileVersion>$(GitVersion_Major).$(GitVersion_Minor).$(GitVersion_Patch).0</FileVersion>
     <AssemblyInformationalVersion>$(GitVersion_FullSemVer)+$(GitCommitId)</AssemblyInformationalVersion>
   </PropertyGroup>
+  <PropertyGroup>
+    <IsLinuxHost>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</IsLinuxHost>
+    <IsLinuxTarget Condition=" '$(RuntimeIdentifier)' != '' ">
+      $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('linux'))
+    </IsLinuxTarget>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
@@ -50,6 +56,7 @@
     <PackageReference Include="Dock.Model.Avalonia" />
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
     <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Condition=" '$(IsLinuxHost)' == 'True' Or '$(IsLinuxTarget)' == 'True' " />
     <PackageReference Include="Octokit" />
     <PackageReference Include="TomsToolbox.Composition" />
     <PackageReference Include="TomsToolbox.Composition.MicrosoftExtensions" />

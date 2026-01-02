@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\thirdParty\TomsToolbox\src\TomsToolbox.Avalonia\TomsToolbox.Avalonia.csproj" />
+    <ProjectReference Include="..\..\thirdparty\TomsToolbox\src\TomsToolbox.Avalonia\TomsToolbox.Avalonia.csproj" />
   </ItemGroup>
 
 </Project>
