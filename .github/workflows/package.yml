@@ -114,3 +114,20 @@ jobs:
       with:
         name: ProjectRover-linux-x64
         path: ProjectRover-linux-x64.tar.gz
+
+    - name : Restore dependencies (Linux ARM64)
+      run: dotnet restore -r linux-arm64 --force-evaluate
+      working-directory: ./src/ProjectRover
+
+    - name: Publish (Linux ARM64)
+      run: dotnet publish -r linux-arm64 -c Release
+      working-directory: ./src/ProjectRover
+
+    - name: Archive artifacts (Linux ARM64)
+      run: tar -czpf ProjectRover-linux-arm64.tar.gz -C ./src/ProjectRover/bin/Release/net10.0/linux-arm64/publish .
+
+    - name: Upload artifacts (Linux ARM64)
+      uses: actions/upload-artifact@v4
+      with:
+        name: ProjectRover-linux-arm64
+        path: ProjectRover-linux-arm64.tar.gz
