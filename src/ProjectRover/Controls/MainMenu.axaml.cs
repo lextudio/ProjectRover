@@ -345,7 +345,7 @@ namespace ICSharpCode.ILSpy.Controls
                 
                 if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && args.NewItems != null)
                 {
-                    log.Debug("TabPages.Add event fired, count={Count}", args.NewItems.Count);
+                    log.Verbose("TabPages.Add event fired, count={Count}", args.NewItems.Count);
                     foreach (var newItem in args.NewItems.OfType<ICSharpCode.ILSpy.ViewModels.TabPageModel>())
                     {
                         log.Debug("Creating menu item for tab: {Title}", newItem.Title);
@@ -395,7 +395,7 @@ namespace ICSharpCode.ILSpy.Controls
                 }
                 else if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove && args.OldItems != null)
                 {
-                    log.Debug("TabPages.Remove event fired, count={Count}", args.OldItems.Count);
+                    log.Verbose("TabPages.Remove event fired, count={Count}", args.OldItems.Count);
                     var toRemove = windowMenuItem.Items.OfType<MenuItem>().Where(mi => {
                         var tabPage = mi.Tag as ICSharpCode.ILSpy.ViewModels.TabPageModel;
                         return tabPage != null
@@ -1302,8 +1302,8 @@ namespace ICSharpCode.ILSpy.Controls
             if (_dockWorkspace == null) return;
             
             var activeTab = _dockWorkspace.ActiveTabPage;
-            log.Debug("UpdateNativeTabPageStates: Updating for active tab: {Active}", activeTab?.Title ?? "none");
-            log.Debug("UpdateNativeTabPageStates: Total native tab items: {Count}", _nativeTabPageItems.Count);
+            log.Verbose("UpdateNativeTabPageStates: Updating for active tab: {Active}", activeTab?.Title ?? "none");
+            log.Verbose("UpdateNativeTabPageStates: Total native tab items: {Count}", _nativeTabPageItems.Count);
             
             foreach (var kvp in _nativeTabPageItems)
             {
@@ -1311,7 +1311,7 @@ namespace ICSharpCode.ILSpy.Controls
                 var nativeItem = kvp.Value;
                 var isActive = tabPage == activeTab;
                 
-                log.Debug("UpdateNativeTabPageStates: Checking tab {Title} (active={IsActive}, sameObject={SameObject})", tabPage.Title, isActive, ReferenceEquals(tabPage, activeTab));
+                log.Verbose("UpdateNativeTabPageStates: Checking tab {Title} (active={IsActive}, sameObject={SameObject})", tabPage.Title, isActive, ReferenceEquals(tabPage, activeTab));
                 
                 // Update header to reflect active state
                 nativeItem.Header = tabPage.Title ?? "Untitled";
@@ -1351,7 +1351,7 @@ namespace ICSharpCode.ILSpy.Controls
                     catch { }
                 }
                 
-                log.Debug("UpdateNativeTabPageStates: Tab {Title} active={IsActive}", tabPage.Title, isActive);
+                log.Verbose("UpdateNativeTabPageStates: Tab {Title} active={IsActive}", tabPage.Title, isActive);
             }
         }
     }

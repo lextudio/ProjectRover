@@ -36,7 +36,6 @@ namespace ICSharpCode.ILSpy.Util
                     .ReadFrom.Configuration(config)
                     .Enrich.FromLogContext()
                     .Enrich.WithProperty("App", "ProjectRover")
-                    .WriteTo.Console()
                     .WriteTo.File("projectrover.log", rollingInterval: RollingInterval.Day)
                     .CreateLogger();
 

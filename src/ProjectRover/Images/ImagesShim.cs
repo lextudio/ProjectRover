@@ -324,7 +324,7 @@ namespace ICSharpCode.ILSpy
 				// Track unresolved resource keys so we can report which logical keys are missing
 				// from App.axaml resource dictionaries.
 				unresolvedKeys.AddOrUpdate(icon.ToString() ?? "(null)", 1, (_, v) => v + 1);
-				log.Warning("Images.LoadImage: ResolveIcon returned null for key {Icon}", icon);
+				log.Information("Images.LoadImage: ResolveIcon returned null for key {Icon}", icon);
 				if (writeDiagnostics)
 				{
 					TryWriteDiagnostics();

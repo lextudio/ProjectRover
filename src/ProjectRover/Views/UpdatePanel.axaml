@@ -3,7 +3,7 @@
              xmlns:vm="clr-namespace:ICSharpCode.ILSpy.ViewModels;assembly=ProjectRover"
              x:Class="ICSharpCode.ILSpy.Views.UpdatePanel"
              x:DataType="vm:UpdatePanelViewModel">
-  <Border BorderBrush="Black" BorderThickness="1">
+  <Border BorderBrush="Black" BorderThickness="1" IsVisible="{Binding IsPanelVisible}">
     <DockPanel>
       <Button DockPanel.Dock="Right" MinWidth="0" Command="{Binding CloseCommand}" Content="X" />
       <StackPanel Orientation="Horizontal">

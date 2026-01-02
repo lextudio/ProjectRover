@@ -22,6 +22,7 @@
             <!-- Place the MainMenu control (populated from MEF exports) -->
             <controls:MainMenu DockPanel.Dock="Top" />
             <controls:MainToolBar DockPanel.Dock="Top" />
+            <views:UpdatePanel DockPanel.Dock="Top" x:Name="UpdatePanel" />
 
             <dock:DockControl x:Name="DockHost" IsVisible="False">
                 <dock:DockControl.DataTemplates>

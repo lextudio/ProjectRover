@@ -5,6 +5,8 @@ using Avalonia.Markup.Xaml;
 using Dock.Avalonia.Controls;
 using System.Windows.Threading;
 using System.Reflection;
+using ICSharpCode.ILSpy.Views;
+using ICSharpCode.ILSpy.ViewModels;
 
 namespace ICSharpCode.ILSpy
 {
@@ -17,6 +19,15 @@ namespace ICSharpCode.ILSpy
         {
             InitializeComponent();
             var dockHost = this.FindControl<DockControl>("DockHost");
+            var updatePanelControl = this.FindControl<UpdatePanel>("UpdatePanel");
+            if (updatePanelControl != null)
+            {
+                var updatePanelViewModel = ProjectRover.App.ExportProvider?.GetExportedValueOrDefault<UpdatePanelViewModel>();
+                if (updatePanelViewModel != null)
+                {
+                    updatePanelControl.DataContext = updatePanelViewModel;
+                }
+            }
 #if DEBUG
             this.AttachDevTools();
             log.Debug("DevTools attached.");
