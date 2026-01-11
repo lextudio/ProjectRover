@@ -1,49 +1,71 @@
+![Project Rover banner](images/social.png)
+
 # Project Rover
 
 A small, cross-platform UI for exploring .NET assemblies.
 
-|  |  |
-|---:|:---|
-| [![Stable Releases](https://img.shields.io/github/downloads/lextudio/ProjectRover/total?label=Stable%20Downloads&logo=github)](https://github.com/lextudio/ProjectRover/releases) | Click to access stable releases. |
-| [![Unstable Releases](https://img.shields.io/github/actions/workflow/status/lextudio/ProjectRover/package.yml?label=Unstable%20Downloads&&logo=github)](https://github.com/lextudio/ProjectRover/actions/workflows/package.yml) | Click to access unstable releases. |
+- **Stable Releases:** [Downloads](https://github.com/lextudio/ProjectRover/releases)
+- **Unstable Builds:** [CI artifacts](https://github.com/lextudio/ProjectRover/actions/workflows/package.yml)
 
-Project Rover is a cross-platform desktop UI for ILSpy, focused on giving macOS and Linux users a first-class experience (Windows too). It is the successor to the deprecated AvaloniaILSpy and keeps pace with upstream ILSpy through mechanisms like `ICSharpCode.ILSpyX`. The UI foundation was initially based on the CodeMerx decompiler app and gradually adapted to view models and other supporting files from ILSpy WPF.
+## Table of Contents
 
-This project is currently maintained by LeXtudio Inc, and not affiliated with or endorsed by the ILSpy team.
+- [Quick Start](#quick-start)
+- [Screenshots](#screenshots)
+- [Build from source](#build-from-source)
+- [Before reporting any issues](#before-reporting-any-issues)
+- [Layout](#layout)
+- [Status](#status)
+- [License](#license)
 
-![Project Rover banner](projectrover-social-v6.png)
-
-## Quick start
+## Quick Start
 
 Download the latest release archive for your platform from the Releases page, extract it, and run the app.
 
-### Windows
+- **macOS** — extract the `.tar.gz` for your architecture and open `ProjectRover.app`. Downloads are on the [Releases page](https://github.com/lextudio/ProjectRover/releases).
 
-1. Extract the archive.
-2. Start `ProjectRover.exe`.
+  Example:
 
-### Linux
+  ```bash
+  tar -xzpf ProjectRover-macos-arm64.tar.gz
+  xattr -d com.apple.quarantine ProjectRover.app
+  open ProjectRover.app
+  ```
 
-1. Extract the archive, for example:
+- **Windows** — extract and run `ProjectRover.exe`. Downloads are on the [Releases page](https://github.com/lextudio/ProjectRover/releases).
 
-   ```bash
-   mkdir ProjectRover && tar -xzpf ./ProjectRover-linux-x64.tar.gz -C ProjectRover
-   ```
+- **Linux** — extract and run the `ProjectRover` binary. Downloads are on the [Releases page](https://github.com/lextudio/ProjectRover/releases).
 
-2. Start the app using `./ProjectRover/ProjectRover`.
+  Example:
+
+  ```bash
+  mkdir ProjectRover && tar -xzpf ProjectRover-linux-x64.tar.gz -C ProjectRover
+  ./ProjectRover/ProjectRover
+  ```
+
+## Screenshots
+
+Below are a few representative screenshots.
 
 ### macOS
 
-1. Extract the archive for your architecture:
-   - ARM64: `tar -xzpf ./ProjectRover-macos-arm64.tar.gz`
-   - x64: `tar -xzpf ./ProjectRover-macos-x64.tar.gz`
-2. Remove the quarantine attribute because the app is not signed and macOS will otherwise block it:
+<p align="center">
+  <img src="images/macos.png" alt="macOS view" width="720" />
+</p>
+*macOS: main window and code view.*
 
-   ```bash
-   xattr -d com.apple.quarantine ProjectRover.app
-   ```
+### Windows
 
-3. Start `ProjectRover.app`.
+<p align="center">
+  <img src="images/windows.png" alt="Windows view" width="720" />
+</p>
+*Windows: assembly tree and context menus.*
+
+### Linux
+
+<p align="center">
+  <img src="images/linux.png" alt="Linux view" width="720" />
+</p>
+*Linux: decompiled code.*
 
 ## Build from source
 
