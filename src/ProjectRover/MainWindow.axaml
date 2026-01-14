@@ -43,6 +43,10 @@
                     <DataTemplate DataType="{x:Type analyzers:AnalyzerTreeViewModel}">
                         <analyzers:AnalyzerTreeView DataContext="{Binding}" />
                     </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type viewModels:DebugStepsPaneModel}">
+                        <vm:DebugSteps DataContext="{Binding}" />
+                    </DataTemplate>
                 </dock:DockControl.DataTemplates>
             </dock:DockControl>
         </DockPanel>

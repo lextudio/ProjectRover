@@ -8,6 +8,7 @@
              xmlns:properties="clr-namespace:ICSharpCode.ILSpy.Properties;assembly=ProjectRover"
              x:Class="ICSharpCode.ILSpy.DebugSteps"
              x:DataType="local:DebugSteps"
+             x:Name="Root"
              mc:Ignorable="d"
              d:DesignWidth="300" d:DesignHeight="300">
   <DockPanel>
@@ -18,7 +19,7 @@
       <CheckBox Margin="3" Content="{x:Static properties:Resources.ShowChildIndexInBlock}" IsChecked="{Binding ShowChildIndexInBlock, Source={x:Static local:DebugSteps.Options}}" />
     </StackPanel>
 
-    <TreeView Name="tree" ItemsSource="{Binding TreeRoot}" KeyDown="tree_KeyDown">
+    <TreeView Name="tree" ItemsSource="{Binding TreeRoot, ElementName=Root}" KeyDown="tree_KeyDown">
       <TreeView.DataTemplates>
         <TreeDataTemplate DataType="transforms:Stepper+Node" ItemsSource="{Binding Children}">
           <TextBlock Text="{Binding Description}" />
