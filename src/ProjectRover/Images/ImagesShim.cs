@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.IO;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Avalonia.Media;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -26,6 +28,7 @@ namespace ICSharpCode.ILSpy
 		private static readonly ConcurrentDictionary<string, int> unresolvedKeys = new ConcurrentDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 		private static readonly ConcurrentDictionary<string, int> failedCandidates = new ConcurrentDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 		private static readonly bool writeDiagnostics = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PROJECTROVER_IMAGE_DIAG"));
+		private static readonly Regex hexColorRegex = new Regex("#(?<hex>[0-9a-fA-F]{3}|[0-9a-fA-F]{6})", RegexOptions.Compiled);
 
 		private static readonly string[] AccessSuffixes = new[]
 		{
@@ -75,6 +78,96 @@ namespace ICSharpCode.ILSpy
 			}
 		}
 
+		private static bool IsDarkTheme()
+		{
+			var app = App.Current;
+			if (app == null) return false;
+			var variant = app.ActualThemeVariant?.ToString();
+			return variant != null && variant.Equals("Dark", StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static bool ShouldPreferGrayInvert()
+		{
+			var env = Environment.GetEnvironmentVariable("PROJECTROVER_ICON_GRAY_INVERT");
+			if (string.IsNullOrWhiteSpace(env)) return true;
+			return env.Equals("1", StringComparison.OrdinalIgnoreCase) || env.Equals("true", StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static bool IsLightAssetPath(string path)
+		{
+			return !path.Contains("/Assets/Dark/", StringComparison.OrdinalIgnoreCase)
+				&& !path.Contains("/ProjectRover/Assets/Dark/", StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static string ToLightAssetPath(string path)
+		{
+			var replaced = path.Replace("/Assets/Dark/", "/Assets/");
+			replaced = replaced.Replace("/ProjectRover/Assets/Dark/", "/ProjectRover/Assets/");
+			return replaced;
+		}
+
+		private static bool TryReadSvg(string path, out string svg)
+		{
+			svg = string.Empty;
+			try
+			{
+				using var stream = AssetLoader.Open(new Uri(path));
+				using var reader = new StreamReader(stream);
+				svg = reader.ReadToEnd();
+				return true;
+			}
+			catch (Exception ex)
+			{
+				log.Warning(ex, "Images.LoadImage: failed to read svg {Path}", path);
+				return false;
+			}
+		}
+
+		private static bool TryParseHexColor(string hex, out byte r, out byte g, out byte b)
+		{
+			r = g = b = 0;
+			if (hex.Length == 3)
+			{
+				if (byte.TryParse(hex.Substring(0, 1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var rNib)
+					&& byte.TryParse(hex.Substring(1, 1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var gNib)
+					&& byte.TryParse(hex.Substring(2, 1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var bNib))
+				{
+					r = (byte)(rNib * 17);
+					g = (byte)(gNib * 17);
+					b = (byte)(bNib * 17);
+					return true;
+				}
+				return false;
+			}
+			if (hex.Length == 6)
+			{
+				if (byte.TryParse(hex.Substring(0, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out r)
+					&& byte.TryParse(hex.Substring(2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out g)
+					&& byte.TryParse(hex.Substring(4, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b))
+				{
+					return true;
+				}
+				return false;
+			}
+			return false;
+		}
+
+		private static string InvertGraySvg(string svg)
+		{
+			if (string.IsNullOrEmpty(svg)) return svg;
+			return hexColorRegex.Replace(svg, match =>
+			{
+				var hex = match.Groups["hex"].Value;
+				if (!TryParseHexColor(hex, out var r, out var g, out var b))
+					return match.Value;
+				if (r != g || g != b)
+					return match.Value;
+				var inv = (byte)(255 - r);
+				var invHex = inv.ToString("X2", CultureInfo.InvariantCulture);
+				return "#" + invHex + invHex + invHex;
+			});
+		}
+
 		// Helper type to represent a composite icon request
 		private sealed class CompositeIcon
 		{
@@ -87,6 +180,18 @@ namespace ICSharpCode.ILSpy
 				Base = @base;
 				Overlay = overlay;
 				IsStatic = isStatic;
+			}
+		}
+
+		private readonly struct SvgCandidate
+		{
+			public string Path { get; }
+			public bool InvertGray { get; }
+
+			public SvgCandidate(string path, bool invertGray)
+			{
+				Path = path;
+				InvertGray = invertGray;
 			}
 		}
 
@@ -337,73 +442,76 @@ namespace ICSharpCode.ILSpy
 				path = $"avares://ProjectRover{path}";
 			}
 
-			// If the application theme is dark, first try the Assets/Dark/ variant
-			// and fall back to the regular asset when it's not available.
 			if (path.EndsWith(".svg"))
 			{
-				// Build candidate paths: themed first (if dark), then the original
-				var candidates = new System.Collections.Generic.List<string>();
-				try
+				var isDark = IsDarkTheme();
+				var preferGrayInvert = isDark && ShouldPreferGrayInvert();
+				var candidates = new System.Collections.Generic.List<SvgCandidate>();
+				var seen = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+				void AddCandidate(string? candidatePath, bool invertGray)
 				{
-					if (App.Current != null && App.Current.ActualThemeVariant.ToString().Equals("Dark", StringComparison.OrdinalIgnoreCase))
+					if (string.IsNullOrWhiteSpace(candidatePath)) return;
+					var key = invertGray ? candidatePath + "|invertgray" : candidatePath;
+					if (seen.Add(key))
 					{
-						// Insert /Dark/ into the Assets path if not already present
-						if (path.Contains("/Assets/") && !path.Contains("/Assets/Dark/"))
-						{
-							var darkPath = path.Replace("/Assets/", "/Assets/Dark/");
-							candidates.Add(darkPath);
-						}
-						else if (path.Contains("/ProjectRover/Assets/") && !path.Contains("/ProjectRover/Assets/Dark/"))
-						{
-							var darkPath = path.Replace("/ProjectRover/Assets/", "/ProjectRover/Assets/Dark/");
-							candidates.Add(darkPath);
-						}
+						candidates.Add(new SvgCandidate(candidatePath, invertGray));
 					}
 				}
-				catch
+
+				if (isDark && preferGrayInvert)
 				{
-					// If anything goes wrong querying the theme, ignore and continue with default path
+					AddCandidate(ToLightAssetPath(path), true);
 				}
 
-				// Ensure original path is tried after themed path
-				candidates.Add(path);
+				var invertOriginal = preferGrayInvert && isDark && IsLightAssetPath(path);
+				AddCandidate(path, invertOriginal);
 
-					foreach (var candidate in candidates)
+				foreach (var candidate in candidates)
 				{
 					try
 					{
-						var p = candidate;
-						// Ensure we have a valid URI
+						var p = candidate.Path;
 						if (!p.Contains("://"))
 						{
 							p = $"avares://ProjectRover/Assets/{p}";
 						}
-						// Try cache first
-						if (imageCache.TryGetValue(p, out var cached))
+						var cacheKey = candidate.InvertGray ? p + "|invertgray" : p;
+						if (imageCache.TryGetValue(cacheKey, out var cached))
 						{
-							log.Debug("Images.LoadImage: cache hit for {Path}", p);
+							log.Debug("Images.LoadImage: cache hit for {Path}", cacheKey);
 							return cached;
 						}
-						var svg = SvgSource.Load(p, null);
-						if (svg != null)
+
+						SvgSource? svg = null;
+						if (candidate.InvertGray)
 						{
-							var svgImage = new SvgImage { Source = svg };
-							log.Debug("Images.LoadImage: loaded svg for {Path}", p);
-							// Add to cache and return the cached instance
-							return imageCache.GetOrAdd(p, svgImage);
+							if (TryReadSvg(p, out var svgText))
+							{
+								var inverted = InvertGraySvg(svgText);
+								svg = SvgSource.LoadFromSvg(inverted);
+							}
 						}
 						else
 						{
-							// SvgSource.Load returned null but did not throw — record this path as failed.
-							failedCandidates.AddOrUpdate(p, 1, (_, v) => v + 1);
-							log.Warning("Images.LoadImage: SvgSource.Load returned null for candidate {Candidate} icon={Icon}", p, icon);
+							svg = SvgSource.Load(p, null);
 						}
+
+						if (svg != null)
+						{
+							var svgImage = new SvgImage { Source = svg };
+							log.Debug("Images.LoadImage: loaded svg for {Path}", cacheKey);
+							return imageCache.GetOrAdd(cacheKey, svgImage);
+						}
+
+						failedCandidates.AddOrUpdate(cacheKey, 1, (_, v) => v + 1);
+						log.Warning("Images.LoadImage: SvgSource.Load returned null for candidate {Candidate} icon={Icon}", cacheKey, icon);
 					}
 					catch (Exception ex)
 					{
-						failedCandidates.AddOrUpdate(candidate, 1, (_, v) => v + 1);
-						log.Warning(ex, "Images.LoadImage: failed to load candidate {Candidate} for icon {Icon}", candidate, icon);
-						// try next candidate
+						var cacheKey = candidate.InvertGray ? candidate.Path + "|invertgray" : candidate.Path;
+						failedCandidates.AddOrUpdate(cacheKey, 1, (_, v) => v + 1);
+						log.Warning(ex, "Images.LoadImage: failed to load candidate {Candidate} for icon {Icon}", cacheKey, icon);
 					}
 				}
 				return null;

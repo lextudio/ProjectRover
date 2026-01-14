@@ -841,7 +841,6 @@ namespace ICSharpCode.ILSpy.Controls
 
         static IImage? LoadNativeMenuImage(MenuItem menuItem)
         {
-            // Prefer a theme-neutral load using platform theme (system) rather than app theme.
             string? iconKey = menuItem.GetValue(MenuIconKeyProperty);
             if (string.IsNullOrEmpty(iconKey))
             {
@@ -850,45 +849,7 @@ namespace ICSharpCode.ILSpy.Controls
                 return null;
             }
 
-            var platformTheme = Application.Current?.PlatformSettings?.GetColorValues()?.ThemeVariant;
-            var preferDark = string.Equals(platformTheme?.ToString(), "Dark", StringComparison.OrdinalIgnoreCase);
-
-            string? path = Images.ResolveIcon(iconKey);
-            if (path == null)
-                return null;
-
-            // Normalize to avares://
-            if (path.StartsWith("/"))
-                path = $"avares://ProjectRover{path}";
-            else if (!path.Contains("://"))
-                path = $"avares://ProjectRover/Assets/{path}";
-
-            if (!path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
-                return Images.LoadImage(iconKey); // fallback
-
-            var candidates = new List<string>();
-            if (preferDark && path.Contains("/Assets/") && !path.Contains("/Assets/Dark/"))
-            {
-                var darkPath = path.Replace("/Assets/", "/Assets/Dark/", StringComparison.Ordinal);
-                candidates.Add(darkPath);
-            }
-            candidates.Add(path);
-
-            foreach (var candidate in candidates)
-            {
-                try
-                {
-                    var svg = SvgSource.Load(candidate, null);
-                    if (svg != null)
-                        return new SvgImage { Source = svg };
-                }
-                catch
-                {
-                    // try next
-                }
-            }
-
-            return null;
+            return Images.LoadImage(iconKey) as IImage;
         }
 
         static void SetupLanguageMenuCheckIcons(Menu mainMenu, SettingsService? settingsService)
