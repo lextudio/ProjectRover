@@ -1050,10 +1050,35 @@ namespace ICSharpCode.ILSpy.Docking
           if (_registeredTools.TryGetValue(contentId, out var registeredTool))
           {
             log.Debug("ActivateTool: Found registered tool {ContentId}", contentId);
-            // Determine target dock
-            string targetDockId = contentId == SearchPaneModel.PaneContentId ? "SearchDock" : "LeftDock";
+            
+            // Determine target dock using DockGroup property (Dock.Avalonia convention)
+            string? targetDockId = null;
+            if (registeredTool is DockableBase dockableBase && !string.IsNullOrEmpty(dockableBase.DockGroup))
+            {
+              // Use the tool's declared DockGroup to find the appropriate dock
+              targetDockId = dockableBase.DockGroup;
+              log.Debug("ActivateTool: Tool has DockGroup={DockGroup}, will use that to find target dock", targetDockId);
+            }
+            else
+            {
+              // Fallback to hardcoded dock IDs for backward compatibility
+              targetDockId = contentId == SearchPaneModel.PaneContentId ? "SearchDock" : "LeftDock";
+              log.Debug("ActivateTool: Tool has no DockGroup, using fallback targetDockId={TargetDockId}", targetDockId);
+            }
+            
             var targetDock = FindDockById(layout, targetDockId);
             log.Debug("ActivateTool: Looking for targetDock {TargetDockId}, found={Found}", targetDockId, targetDock != null);
+
+            // If target dock not found, find any existing ToolDock as fallback
+            if (targetDock == null && targetDockId != "SearchDock")
+            {
+              log.Debug("ActivateTool: Specified dock {TargetDockId} not found, looking for any existing ToolDock", targetDockId);
+              targetDock = FindFirstToolDockInLayout(layout);
+              if (targetDock != null)
+              {
+                log.Debug("ActivateTool: Found existing ToolDock {DockId}, will use it for {ContentId}", targetDock.Id, contentId);
+              }
+            }
 
             // If target dock not found in layout, try to find in registered dockables and insert it
             if (targetDock == null && targetDockId == "SearchDock")
@@ -1289,6 +1314,24 @@ namespace ICSharpCode.ILSpy.Docking
             if (found != null)
               return found;
           }
+        }
+      }
+      return null;
+    }
+
+    private IDock? FindFirstToolDockInLayout(IDockable root)
+    {
+      // Find the first ToolDock in the layout tree
+      if (root is IToolDock toolDock)
+        return toolDock;
+
+      if (root is IDock dock && dock.VisibleDockables != null)
+      {
+        foreach (var dockable in dock.VisibleDockables)
+        {
+          var found = FindFirstToolDockInLayout(dockable);
+          if (found != null)
+            return found;
         }
       }
       return null;
