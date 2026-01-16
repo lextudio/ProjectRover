@@ -1,0 +1,138 @@
+name: Bug report - Project Rover
+description: Report launch/runtime errors for Project Rover. Please include OS, .NET runtime details, how you launched Rover, and any logs or stack traces. Linux-specific guidance is provided.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: input
+    id: issue_title
+    attributes:
+      label: Short summary
+      description: A short one-line summary for the issue title
+      placeholder: "Example: ProjectRover fails to launch on Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: rover-version
+    attributes:
+      label: ProjectRover version
+      description: If known, choose the version or release tag
+      options:
+        - "Unknown"
+        - "Release: latest"
+        - "Release: older"
+        - "Built from source"
+
+  - type: dropdown
+    id: os-name
+    attributes:
+      label: Operating system
+      description: Choose your OS and version where possible
+      options:
+        - "Ubuntu"
+        - "Debian"
+        - "Fedora"
+        - "CentOS"
+        - "Other Linux"
+        - "macOS"
+        - "Windows"
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS release / distro version (freeform)
+      description: e.g. `Ubuntu 24.04` or `macOS 14.4` or `Windows 11`
+
+  - type: dropdown
+    id: arch
+    attributes:
+      label: Architecture
+      options:
+        - "x64"
+        - "arm64"
+        - "Other"
+
+  - type: dropdown
+    id: dotnet-install-method
+    attributes:
+      label: How did you install .NET
+      options:
+        - "Distro package (apt / yum)"
+        - "Snap"
+        - "Homebrew (macOS)"
+        - "Microsoft installer / pkg"
+        - "dotnet-install.sh (script)"
+        - "Other / built from source"
+
+  - type: dropdown
+    id: launch-method
+    attributes:
+      label: How did you run Rover?
+      options:
+        - "Packaged native app (./ProjectRover)"
+        - "Using dotnet (dotnet ProjectRover.dll)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: dotnet-info
+    attributes:
+      label: |
+        `dotnet --info` output
+      description: Paste the full output of `dotnet --info` (or attach as a file). This is required for diagnosing runtime mismatches.
+      placeholder: |
+        Example:
+        .NET SDK (reflecting any global.json):
+          Version:   10.0.x
+          Commit:    xxxxx
+    validations:
+      required: true
+
+  - type: textarea
+    id: dotnet-runtimes
+    attributes:
+      label: |
+        `dotnet --list-runtimes` output
+      description: Paste the output of `dotnet --list-runtimes`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error message / stack trace
+      description: Paste the exact error, exception, or apphost message you saw when launching Rover. If native library load errors (GLIBC, libSkiaSharp) appeared, include them in full. You can also drag-and-drop files/screenshots into this textbox to attach them.
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Exact commands and steps to reproduce the problem from a clean system if possible.
+      placeholder: |
+        1. Downloaded release archive from ...
+        2. Extracted and ran `./ProjectRover`
+
+  - type: textarea
+    id: linux-notes
+    attributes:
+      label: Linux-specific notes (optional but helpful)
+      description: |
+        If you're on Linux: did you install dotnet from snap, apt, or via `dotnet-install.sh`? Did you see GLIBC / libSkiaSharp errors? If yes, paste the error or try the strace example below and attach the output.
+      placeholder: |
+        If you can reproduce native library load failures, try running:
+        strace -f -e openat ./ProjectRover 2>&1 | head -n 200
+
+        Attach the output (or paste it here).
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected to happen
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional information
+      description: Any other context (WSL, container, custom env vars, etc.)
