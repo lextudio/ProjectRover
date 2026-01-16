@@ -1,25 +1,7 @@
 Linux Installation Troubleshooting
 ==================================
 
-If somehow neither the following commands launch this tool on your Linux distribution,
-
-``` sh
-./ProjectRover
-dotnet ProjectRover.dll
-```
-
-Then you are likely hitting certain .NET runtime packaging issues and you should switch to a custom .NET runtime installation outside of the package system (Snap or another). To do so, you might refer to the example below,
-
-``` sh
-# install to ~/.dotnet
-curl -sSL https://dot.net/v1/dotnet-install.sh -o ~/dotnet-install.sh
-chmod +x ~/dotnet-install.sh
-~/dotnet-install.sh --channel 10.0 --install-dir ~/.dotnet
-
-# Use it to run the app
-~/.dotnet/dotnet --info
-~/.dotnet/dotnet ~/Downloads/ProjectRover-linux-x64/ProjectRover.dll
-```
+There can be too many reasons why Project Rover might not start or run correctly on Linux. So, please read LINUX.md to learn the common pitfalls and how to avoid them.
 
 Enabling Categorized Logging (for shipped binaries)
 ===================================================
