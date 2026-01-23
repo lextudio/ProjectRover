@@ -58,8 +58,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\ProDataGrid\src\Avalonia.Controls.DataGrid\Avalonia.Controls.DataGrid.csproj" />
-    <ProjectReference Include="..\thirdparty\AvaloniaEdit\src\AvaloniaEdit\AvaloniaEdit.csproj" />
-    <ProjectReference Include="..\thirdparty\AvaloniaEdit\src\AvaloniaEdit.TextMate\AvaloniaEdit.TextMate.csproj" />
+    <ProjectReference Include="..\..\thirdparty\AvaloniaEdit\src\AvaloniaEdit\AvaloniaEdit.csproj" />
+    <ProjectReference Include="..\..\thirdparty\AvaloniaEdit\src\AvaloniaEdit.TextMate\AvaloniaEdit.TextMate.csproj" />
     <ProjectReference Include="..\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
     <ProjectReference Include="..\ILSpy\ICSharpCode.ILSpyX\ICSharpCode.ILSpyX.csproj" />
     <ProjectReference Include="..\Dock.Model.TomsToolbox\Dock.Model.TomsToolbox.csproj" />

@@ -1677,7 +1677,7 @@ namespace ICSharpCode.ILSpy.TextView
 			log.Debug("GetPositionFromMousePosition: translated to editor point = ({X}, {Y})", editorPoint.Value.X, editorPoint.Value.Y);
 			log.Debug("TextEditor bounds: Width={Width}, Height={Height}", textEditor.Bounds.Width, textEditor.Bounds.Height);
 			
-			TextViewPosition? position = textEditor.GetPositionFromPointWithFallback(editorPoint.Value);
+			TextViewPosition? position = textEditor.GetPositionFromPoint(editorPoint.Value);
 			if (position == null)
 			{
 				log.Warning("GetPositionFromMousePosition: textEditor.GetPositionFromPointWithFallback returned null for editor point ({X}, {Y})", editorPoint.Value.X, editorPoint.Value.Y);
