@@ -1,11 +1,11 @@
-[submodule "engine/AvaloniaEdit"]
-	path = src/AvaloniaEdit
-	url = ../AvaloniaEdit.git
+[submodule "thirdparty/AvaloniaEdit"]
+	path = thirdparty/AvaloniaEdit
+	url = https://github.com/lextudio/AvaloniaEdit.git
 [submodule "src/ILSpy"]
 	path = src/ILSpy
 	url = https://github.com/lextudio/ILSpy
 	branch = wpf-isolation
-[submodule "src/TomsToolbox"]
+[submodule "thirdparty/TomsToolbox"]
 	path = thirdparty/TomsToolbox
 	url = https://github.com/tom-englert/TomsToolbox.git
 	branch = avalonia

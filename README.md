@@ -86,7 +86,7 @@ Please read [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for step-by-step instructio
 ## Layout
 
 - `src/ProjectRover` – Avalonia application, shims for view models and other supporting files.
-- `src/AvaloniaEdit` – bundled text editor control.
+- `thirdparty/AvaloniaEdit` – bundled text editor control.
 - `src/ILSpy` - Original ILSpy source code, mostly unmodified.
 
 ## Status
