@@ -25,6 +25,8 @@ using ProjectRover.Extensions;
 using ProjectRover.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using System.IO;
+using System.Runtime.Loader;
 using System.Collections.Generic;
 using System.Composition.Hosting;
 using System.Composition.Convention;
@@ -152,8 +154,38 @@ public partial class App : Application
             }
 
             // Bind exports from assemblies
+            // Load external plugins (*.Plugin.dll) from the executable folder so Rover can pick up third-party plugins.
+            try
+            {
+                var pluginDir = Path.GetDirectoryName(typeof(App).Assembly.Location);
+                if (pluginDir != null)
+                {
+                    log.Information("Scanning for plugins in: {Dir}", pluginDir);
+                    foreach (var plugin in Directory.GetFiles(pluginDir, "*.Plugin.dll"))
+                    {
+                        var name = Path.GetFileNameWithoutExtension(plugin);
+                        try
+                        {
+                            log.Information("Loading plugin: {Plugin}", name);
+                            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(plugin);
+                            services.BindExports(assembly);
+                            log.Information("Loaded plugin: {Plugin}", name);
+                        }
+                        catch (Exception ex)
+                        {
+                            StartupExceptions.Add(new ExceptionData(ex) { PluginName = name });
+                            log.Error(ex, "Failed to load plugin: {Plugin}", name);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warning(ex, "Plugin scanning failed");
+            }
+
             // ILSpyX
-                log.Information("Binding exports from ILSpyX...");
+            log.Information("Binding exports from ILSpyX...");
             services.BindExports(typeof(IAnalyzer).Assembly);
             // ILSpy (Original)
             // NOTE: Do not bind the original ILSpy assembly here. Many ILSpy source files

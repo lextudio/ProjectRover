@@ -119,7 +119,7 @@ Documented platform-specific differences between ILSpy WPF and Project Rover (Av
 3. **No WPF adorners** — WPF `Adorner` layer features (used for overlays/visual adornments) do not exist in Avalonia; equivalent UX must be implemented using Avalonia overlays or custom controls.
 4. **AvaloniaEditor (AvaloniaEdit) differences** — The editor used by Rover (`AvaloniaEdit`) is a separate codebase and differs from WPF `AvalonEdit`. Some features and APIs (e.g., certain text rendering hooks, adorner-like features, or exact highlighting behaviors) require adaptation; expect API and behavior deltas.
 
-Notes: for each platform-specific delta above, we should decide whether to implement a Rover-specific shim, accept the platform limitation, or contribute required features upstream to Avalonia/AvaloniaEdit.
+Notes: for each platform-specific delta above, we should decide whether to implement a Rover-specific shim, accept the platform limitation, or contribute required features upstream.
 
 
 ## Revised Epics & Status (concise)

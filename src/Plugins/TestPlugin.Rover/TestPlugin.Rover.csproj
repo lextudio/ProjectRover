@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Test.Rover.Plugin</AssemblyName>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ProjectRover\ProjectRover.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Readme.txt" />
+  </ItemGroup>
+</Project>
