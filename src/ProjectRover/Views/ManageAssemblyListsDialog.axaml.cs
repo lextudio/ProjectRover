@@ -19,6 +19,7 @@ namespace ICSharpCode.ILSpy
         public ManageAssemblyListsDialog(SettingsService settingsService)
         {
             InitializeComponent();
+            DataContext = new ICSharpCode.ILSpy.ViewModels.ManageAssemblyListsViewModel(this, settingsService);
             // Resource strings are provided via AXAML static bindings
 
             // ListBox triggers are handled in AXAML via Interaction.Behaviors

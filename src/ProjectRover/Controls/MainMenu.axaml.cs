@@ -134,6 +134,10 @@ namespace ICSharpCode.ILSpy.Controls
                                 Header = headerText ?? entry.Metadata?.Header
                             };
                             ApplyGesture(menuItem, entry.Metadata?.InputGestureText, cmd);
+                            if (cmd is IProvideParameterBinding parameterBinding)
+                            {
+                                menuItem.Bind(MenuItem.CommandParameterProperty, parameterBinding.ParameterBinding);
+                            }
                             if (!string.IsNullOrEmpty(entry.Metadata?.MenuIcon))
                             {
                                 try

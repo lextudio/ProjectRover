@@ -125,7 +125,7 @@ namespace ICSharpCode.ILSpy.Search
             if (e.Key == Key.Down)
             {
                 var grid = this.FindControl<DataGrid>("resultsGrid");
-                if (grid?.Items is IEnumerable enumerable && enumerable.Cast<object>().Any())
+                if (grid?.ItemsSource is IEnumerable enumerable && enumerable.Cast<object>().Any())
                 {
                     e.Handled = true;
                     grid.SelectedIndex = grid.SelectedIndex < 0 ? 0 : grid.SelectedIndex;

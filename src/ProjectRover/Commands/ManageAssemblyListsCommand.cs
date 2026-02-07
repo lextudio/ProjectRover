@@ -16,8 +16,11 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-
 using System.Composition;
+using System.Linq;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using System.Windows;
 using System.Windows.Data;
 
@@ -31,10 +34,29 @@ namespace ICSharpCode.ILSpy
 	{
 		public override void Execute(object parameter)
 		{
-			ManageAssemblyListsDialog dlg = new(settingsService) {
-			};
+			var owner = ResolveOwnerWindow(parameter);
+			ManageAssemblyListsDialog dlg = new(settingsService);
 
-			dlg.ShowDialog(parameter as Window);
+			if (owner != null)
+			{
+				_ = dlg.ShowDialog(owner);
+				return;
+			}
+
+			dlg.Show();
+		}
+
+		private static Window? ResolveOwnerWindow(object? parameter)
+		{
+			if (parameter is Window window)
+				return window;
+
+			if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+			{
+				return desktop.Windows.FirstOrDefault(static w => w.IsActive) ?? desktop.MainWindow;
+			}
+
+			return null;
 		}
 
 		public Binding ParameterBinding => new() {

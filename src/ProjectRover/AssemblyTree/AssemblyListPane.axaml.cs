@@ -17,7 +17,26 @@ namespace ICSharpCode.ILSpy.AssemblyTree
             InitializeComponent();
             var treeView = ExplorerTreeView;
             if (treeView != null)
+            {
                 ContextMenuProvider.Add(treeView);
+                treeView.KeyDown += TreeView_KeyDown;
+            }
+        }
+
+        private void TreeView_KeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Delete)
+            {
+                var tree = ExplorerTreeView;
+                if (tree?.SelectedItem is ICSharpCode.ILSpyX.TreeView.SharpTreeNode node)
+                {
+                    if (node.CanDelete())
+                    {
+                        node.Delete();
+                        e.Handled = true;
+                    }
+                }
+            }
         }
 
         protected override void OnDataContextChanged(EventArgs e)
