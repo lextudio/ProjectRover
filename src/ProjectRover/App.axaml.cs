@@ -158,6 +158,28 @@ public partial class App : Application
             try
             {
                 var pluginDir = Path.GetDirectoryName(typeof(App).Assembly.Location);
+                // Global resolving handler: log attempts and try to load missing assemblies from plugin dir.
+                if (pluginDir != null)
+                {
+                    AssemblyLoadContext.Default.Resolving += (alc, asmName) =>
+                    {
+                        try
+                        {
+                            log.Warning("Resolving assembly: {Name}", asmName.FullName);
+                            var probe = Path.Combine(pluginDir, asmName.Name + ".dll");
+                            if (File.Exists(probe))
+                            {
+                                log.Information("Loading assembly from plugin dir: {Path}", probe);
+                                return alc.LoadFromAssemblyPath(probe);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Warning(ex, "Resolving handler failed for {Name}", asmName.FullName);
+                        }
+                        return null;
+                    };
+                }
                 if (pluginDir != null)
                 {
                     log.Information("Scanning for plugins in: {Dir}", pluginDir);
@@ -167,7 +189,31 @@ public partial class App : Application
                         try
                         {
                             log.Information("Loading plugin: {Plugin}", name);
-                            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(plugin);
+                            // Use AssemblyDependencyResolver to locate plugin dependencies relative to the plugin path.
+                            var resolver = new AssemblyDependencyResolver(plugin);
+                            Func<AssemblyLoadContext, AssemblyName, Assembly?> resolving = (alc, asmName) =>
+                            {
+                                try
+                                {
+                                    var asmPath = resolver.ResolveAssemblyToPath(asmName);
+                                    if (asmPath != null)
+                                        return alc.LoadFromAssemblyPath(asmPath);
+                                }
+                                catch { }
+                                return null;
+                            };
+
+                            AssemblyLoadContext.Default.Resolving += resolving;
+                            Assembly assembly;
+                            try
+                            {
+                                assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(plugin);
+                            }
+                            finally
+                            {
+                                AssemblyLoadContext.Default.Resolving -= resolving;
+                            }
+
                             services.BindExports(assembly);
                             log.Information("Loaded plugin: {Plugin}", name);
                         }
