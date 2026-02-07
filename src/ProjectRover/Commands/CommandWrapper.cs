@@ -29,16 +29,6 @@ namespace ICSharpCode.ILSpy
 	abstract class CommandWrapper : ICommand
 	{
 		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Commands");
-		static CommandWrapper()
-		{
-			// var app = Application.Current;
-			// var lifetime = app?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-			// var window = lifetime?.MainWindow;
-			// if (window is null)
-			// 	return;
-				
-			// var bindings = Avalonia.Labs.Input.CommandManager.GetCommandBindings(window);
-		}
 
 		private readonly ICommand wrappedCommand;
 
@@ -47,14 +37,14 @@ namespace ICSharpCode.ILSpy
 
 		protected CommandWrapper(ICommand wrappedCommand)
 		{
-					 log.Debug("CommandWrapper created for {Cmd}. targetWindow is {State}", wrappedCommand, (targetWindow == null ? "null" : "set"));
+			log.Debug("CommandWrapper created for {Cmd}. targetWindow is {State}", wrappedCommand, (targetWindow == null ? "null" : "set"));
 			this.wrappedCommand = wrappedCommand;
 			var binding = new CommandBinding(wrappedCommand, OnExecute, OnCanExecute);
 			commandBindings.Add(binding);
 
 			if (targetWindow != null)
 			{
-							 log.Debug("Late registering binding for {Cmd}", wrappedCommand);
+				log.Debug("Late registering binding for {Cmd}", wrappedCommand);
 				var windowBindings = Avalonia.Labs.Input.CommandManager.GetCommandBindings(targetWindow);
 				windowBindings.Add(binding);
 			}
@@ -67,7 +57,7 @@ namespace ICSharpCode.ILSpy
 		public static void RegisterBindings(Window window)
 		{
 			targetWindow = window;
-					 log.Debug("Registering {Count} bindings to window {Hash}", commandBindings.Count, window.GetHashCode());
+			log.Debug("Registering {Count} bindings to window {Hash}", commandBindings.Count, window.GetHashCode());
 			var windowBindings = Avalonia.Labs.Input.CommandManager.GetCommandBindings(window);
 			foreach (var binding in commandBindings)
 			{
@@ -93,10 +83,10 @@ namespace ICSharpCode.ILSpy
 
 		public void Execute(object parameter)
 		{
-					 log.Debug("CommandWrapper.Execute called for {Cmd}", wrappedCommand);
+			log.Debug("CommandWrapper.Execute called for {Cmd}", wrappedCommand);
 			if (targetWindow != null && wrappedCommand is Avalonia.Labs.Input.RoutedCommand rc)
 			{
-							 log.Debug("Executing with targetWindow: {Target}", targetWindow);
+				 log.Debug("Executing with targetWindow: {Target}", targetWindow);
 				rc.Execute(parameter, targetWindow);
 				return;
 			}

@@ -1,5 +1,8 @@
+/// AGPLv3 License
+
 using System;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using ICSharpCode.ILSpy;
 using ICSharpCode.ILSpy.TreeNodes;
