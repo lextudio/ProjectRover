@@ -20,6 +20,7 @@ namespace ICSharpCode.ILSpy.Themes
 	public class ThemeManager
 	{
 		private string currentTheme;
+		private object? _cachedThemeVariant;
 		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("ThemeManager");
 
 		public static ThemeManager Current { get; } = new ThemeManager();
@@ -27,6 +28,12 @@ namespace ICSharpCode.ILSpy.Themes
 		private ThemeManager()
 		{
 			currentTheme = DefaultTheme;
+			// Initialize theme variant cache
+			var app = Application.Current;
+			if (app != null)
+			{
+				_cachedThemeVariant = app.ActualThemeVariant;
+			}
 		}
 
 		// Ensure we react to persisted settings changes (Options dialog commit) so theme is applied immediately.
@@ -61,6 +68,15 @@ namespace ICSharpCode.ILSpy.Themes
 			set => ApplyTheme(value);
 		}
 
+		/// <summary>
+		/// Get the cached theme variant. Can be safely called from any thread.
+		/// Returns null if the cache has not been initialized.
+		/// </summary>
+		public object? GetCachedThemeVariant()
+		{
+			return _cachedThemeVariant;
+		}
+
 		public void ApplyTheme(string? themeName)
 		{
 			var normalized = NormalizeTheme(themeName);
@@ -75,6 +91,7 @@ namespace ICSharpCode.ILSpy.Themes
 			if (Application.Current != null)
 			{
 				Application.Current.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
+				_cachedThemeVariant = Application.Current.ActualThemeVariant;
 							 log.Debug("RequestedThemeVariant set to {Requested}, Actual={Actual}", Application.Current.RequestedThemeVariant, Application.Current.ActualThemeVariant);
 
 				if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)

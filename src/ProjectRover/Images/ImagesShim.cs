@@ -80,10 +80,12 @@ namespace ICSharpCode.ILSpy
 
 		private static bool IsDarkTheme()
 		{
-			var app = App.Current;
-			if (app == null) return false;
-			var variant = app.ActualThemeVariant?.ToString();
-			return variant != null && variant.Equals("Dark", StringComparison.OrdinalIgnoreCase);
+			return ICSharpCode.ILSpy.Themes.ThemeManager.Current.IsDarkTheme;
+		}
+
+		private static object? GetCachedThemeVariant()
+		{
+			return ICSharpCode.ILSpy.Themes.ThemeManager.Current.GetCachedThemeVariant();
 		}
 
 		private static bool ShouldPreferGrayInvert()
@@ -297,11 +299,28 @@ namespace ICSharpCode.ILSpy
 
         public static object OK => GetUri("StatusOKOutline.svg");
 
+		private static bool TryGetResourceSafe(string key, out object? result)
+		{
+			var app = App.Current;
+			var variant = GetCachedThemeVariant();
+			result = null;
+			if (app == null || variant == null)
+				return false;
+			try
+			{
+				return app.TryGetResource(key, (Avalonia.Styling.ThemeVariant?)variant, out result);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
 		private static bool HasIconResource(string key)
 		{
 			if (App.Current == null)
 				return true; // don't block on startup; let resolve happen later
-			return App.Current.TryGetResource(key, App.Current.ActualThemeVariant, out var res) && res is string;
+			return TryGetResourceSafe(key, out var res) && res is string;
 		}
 
 		private static string NormalizeBaseKey(string key)
@@ -360,23 +379,21 @@ namespace ICSharpCode.ILSpy
 					var name = Path.GetFileName(s);
 					return $"/Assets/{name}.svg";
 				}
-				if (App.Current.TryGetResource(s, App.Current.ActualThemeVariant, out var res) && res is string p)
+				if (TryGetResourceSafe(s, out var res) && res is string p)
 				{
 					log.Debug("Images.ResolveIcon: resolved resource key {Key} -> {Path}", s, p);
 					return p;
 				}
 				// Fallback: try an Icon-suffixed resource key if the plain key is missing
 				if (!s.EndsWith("Icon", StringComparison.Ordinal) &&
-					App.Current.TryGetResource(s + "Icon", App.Current.ActualThemeVariant, out res) &&
-					res is string p2)
+					TryGetResourceSafe(s + "Icon", out res) && res is string p2)
 				{
 					log.Debug("Images.ResolveIcon: resolved fallback key {Key} -> {Path}", s + "Icon", p2);
 					return p2;
 				}
 				var normalized = NormalizeBaseKey(s);
 				if (!string.Equals(normalized, s, StringComparison.Ordinal) &&
-					App.Current.TryGetResource(normalized, App.Current.ActualThemeVariant, out res) &&
-					res is string p3)
+					TryGetResourceSafe(normalized, out res) && res is string p3)
 				{
 					log.Debug("Images.ResolveIcon: resolved normalized key {Key} -> {Path}", normalized, p3);
 					return p3;

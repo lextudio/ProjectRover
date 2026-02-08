@@ -65,6 +65,9 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Ensure ThemeManager singleton is initialized early so theme variant is cached for background threads
+            _ = ICSharpCode.ILSpy.Themes.ThemeManager.Current;
+
             var dataGridLog = ICSharpCode.ILSpy.Util.LogCategory.For("DataGrid");
             ProjectRover.Settings.RectTypeConverterRegistration.Ensure();
             var services = CreateServiceCollection();
