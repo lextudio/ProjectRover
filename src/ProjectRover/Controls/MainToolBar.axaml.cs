@@ -81,7 +81,7 @@ namespace ICSharpCode.ILSpy.Controls
 
         static Button CreateToolbarItem(IExport<ICommand, IToolbarCommandMetadata> commandExport)
         {
-            var command = CommandWrapper.Unwrap(commandExport.Value);
+            var command = commandExport.Value;
             var iconPath = commandExport.Metadata?.ToolbarIcon;
 
             var tooltip = ICSharpCode.ILSpy.Util.ResourceHelper.GetString(commandExport.Metadata?.ToolTip)
@@ -126,7 +126,5 @@ namespace ICSharpCode.ILSpy.Controls
 
             return button;
         }
-
-        // Note: image loading is delegated to Images.LoadImage to keep behavior consistent
     }
 }
