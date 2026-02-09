@@ -2,6 +2,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using ICSharpCode.ILSpy;
 using ICSharpCode.ILSpy.Commands;
 using System.Windows.Input;
@@ -77,6 +78,10 @@ namespace ICSharpCode.ILSpy.Controls
                     otherToolbar.Items.Add(CreateToolbarItem(cmd));
                 }
             }
+
+            // Initial CanExecute can be evaluated before all toolbar buttons are attached.
+            // Queue a requery so startup enabled/disabled state matches the current model.
+            Dispatcher.UIThread.Post(CommandManager.InvalidateRequerySuggested, DispatcherPriority.Background);
         }
 
         static Button CreateToolbarItem(IExport<ICommand, IToolbarCommandMetadata> commandExport)
