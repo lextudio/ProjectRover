@@ -161,6 +161,7 @@
                     <x:String x:Key="WebAssemblyIcon">/Assets/WebAssembly.svg</x:String>
                     <x:String x:Key="ZoomInIcon">/Assets/ZoomIn.svg</x:String>
                     <x:String x:Key="ZoomOutIcon">/Assets/ZoomOut.svg</x:String>
+                    <x:String x:Key="CheckmarkIcon">/Assets/Checkmark.svg</x:String>
 
                     <!-- Overlay assets used by the Images shim for composition -->
                     <x:String x:Key="OverlayPrivateIcon">/Assets/OverlayPrivate.svg</x:String>
@@ -269,6 +270,7 @@
                     <x:String x:Key="WebAssemblyIcon">/Assets/WebAssembly.svg</x:String>
                     <x:String x:Key="ZoomInIcon">/Assets/ZoomIn.svg</x:String>
                     <x:String x:Key="ZoomOutIcon">/Assets/ZoomOut.svg</x:String>
+                    <x:String x:Key="CheckmarkIcon">/Assets/Checkmark.svg</x:String>
 
                     <!-- Overlay assets used by the Images shim for composition -->
                     <x:String x:Key="OverlayPrivateIcon">/Assets/OverlayPrivate.svg</x:String>
@@ -291,4 +293,3 @@
         </ResourceDictionary>
     </Application.Resources>
 </Application>
-        

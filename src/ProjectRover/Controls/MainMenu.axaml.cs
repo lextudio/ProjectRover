@@ -35,7 +35,8 @@ namespace ICSharpCode.ILSpy.Controls
         private readonly List<MenuItem> _themeMenuItems = new();
         private List<NativeMenuItem> _nativeThemeMenuItems = new();
         private SettingsService? _settingsService;
-        private const string TabPageMenuIconPath = "/Assets/Checkmark.svg";
+        // Theme-aware resource key resolved via App.axaml ThemeDictionaries.
+        private const string TabPageMenuIconPath = "CheckmarkIcon";
         private NativeMenu? _nativeWindowSubmenu; // Track the Window submenu for dynamic updates
         private readonly Dictionary<ICSharpCode.ILSpy.ViewModels.TabPageModel, NativeMenuItem> _nativeTabPageItems = new();
         private NativeMenuItemSeparator? _nativeTabPageSeparator; // Separator before tab pages
@@ -637,20 +638,7 @@ namespace ICSharpCode.ILSpy.Controls
                 menuItem.IsChecked = isActive;
                 if (isActive)
                 {
-                    var iconSource = Images.LoadImage(TabPageMenuIconPath);
-                    if (iconSource != null)
-                    {
-                        menuItem.Icon = new Avalonia.Controls.Image
-                        {
-                            Width = 16,
-                            Height = 16,
-                            Source = iconSource
-                        };
-                    }
-                    else
-                    {
-                        menuItem.Icon = null;
-                    }
+                    menuItem.Icon = CreateCheckmarkIcon();
                 }
                 else
                 {
@@ -670,12 +658,14 @@ namespace ICSharpCode.ILSpy.Controls
                 {
                     if (item.IsChecked == true)
                     {
-                        var iconSource = Images.LoadImage(TabPageMenuIconPath);
                         item.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
-                        item.Icon = iconSource == null ? null : new Avalonia.Controls.Image { Width = 16, Height = 16, Source = iconSource };
+                        item.Icon = CreateCheckmarkIcon();
                     }
                     else
                     {
+                        // Clear MenuIconKeyProperty so RefreshMenuIcons doesn't
+                        // re-add the checkmark to unchecked theme items.
+                        item.SetValue(MenuIconKeyProperty, null);
                         item.Icon = null;
                     }
                 }
@@ -714,9 +704,8 @@ namespace ICSharpCode.ILSpy.Controls
                 {
                     if (item.IsChecked == true)
                     {
-                        var iconSource = Images.LoadImage(TabPageMenuIconPath);
                         item.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
-                        item.Icon = iconSource == null ? null : new Avalonia.Controls.Image { Width = 16, Height = 16, Source = iconSource };
+                        item.Icon = CreateCheckmarkIcon();
                     }
                     else
                     {
@@ -874,10 +863,8 @@ namespace ICSharpCode.ILSpy.Controls
                 {
                     if (item.IsChecked == true)
                     {
-                        var iconSource = Images.LoadImage(TabPageMenuIconPath);
                         item.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
-                        item.Icon = iconSource == null ? null : new Avalonia.Controls.Image { Width = 16, Height = 16, Source = iconSource };
-                        item.SetValue(MenuIconKeyProperty, TabPageMenuIconPath);
+                        item.Icon = CreateCheckmarkIcon();
                     }
                     else
                     {
@@ -895,6 +882,22 @@ namespace ICSharpCode.ILSpy.Controls
                 item.Click += (_, _) => ApplyLanguageSelection(settingsService, item.Tag as string);
                 UpdateIcon();
             }
+        }
+
+        static Control CreateCheckmarkIcon()
+        {
+            var iconSource = Images.LoadImage(TabPageMenuIconPath);
+            if (iconSource != null)
+            {
+                return new Avalonia.Controls.Image
+                {
+                    Width = 16,
+                    Height = 16,
+                    Source = iconSource
+                };
+            }
+
+            return null;
         }
 
         static void ApplyGesture(MenuItem menuItem, string? gestureText, ICommand cmd)
