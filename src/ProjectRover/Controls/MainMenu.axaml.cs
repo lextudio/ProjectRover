@@ -798,6 +798,22 @@ namespace ICSharpCode.ILSpy.Controls
             }
         }
 
+        static void TryClearNativeMenuIcon(NativeMenuItem native)
+        {
+            try
+            {
+                var iconProp = native.GetType().GetProperty("Icon", BindingFlags.Public | BindingFlags.Instance);
+                if (iconProp != null && iconProp.CanWrite)
+                {
+                    iconProp.SetValue(native, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex, "Clearing native menu icon failed");
+            }
+        }
+
         static IImage? RasterizeImage(IImage image, int width, int height)
         {
             try
@@ -992,6 +1008,34 @@ namespace ICSharpCode.ILSpy.Controls
                     }
 
                     TryApplyNativeMenuIcon(native, m);
+
+                    if (suppressNativeToggle)
+                    {
+                        // Theme/API visibility/language items use our custom checkmark icon.
+                        // Keep native toggle visuals disabled and sync icon manually.
+                        void SyncCustomCheckmark()
+                        {
+                            if (m.IsChecked == true)
+                            {
+                                TryApplyNativeMenuIcon(native, m);
+                            }
+                            else
+                            {
+                                TryClearNativeMenuIcon(native);
+                            }
+                        }
+
+                        SyncCustomCheckmark();
+
+                        m.PropertyChanged += (_, e) => {
+                            if (e.Property == MenuItem.IsCheckedProperty
+                                || e.Property == MenuItem.IconProperty
+                                || e.Property == MenuIconKeyProperty)
+                            {
+                                SyncCustomCheckmark();
+                            }
+                        };
+                    }
 
                     if (!suppressNativeToggle && m.ToggleType != MenuItemToggleType.None)
                     {
