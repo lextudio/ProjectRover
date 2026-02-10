@@ -74,4 +74,84 @@ namespace ICSharpCode.ILSpy.Commands
 			settingsService.SessionSettings.Theme = "Dark";
 		}
 	}
+
+	[ExportMainMenuCommand(ParentMenuID = "_Theme", Header = "VS Code Light+", MenuCategory = "Theme", MenuOrder = 2)]
+	[Shared]
+	public class SetVSCodeLightThemeMenuCommand : SimpleCommand
+	{
+		private readonly SettingsService settingsService;
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Theme");
+
+		public SetVSCodeLightThemeMenuCommand(SettingsService settingsService)
+		{
+			this.settingsService = settingsService;
+		}
+
+		public override void Execute(object parameter)
+		{
+			log.Debug("SetVSCodeLightThemeMenuCommand executed");
+			ThemeManager.Current.ApplyTheme("VS Code Light+");
+			settingsService.SessionSettings.Theme = "VS Code Light+";
+		}
+	}
+
+	[ExportMainMenuCommand(ParentMenuID = "_Theme", Header = "VS Code Dark+", MenuCategory = "Theme", MenuOrder = 3)]
+	[Shared]
+	public class SetVSCodeDarkThemeMenuCommand : SimpleCommand
+	{
+		private readonly SettingsService settingsService;
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Theme");
+
+		public SetVSCodeDarkThemeMenuCommand(SettingsService settingsService)
+		{
+			this.settingsService = settingsService;
+		}
+
+		public override void Execute(object parameter)
+		{
+			log.Debug("SetVSCodeDarkThemeMenuCommand executed");
+			ThemeManager.Current.ApplyTheme("VS Code Dark+");
+			settingsService.SessionSettings.Theme = "VS Code Dark+";
+		}
+	}
+
+	[ExportMainMenuCommand(ParentMenuID = "_Theme", Header = "R# Light", MenuCategory = "Theme", MenuOrder = 4)]
+	[Shared]
+	public class SetRSharpLightThemeMenuCommand : SimpleCommand
+	{
+		private readonly SettingsService settingsService;
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Theme");
+
+		public SetRSharpLightThemeMenuCommand(SettingsService settingsService)
+		{
+			this.settingsService = settingsService;
+		}
+
+		public override void Execute(object parameter)
+		{
+			log.Debug("SetRSharpLightThemeMenuCommand executed");
+			ThemeManager.Current.ApplyTheme("R# Light");
+			settingsService.SessionSettings.Theme = "R# Light";
+		}
+	}
+
+	[ExportMainMenuCommand(ParentMenuID = "_Theme", Header = "R# Dark", MenuCategory = "Theme", MenuOrder = 5)]
+	[Shared]
+	public class SetRSharpDarkThemeMenuCommand : SimpleCommand
+	{
+		private readonly SettingsService settingsService;
+		private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("Theme");
+
+		public SetRSharpDarkThemeMenuCommand(SettingsService settingsService)
+		{
+			this.settingsService = settingsService;
+		}
+
+		public override void Execute(object parameter)
+		{
+			log.Debug("SetRSharpDarkThemeMenuCommand executed");
+			ThemeManager.Current.ApplyTheme("R# Dark");
+			settingsService.SessionSettings.Theme = "R# Dark";
+		}
+	}
 }

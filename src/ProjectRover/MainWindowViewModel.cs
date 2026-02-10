@@ -65,7 +65,11 @@ namespace ICSharpCode.ILSpy
             Themes = new ObservableCollection<ThemeOption>
             {
                 new("Light", ThemeVariant.Light),
-                new("Dark", ThemeVariant.Dark)
+                new("Dark", ThemeVariant.Dark),
+                new("VS Code Light+", ThemeVariant.Light),
+                new("VS Code Dark+", ThemeVariant.Dark),
+                new("R# Light", ThemeVariant.Light),
+                new("R# Dark", ThemeVariant.Dark)
             };
             var savedTheme = settingsService.SessionSettings.Theme;
             SelectedTheme = Themes.FirstOrDefault(t => t.Name.Equals(savedTheme, StringComparison.OrdinalIgnoreCase)) ?? Themes[0];

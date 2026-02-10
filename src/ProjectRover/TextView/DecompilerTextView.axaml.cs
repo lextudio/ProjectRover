@@ -73,19 +73,14 @@ using ICSharpCode.ILSpy.Views;
 
 using TomsToolbox.Composition;
 using TomsToolbox.Wpf;
-using AvaloniaEdit.TextMate;
-using TextMateSharp.Themes;
-using TextMateSharp.Registry;
 
 using ResourceKeys = ICSharpCode.ILSpy.Themes.ResourceKeys;
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Styling;
 using System.Windows.Threading;
-using TextMateSharp.Grammars;
-using RegistryOptions = TextMateSharp.Grammars.RegistryOptions;
 using Popup = ICSharpCode.ILSpy.Controls.Popup;
 using ProjectRover.Settings;
 
@@ -122,80 +117,6 @@ namespace ICSharpCode.ILSpy.TextView
 
 		readonly TextMarkerService textMarkerService;
 		readonly List<ITextMarker> localReferenceMarks = new List<ITextMarker>();
-		
-		static ThemeName ResolveTextMateTheme(string? appThemeName)
-		{
-			if (!string.IsNullOrEmpty(appThemeName)
-				&& appThemeName.Equals("dark", StringComparison.OrdinalIgnoreCase))
-			{
-				return ThemeName.AtomOneDark;
-			}
-
-			var variant = Application.Current?.ActualThemeVariant;
-			return variant == ThemeVariant.Dark ? ThemeName.AtomOneDark : ThemeName.AtomOneLight;
-		}
-
-		static void ApplyTextMateTheme(TextMate.Installation installation, RegistryOptions registryOptions, ThemeName themeName, TextEditor textEditor)
-		{
-			try
-			{
-				installation.SetTheme(registryOptions.LoadTheme(themeName));
-				// after applying the theme to the transformer/model, also apply GUI colors to the editor
-				try
-				{
-					ApplyThemeColorsToEditor(installation, textEditor);
-				}
-				catch (Exception ex)
-				{
-								  log.Error(ex, "ApplyThemeColorsToEditor failed");
-				}
-			}
-			catch (Exception ex)
-			{
-						  log.Error(ex, "Failed to apply TextMate theme");
-			}
-		}
-
-		static void ApplyThemeColorsToEditor(TextMate.Installation e, TextEditor editor)
-		{
-			if (editor == null || e == null)
-				return;
-
-			bool TryApplyBrush(string key, Action<IBrush> apply)
-			{
-				if (!e.TryGetThemeColor(key, out var colorString))
-					return false;
-				if (!Color.TryParse(colorString, out var color))
-					return false;
-				apply(new SolidColorBrush(color));
-				return true;
-			}
-
-			TryApplyBrush("editor.background", brush => editor.Background = brush);
-			TryApplyBrush("editor.foreground", brush => editor.Foreground = brush);
-
-			if (!TryApplyBrush("editor.selectionBackground", brush => editor.TextArea.SelectionBrush = brush))
-			{
-				if (Application.Current!.TryGetResource("TextAreaSelectionBrush", out var resourceObject))
-				{
-					if (resourceObject is IBrush brush)
-						editor.TextArea.SelectionBrush = brush;
-				}
-			}
-
-			if (!TryApplyBrush("editor.lineHighlightBackground", brush => {
-				editor.TextArea.TextView.CurrentLineBackground = brush;
-				editor.TextArea.TextView.CurrentLineBorder = new Pen(brush);
-			}))
-			{
-				editor.TextArea.TextView.SetDefaultHighlightLineColors();
-			}
-
-			if (!TryApplyBrush("editorLineNumber.foreground", brush => editor.LineNumbersForeground = brush))
-			{
-				editor.LineNumbersForeground = editor.Foreground;
-			}
-		}
 
 		#region Constructor
 		public DecompilerTextView() : this(ProjectRover.App.ExportProvider!)
@@ -213,7 +134,6 @@ namespace ICSharpCode.ILSpy.TextView
 			roverSettings.PropertyChanged += RoverSettings_PropertyChanged;
 
 			RegisterHighlighting();
-			// TextMate installation is optional and may be initialized elsewhere.
 
 			InitializeComponent();
 
@@ -235,47 +155,10 @@ namespace ICSharpCode.ILSpy.TextView
 				MessageBus<ThemeChangedEventArgs>.Subscribers += (s, e) =>
 				{
 								  log.Debug("Received ThemeChanged message: {Theme}", e.ThemeName);
+					ApplyThemeResources();
 				};
 			}
 			catch { }
-
-			// Create a per-editor TextMate installation using compile-time RegistryOptions.
-			try
-			{
-				var textMateTheme = ResolveTextMateTheme(null);
-				var registryOptions = new RegistryOptions(textMateTheme);
-				var textMateInstallation = textEditor.InstallTextMate(registryOptions);
-						  log.Debug("Installed TextMate for editor.");
-
-				ApplyTextMateTheme(textMateInstallation, registryOptions, textMateTheme, textEditor);
-				// ensure GUI brushes are also applied whenever the installation signals it applied a theme
-				try
-				{
-					textMateInstallation.AppliedTheme += (_, _) =>
-					{
-						try
-						{
-							ApplyThemeColorsToEditor(textMateInstallation, textEditor);
-						}
-						catch (Exception ex)
-						{
-									  log.Error(ex, "AppliedTheme handler failed");
-						}
-					};
-				}
-				catch { }
-
-				MessageBus<ThemeChangedEventArgs>.Subscribers += (s, e) =>
-				{
-					var nextTheme = ResolveTextMateTheme(e.ThemeName);
-					ApplyTextMateTheme(textMateInstallation, registryOptions, nextTheme, textEditor);
-						  log.Debug("Applied TextMate theme on ThemeChanged: {Theme}", e.ThemeName);
-				};
-			}
-			catch (Exception ex)
-			{
-						  log.Error(ex, "TextMate wiring skipped");
-			}
 			textEditor.TextArea.TextView.ElementGenerators.Add(referenceElementGenerator);
 			this.uiElementGenerator = new UIElementGenerator();
 			this.bracketHighlightRenderer = new BracketHighlightRenderer(textEditor.TextArea.TextView);
@@ -321,12 +204,9 @@ namespace ICSharpCode.ILSpy.TextView
 
 			ShowLineMargin();
 			SetHighlightCurrentLine();
+			ApplyThemeResources();
 
 			ContextMenuProvider.Add(this);
-
-			textEditor.TextArea.TextView.Bind(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty, this.GetResourceObservable(ResourceKeys.LinkTextForegroundBrush));
-			textEditor.TextArea.TextView.Bind(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty, this.GetResourceObservable(ResourceKeys.CurrentLineBackgroundBrush));
-			textEditor.TextArea.TextView.Bind(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty, this.GetResourceObservable(ResourceKeys.CurrentLineBorderPen));
 
 			//DataObject.AddSettingDataHandler(textEditor.TextArea, OnSettingData);
 
@@ -400,10 +280,6 @@ namespace ICSharpCode.ILSpy.TextView
 						if (margin is LineNumberMargin || margin is Avalonia.Controls.Shapes.Line)
 						{
 							margin.IsVisible = showLineNumbers;
-							if (showLineNumbers)
-							{
-								try { margin.SetValue(Avalonia.Controls.TextBlock.ForegroundProperty, textEditor.Foreground); } catch { }
-							}
 							log.Debug("ShowLineMargin: LeftMargin[{Index}] type={Type} visible={Visible}", mi, margin.GetType().Name, margin.IsVisible);
 						}
 					}
@@ -424,6 +300,37 @@ namespace ICSharpCode.ILSpy.TextView
 		void SetHighlightCurrentLine()
 		{
 			textEditor.Options.HighlightCurrentLine = settingsService.DisplaySettings.HighlightCurrentLine;
+		}
+
+		void ApplyThemeResources()
+		{
+			if (TryResolveThemeResource<IBrush>(ResourceKeys.TextBackgroundBrush, out var textBackground))
+				textEditor.Background = textBackground;
+
+			if (TryResolveThemeResource<IBrush>(ResourceKeys.TextForegroundBrush, out var textForeground))
+				textEditor.Foreground = textForeground;
+
+			if (TryResolveThemeResource<IBrush>(ResourceKeys.LineNumbersForegroundBrush, out var lineNumbersForeground))
+				textEditor.LineNumbersForeground = lineNumbersForeground;
+
+			if (TryResolveThemeResource<IBrush>(ResourceKeys.SearchResultBackgroundBrush, out var searchResultBackground))
+				textEditor.SearchResultsBrush = searchResultBackground;
+
+			if (TryResolveThemeResource<IBrush>(ResourceKeys.LinkTextForegroundBrush, out var linkForeground))
+				textEditor.TextArea.TextView.LinkTextForegroundBrush = linkForeground;
+
+			if (TryResolveThemeResource<IBrush>(ResourceKeys.CurrentLineBackgroundBrush, out var currentLineBackground))
+				textEditor.TextArea.TextView.CurrentLineBackground = currentLineBackground;
+
+			if (TryResolveThemeResource<IPen>(ResourceKeys.CurrentLineBorderPen, out var currentLineBorder))
+				textEditor.TextArea.TextView.CurrentLineBorder = currentLineBorder;
+		}
+
+		static bool TryResolveThemeResource<TResource>(string key, out TResource? value)
+			where TResource : class
+		{
+			value = ThemeManager.Current.TryGetThemeResource(key, out var resource) ? resource as TResource : null;
+			return value != null;
 		}
 
 		#endregion
@@ -1768,6 +1675,10 @@ namespace ICSharpCode.ILSpy.TextView
 		{
 			if (Application.Current == null)
 				return;
+
+			// Re-register once per theme switch so fresh definitions reflect the new SyntaxColor resources.
+			DecompilerTextView.RegisterHighlighting();
+
 			if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
 			{
 				foreach (var w in desktop.Windows)
@@ -1776,9 +1687,41 @@ namespace ICSharpCode.ILSpy.TextView
 					{
 						if (desc is DecompilerTextView view)
 						{
-							// Force re-registration of highlighting by re-invoking RegisterHighlighting and
-							// forcing the text editor to re-evaluate its colorizer.
-							DecompilerTextView.RegisterHighlighting();
+							view.ApplyThemeResources();
+
+							// Rebind to the latest highlighting definition instance for this mode.
+							if (view.textEditor.SyntaxHighlighting is { } currentHighlighting)
+							{
+								var refreshedHighlighting = HighlightingManager.Instance.GetDefinition(currentHighlighting.Name);
+								if (refreshedHighlighting != null)
+								{
+									view.textEditor.SyntaxHighlighting = null;
+									view.textEditor.SyntaxHighlighting = refreshedHighlighting;
+								}
+							}
+
+							// Semantic rich text colors are materialized during decompilation and must be regenerated.
+							if (view.decompiledNodes is { Length: > 0 })
+							{
+								try
+								{
+									var options = new DecompilationOptions(
+										view.languageService.LanguageVersion,
+										view.settingsService.DecompilerSettings,
+										view.settingsService.DisplaySettings)
+									{
+										TextViewState = view.GetState()
+									};
+
+									view.DecompileAsync(view.languageService.Language, view.decompiledNodes, source: null, options)
+										.HandleExceptions();
+								}
+								catch (Exception ex)
+								{
+									log.Warning(ex, "Failed to refresh decompiled output for theme switch");
+								}
+							}
+
 							view.textEditor.TextArea.TextView.Redraw();
 						}
 					}
@@ -1903,8 +1846,7 @@ namespace ICSharpCode.ILSpy.TextView
 			string[] extensions,
 			string resourceName)
 		{
-			Stream? resourceStream = typeof(DecompilerTextView).Assembly
-				.GetManifestResourceStream(typeof(DecompilerTextView), resourceName + ".xshd");
+			Stream? resourceStream = OpenHighlightingResourceStream(resourceName);
 
 			if (resourceStream != null)
 			{
@@ -1924,6 +1866,51 @@ namespace ICSharpCode.ILSpy.TextView
 					return highlightingDefinition;
 				});
 			}
+			else
+			{
+				log.Warning("Could not locate highlighting resource {ResourceName}.xshd for {Name}", resourceName, name);
+			}
+		}
+
+		private static Stream? OpenHighlightingResourceStream(string resourceName)
+		{
+			var assembly = typeof(DecompilerTextView).Assembly;
+			var fileName = resourceName + ".xshd";
+
+			// First try the original ILSpy pattern.
+			var stream = assembly.GetManifestResourceStream(typeof(DecompilerTextView), fileName);
+			if (stream != null)
+				return stream;
+
+			// Then try common manifest name patterns used in ProjectRover.
+			var candidates = new[] {
+				$"{typeof(DecompilerTextView).Namespace}.{fileName}",
+				$"ICSharpCode.ILSpy.{fileName}",
+				$"{assembly.GetName().Name}.{fileName}"
+			};
+
+			foreach (var candidate in candidates.Distinct(StringComparer.Ordinal))
+			{
+				stream = assembly.GetManifestResourceStream(candidate);
+				if (stream != null)
+				{
+					log.Debug("Resolved highlighting resource {Resource} using manifest name {ManifestName}", fileName, candidate);
+					return stream;
+				}
+			}
+
+			// Final fallback: match by suffix in case manifest naming changes again.
+			var matched = assembly
+				.GetManifestResourceNames()
+				.FirstOrDefault(n => n.EndsWith("." + fileName, StringComparison.OrdinalIgnoreCase)
+					|| n.Equals(fileName, StringComparison.OrdinalIgnoreCase));
+			if (matched != null)
+			{
+				log.Debug("Resolved highlighting resource {Resource} via suffix match: {ManifestName}", fileName, matched);
+				return assembly.GetManifestResourceStream(matched);
+			}
+
+			return null;
 		}
 	}
 

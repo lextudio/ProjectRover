@@ -1,8 +1,11 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Input;
 using Avalonia.Media;
+
+using ICSharpCode.ILSpy.Themes;
 
 namespace ICSharpCode.ILSpy.Controls
 {
@@ -11,6 +14,7 @@ namespace ICSharpCode.ILSpy.Controls
         const double DefaultMaxWidth = 800;
         static readonly IBrush DefaultBackground = Brushes.LightYellow;
         static readonly IBrush DefaultBorderBrush = Brushes.Gray;
+        static readonly IBrush DefaultForeground = Brushes.Black;
         readonly Border border;
         bool isPointerInside;
         bool staysOpen = true;
@@ -92,13 +96,15 @@ namespace ICSharpCode.ILSpy.Controls
         {
             target.Background = TryFindBrush("ToolTipBackgroundBrush") ?? DefaultBackground;
             target.BorderBrush = TryFindBrush("ToolTipBorderBrush") ?? DefaultBorderBrush;
+            var foreground = TryFindBrush(ResourceKeys.ToolTipForegroundBrush)
+                ?? TryFindBrush(ResourceKeys.TextForegroundBrush)
+                ?? (ThemeManager.Current.IsDarkTheme ? Brushes.White : DefaultForeground);
+            target.SetValue(TextElement.ForegroundProperty, foreground);
         }
 
         static IBrush? TryFindBrush(string key)
         {
-            if (Application.Current?.TryFindResource(key, out var resource) == true)
-                return resource as IBrush;
-            return null;
+            return ThemeManager.Current.TryGetThemeResource(key, out var resource) ? resource as IBrush : null;
         }
     }
 
