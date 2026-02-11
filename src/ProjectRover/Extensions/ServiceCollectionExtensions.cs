@@ -65,7 +65,5 @@ public static class ServiceCollectionExtensions
 
     private static IConfigurationRoot GetConfiguration() =>
         new ConfigurationBuilder()
-            .AddEmbeddedResource("appsettings.json")
-            .AddEmbeddedResource($"appsettings.{EnvironmentProvider.Environment}.json")
             .Build();
 }
