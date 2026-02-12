@@ -1,6 +1,6 @@
 ﻿/*
     Copyright 2024 CodeMerx
-    Copyright 2025 LeXtudio Inc.
+    Copyright 2025-2026 LeXtudio Inc.
     This file is part of ProjectRover.
 
     ProjectRover is free software: you can redistribute it and/or modify
