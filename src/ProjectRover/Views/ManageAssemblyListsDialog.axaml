@@ -27,7 +27,11 @@
   x:Class="ICSharpCode.ILSpy.ManageAssemblyListsDialog"
   x:DataType="vm:ManageAssemblyListsViewModel"
   Title="{x:Static res:Resources.ManageAssemblyLists}"
-  Width="480" Height="350">
+  Width="480"
+  Height="350"
+  MinWidth="480"
+  MinHeight="250"
+  WindowStartupLocation="CenterOwner">
   <Grid Margin="12,8">
     <Grid.RowDefinitions>
       <RowDefinition Height="*" />
@@ -56,15 +60,15 @@
       </ia:Interaction.Behaviors>
     </ListBox>
 
-    <StackPanel Grid.Column="5" Grid.RowSpan="2" Margin="4,8">
-      <Button x:Name="NewButton" Margin="2 2 2 10" Command="{Binding NewCommand}" Content="{x:Static res:Resources.NewList}" />
+    <StackPanel Grid.Column="4" Grid.RowSpan="2" Margin="4,8">
+      <Button x:Name="NewButton" Margin="2 2 2 10" Command="{Binding NewCommand}" Content="{x:Static res:Resources._New}" />
       <Button x:Name="CloneButton" Margin="2" Command="{Binding CloneCommand}" Content="{x:Static res:Resources.C_lone}" />
       <Button x:Name="RenameButton" Margin="2" Command="{Binding RenameCommand}" Content="{x:Static res:Resources.R_ename}" />
       <Button x:Name="DeleteButton" Margin="2" Command="{Binding DeleteCommand}" Content="{x:Static res:Resources.OpenListDialog__Delete}" />
       <Button x:Name="ResetButton" Margin="2 10 2 2" Command="{Binding ResetCommand}" Content="{x:Static res:Resources._Reset}" />
     </StackPanel>
 
-    <Button x:Name="CloseButton" IsCancel="True" Grid.Row="2" Margin="2,0" Content="{x:Static res:Resources.Close}" />
-    <Button x:Name="PreconfiguredButton" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="2,0" Click="PreconfiguredAssemblyListsMenuClick" Content="{x:Static res:Resources.AddPreconfiguredList}" />
+    <Button x:Name="CloseButton" IsCancel="True" Grid.Row="1" Margin="2,0" Click="CloseButton_Click" Content="{x:Static res:Resources.Close}" />
+    <Button x:Name="PreconfiguredButton" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="2,0" Click="PreconfiguredAssemblyListsMenuClick" Content="{x:Static res:Resources.AddPreconfiguredList}" />
   </Grid>
 </Window>
