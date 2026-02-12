@@ -21,12 +21,12 @@ A small, cross-platform UI for exploring .NET assemblies.
 
 Download the latest release archive for your platform from the Releases page, extract it, and run the app.
 
-- **macOS** — extract the `.tar.gz` for your architecture and open `ProjectRover.app`. Downloads are on the [Releases page](https://github.com/lextudio/ProjectRover/releases).
+- **macOS** — extract the universal `.tar.gz` and open `ProjectRover.app`. Downloads are on the [Releases page](https://github.com/lextudio/ProjectRover/releases).
 
   Example:
 
   ```bash
-  tar -xzpf ProjectRover-macos-arm64.tar.gz
+  tar -xzpf ProjectRover-macos-universal.tar.gz
   xattr -d com.apple.quarantine ProjectRover.app
   open ProjectRover.app
   ```

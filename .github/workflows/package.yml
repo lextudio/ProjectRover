@@ -66,18 +66,6 @@ jobs:
       run: dotnet publish -r osx-x64 -c Release
       working-directory: ./src/ProjectRover
 
-    - name: Build .app bundle (macOS x64)
-      run: build/macos/build-application-bundle.sh osx-x64
-
-    - name: Archive artifacts (macOS x64)
-      run: tar -czpf ProjectRover-macos-x64.tar.gz ProjectRover.app
-
-    - name: Upload artifacts (macOS x64)
-      uses: actions/upload-artifact@v4
-      with:
-        name: ProjectRover-macos-x64
-        path: ProjectRover-macos-x64.tar.gz
-
     - name: Restore dependencies (macOS ARM64)
       run: dotnet restore -r osx-arm64 --force-evaluate
       working-directory: ./src/ProjectRover
@@ -86,17 +74,17 @@ jobs:
       run: dotnet publish -r osx-arm64 -c Release
       working-directory: ./src/ProjectRover
 
-    - name: Build .app bundle (macOS ARM64)
-      run: build/macos/build-application-bundle.sh osx-arm64
+    - name: Build .app bundle (macOS universal)
+      run: build/macos/build-application-bundle.sh osx-universal
 
-    - name: Archive artifacts (macOS ARM64)
-      run: tar -czpf ProjectRover-macos-arm64.tar.gz ProjectRover.app
+    - name: Archive artifacts (macOS universal)
+      run: tar -czpf ProjectRover-macos-universal.tar.gz ProjectRover.app
 
-    - name: Upload artifacts (macOS ARM64)
+    - name: Upload artifacts (macOS universal)
       uses: actions/upload-artifact@v4
       with:
-        name: ProjectRover-macos-arm64
-        path: ProjectRover-macos-arm64.tar.gz
+        name: ProjectRover-macos-universal
+        path: ProjectRover-macos-universal.tar.gz
 
     - name : Restore dependencies (Linux x64)
       run: dotnet restore -r linux-x64 --force-evaluate

@@ -118,7 +118,7 @@ The precise place you must put `appsettings.json` or `appsettings.Development.js
 
 2) macOS (.app bundle created by CI)
 
-- CI produces a `.app` bundle which is archived into `ProjectRover-macos-x64.tar.gz` or similar. After expanding the tar, you'll have `ProjectRover.app`.
+- CI produces a universal `.app` bundle which is archived into `ProjectRover-macos-universal.tar.gz`. After expanding the tar, you'll have `ProjectRover.app`.
 - The actual native executable lives inside the bundle at `ProjectRover.app/Contents/MacOS/ProjectRover`.
 - Place `appsettings.Development.json` next to that executable. Example commands (run from the folder that contains `ProjectRover.app`):
 
