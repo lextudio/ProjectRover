@@ -21,6 +21,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using ProjectRover.Extensions;
 using ProjectRover.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,14 +47,24 @@ namespace ProjectRover;
 public partial class App : Application
 {
     private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("App");
+    private static readonly string[] SupportedAssemblyExtensions = [".dll", ".exe", ".winmd", ".netmodule"];
+    private const string FinderDebugLogPath = "/tmp/projectrover-finder.log";
+    private static string[] rawStartupArgs = Array.Empty<string>();
     public new static App Current => (App)Application.Current!;
 
     public IServiceProvider Services { get; private set; } = null!;
     public object? CompositionHost { get; private set; }
     public static IExportProvider? ExportProvider { get; private set; }
 
-    public static CommandLineArguments CommandLineArguments { get; private set; } = CommandLineArguments.Create(Array.Empty<string>()); // TODO:
+    public static CommandLineArguments CommandLineArguments { get; private set; } = CommandLineArguments.Create(Array.Empty<string>());
     internal static readonly IList<ExceptionData> StartupExceptions = new List<ExceptionData>(); // TODO:
+
+    public static void InitializeCommandLineArguments(IEnumerable<string>? arguments)
+    {
+        rawStartupArgs = arguments?.ToArray() ?? Array.Empty<string>();
+        CommandLineArguments = CommandLineArguments.Create(rawStartupArgs);
+        TraceFinder($"InitializeCommandLineArguments raw={FormatArgs(rawStartupArgs)} parsedAssemblies={FormatArgs(CommandLineArguments.AssembliesToLoad)}");
+    }
 
     public override void Initialize()
     {
@@ -277,6 +288,7 @@ public partial class App : Application
                 log.Information("Creating MainWindow...");
             desktop.MainWindow = Services.GetRequiredService<ICSharpCode.ILSpy.MainWindow>();
                 log.Information("MainWindow created.");
+            TryQueueStartupFileArguments(desktop.Args);
 
             // Attach the export provider to the MainWindow so that inheritable
             // attached property lookup works for all visual children.
@@ -320,7 +332,180 @@ public partial class App : Application
             // Theme application and ILSpy-warning will run in the Opened handler above.
         }
 
+        HookActivationLifetime();
+
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void HookActivationLifetime()
+    {
+        try
+        {
+            if (TryGetFeature(typeof(IActivatableLifetime)) is IActivatableLifetime activatable)
+            {
+                // Defensive unsubscribe to avoid duplicate subscriptions when this method is called more than once.
+                activatable.Activated -= OnActivated;
+                activatable.Activated += OnActivated;
+                TraceFinder("HookActivationLifetime succeeded.");
+            }
+            else
+            {
+                TraceFinder("HookActivationLifetime: IActivatableLifetime feature not available.");
+            }
+        }
+        catch (Exception ex)
+        {
+            log.Warning(ex, "Failed to hook activation lifetime.");
+            TraceFinder($"HookActivationLifetime failed: {ex}");
+        }
+    }
+
+    private void OnActivated(object? sender, ActivatedEventArgs e)
+    {
+        TraceFinder($"OnActivated kind={e.Kind} type={e.GetType().FullName}");
+        if (e.Kind != ActivationKind.File || e is not FileActivatedEventArgs fileArgs)
+            return;
+
+        foreach (var file in fileArgs.Files)
+        {
+            TraceFinder($"Activated file item name={file.Name} localPath={file.TryGetLocalPath() ?? "<null>"}");
+        }
+
+        var filePaths = fileArgs.Files
+            .Select(file => file.TryGetLocalPath())
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(path => path!)
+            .Where(File.Exists)
+            .Where(IsSupportedAssemblyPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (filePaths.Length == 0)
+        {
+            TraceFinder("OnActivated file event yielded 0 supported local files.");
+            return;
+        }
+
+        log.Information("Received file activation for {Count} file(s): {Files}", filePaths.Length, string.Join(", ", filePaths));
+        TraceFinder($"Queueing activated files: {FormatArgs(filePaths)}");
+        _ = OpenActivatedFilesWhenReadyAsync(filePaths, source: "activation");
+    }
+
+    private static bool IsSupportedAssemblyPath(string path)
+    {
+        return SupportedAssemblyExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static async System.Threading.Tasks.Task OpenActivatedFilesWhenReadyAsync(string[] filePaths, string source)
+    {
+        // Startup may still be constructing exports when Finder sends activation.
+        for (var attempt = 0; attempt < 120; attempt++)
+        {
+            var opened = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                var model = ExportProvider?.GetExportedValueOrDefault<ICSharpCode.ILSpy.AssemblyTree.AssemblyTreeModel>();
+                if (model == null)
+                {
+                    if (attempt == 0 || (attempt + 1) % 20 == 0)
+                        TraceFinder($"Open wait ({source}) attempt {attempt + 1}: AssemblyTreeModel export not ready.");
+                    return false;
+                }
+
+                // Initialize() sets Root via ShowAssemblyList(); before that OpenFiles may be lost
+                // because AssemblyList is replaced during initialization.
+                if (model.Root == null)
+                {
+                    if (attempt == 0 || (attempt + 1) % 20 == 0)
+                        TraceFinder($"Open wait ({source}) attempt {attempt + 1}: AssemblyTreeModel.Root not ready.");
+                    return false;
+                }
+
+                model.OpenFiles(filePaths);
+                return true;
+            });
+
+            if (opened)
+            {
+                TraceFinder($"Opened files from {source} after attempt {attempt + 1}: {FormatArgs(filePaths)}");
+                return;
+            }
+
+            await System.Threading.Tasks.Task.Delay(250);
+        }
+
+        log.Warning("Failed to process file activation because AssemblyTreeModel was not ready: {Files}", string.Join(", ", filePaths));
+        TraceFinder($"Failed to open files from {source} because AssemblyTreeModel was not ready: {FormatArgs(filePaths)}");
+    }
+
+    private static void TryQueueStartupFileArguments(IEnumerable<string>? args)
+    {
+        var effectiveArgs = args?.ToArray() ?? rawStartupArgs;
+        TraceFinder($"Desktop startup args={FormatArgs(effectiveArgs)}");
+
+        if (effectiveArgs.Length == 0)
+            return;
+
+        var startupFiles = effectiveArgs
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Where(File.Exists)
+            .Where(IsSupportedAssemblyPath)
+            .Select(Path.GetFullPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (startupFiles.Length == 0)
+        {
+            TraceFinder("Startup args contained no supported existing assembly files.");
+            return;
+        }
+
+        var parsedFiles = CommandLineArguments.AssembliesToLoad
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(path => {
+                try
+                {
+                    return Path.GetFullPath(path);
+                }
+                catch
+                {
+                    return path;
+                }
+            })
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var unparsedStartupFiles = startupFiles
+            .Where(path => !parsedFiles.Contains(path))
+            .ToArray();
+
+        if (unparsedStartupFiles.Length == 0)
+        {
+            TraceFinder("Startup file args are already handled by CommandLineArguments parsing.");
+            return;
+        }
+
+        TraceFinder($"Queueing startup files missed by parser: {FormatArgs(unparsedStartupFiles)}");
+        _ = OpenActivatedFilesWhenReadyAsync(unparsedStartupFiles, source: "startup-args");
+    }
+
+    private static void TraceFinder(string message)
+    {
+        try
+        {
+            File.AppendAllText(FinderDebugLogPath, $"{DateTimeOffset.Now:O} {message}{System.Environment.NewLine}");
+        }
+        catch
+        {
+            // Best effort diagnostics only.
+        }
+    }
+
+    private static string FormatArgs(IEnumerable<string>? values)
+    {
+        if (values == null)
+            return "[]";
+
+        var arr = values.Where(v => !string.IsNullOrEmpty(v)).ToArray();
+        return arr.Length == 0 ? "[]" : "[" + string.Join(", ", arr.Select(v => $"\"{v}\"")) + "]";
     }
 
     // Diagnostic helper: wait for AssemblyTreeModel export and attach to Root.Children changes

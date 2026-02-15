@@ -57,6 +57,7 @@ sealed class Program
         // Do NOT forward ILSpyX diagnostics into Serilog here so ilspy logs remain console-only.
         try
         {
+            App.InitializeCommandLineArguments(args);
             BuildAvaloniaApp()
                 .StartWithClassicDesktopLifetime(args);
         }
