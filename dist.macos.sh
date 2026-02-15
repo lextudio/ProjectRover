@@ -46,6 +46,14 @@ echo "   ✓ ARM64 binary created"
 echo "[3/6] Building x64 (Intel)..."
 find . -name "packages.lock.json" -delete
 
+# Kill any remaining processes and wait
+killall dotnet 2>/dev/null || true
+sleep 2
+
+# Clean obj directories more aggressively to release file locks
+find thirdparty -type d -name "obj" -exec rm -rf {} + 2>/dev/null || true
+find src -type d -name "obj" -exec rm -rf {} + 2>/dev/null || true
+
 if ! dotnet restore ./src/ProjectRover/ProjectRover.csproj -r osx-x64 --force-evaluate -q; then
     echo "❌ x64 restore failed"
     exit 1
