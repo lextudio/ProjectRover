@@ -20,6 +20,30 @@
         <string>6.0</string>
         <key>CFBundlePackageType</key>
         <string>APPL</string>
+        <key>CFBundleDocumentTypes</key>
+        <array>
+            <dict>
+                <key>CFBundleTypeName</key>
+                <string>.NET Assemblies</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>LSTypeIsPackage</key>
+                <false/>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                    <string>dll</string>
+                    <string>exe</string>
+                    <string>winmd</string>
+                    <string>netmodule</string>
+                </array>
+                <key>CFBundleTypeMIMETypes</key>
+                <array>
+                    <string>application/octet-stream</string>
+                </array>
+            </dict>
+        </array>
         <key>NSHighResolutionCapable</key>
         <true/>
     </dict>

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #    Copyright 2024 CodeMerx
 #    Copyright 2025 LeXtudio Inc.
 #    This file is part of ProjectRover.
@@ -14,8 +15,6 @@
 
 #    You should have received a copy of the GNU Affero General Public License
 #    along with ProjectRover.  If not, see<https://www.gnu.org/licenses/>.
-
-#!/usr/bin/env bash
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
