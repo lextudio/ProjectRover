@@ -21,22 +21,10 @@ namespace ICSharpCode.ILSpy.Util
                     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
                     .Build();
 
-                // Enable Serilog internal diagnostics to a file for troubleshooting
-                try
-                {
-                    var selfLogPath = Path.Combine(AppContext.BaseDirectory, "serilog-selflog.txt");
-                    Serilog.Debugging.SelfLog.Enable(TextWriter.Synchronized(File.CreateText(selfLogPath)));
-                }
-                catch
-                {
-                    // ignore selflog failures
-                }
-
                 var logger = new LoggerConfiguration()
                     .ReadFrom.Configuration(config)
                     .Enrich.FromLogContext()
                     .Enrich.WithProperty("App", "ProjectRover")
-                    .WriteTo.File("projectrover.log", rollingInterval: RollingInterval.Day)
                     .CreateLogger();
 
                 logger.Information("Rover logging initialized");
