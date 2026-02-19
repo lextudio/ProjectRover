@@ -41,6 +41,7 @@ using ICSharpCode.ILSpy.AppEnv;
 using ICSharpCode.ILSpyX.TreeView;
 using ICSharpCode.ILSpy.Themes;
 using TomsToolbox.Wpf.Composition;
+using Medo.Application;
 
 namespace ProjectRover;
 
@@ -49,7 +50,10 @@ public partial class App : Application
     private static readonly Serilog.ILogger log = ICSharpCode.ILSpy.Util.LogCategory.For("App");
     private static readonly string[] SupportedAssemblyExtensions = [".dll", ".exe", ".winmd", ".netmodule"];
     private const string FinderDebugLogPath = "/tmp/projectrover-finder.log";
+    private static readonly object singleInstanceSync = new();
+    private static readonly System.Threading.SemaphoreSlim singleInstanceCommandLineLock = new(1, 1);
     private static string[] rawStartupArgs = Array.Empty<string>();
+    private static bool singleInstanceConfigured;
     public new static App Current => (App)Application.Current!;
 
     public IServiceProvider Services { get; private set; } = null!;
@@ -76,6 +80,9 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            var settingsService = new ICSharpCode.ILSpy.Util.SettingsService();
+            ConfigureSingleInstanceHandling(settingsService);
+
             // Ensure ThemeManager singleton is initialized early so theme variant is cached for background threads
             _ = ICSharpCode.ILSpy.Themes.ThemeManager.Current;
 
@@ -83,8 +90,6 @@ public partial class App : Application
             ProjectRover.Settings.RectTypeConverterRegistration.Ensure();
             var services = CreateServiceCollection();
 
-            // Initialize SettingsService
-            var settingsService = new ICSharpCode.ILSpy.Util.SettingsService();
             var desiredTheme = settingsService.SessionSettings.Theme;
             services.AddSingleton(settingsService);
 
@@ -335,6 +340,92 @@ public partial class App : Application
         HookActivationLifetime();
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static void ConfigureSingleInstanceHandling(ICSharpCode.ILSpy.Util.SettingsService settingsService)
+    {
+        if (singleInstanceConfigured)
+            return;
+
+        lock (singleInstanceSync)
+        {
+            if (singleInstanceConfigured)
+                return;
+
+            var forceSingleInstance = (CommandLineArguments.SingleInstance ?? true)
+                && !settingsService.MiscSettings.AllowMultipleInstances;
+            TraceFinder($"SingleInstance config singleInstanceArg={(CommandLineArguments.SingleInstance?.ToString() ?? "<null>")} allowMultiple={settingsService.MiscSettings.AllowMultipleInstances} forceSingle={forceSingleInstance}");
+
+            if (!forceSingleInstance)
+            {
+                singleInstanceConfigured = true;
+                return;
+            }
+
+            SingleInstance.Attach(); // exits the current process if another instance is already running
+            SingleInstance.NewInstanceDetected -= OnNewInstanceDetected;
+            SingleInstance.NewInstanceDetected += OnNewInstanceDetected;
+            singleInstanceConfigured = true;
+            TraceFinder("SingleInstance.Attach succeeded.");
+        }
+    }
+
+    private static void OnNewInstanceDetected(object? sender, NewInstanceEventArgs e)
+    {
+        var forwardedArgs = e.Args;
+        TraceFinder($"SingleInstance NewInstanceDetected args={FormatArgs(forwardedArgs)}");
+        _ = HandleForwardedCommandLineArgumentsWhenReadyAsync(forwardedArgs);
+    }
+
+    private static async System.Threading.Tasks.Task HandleForwardedCommandLineArgumentsWhenReadyAsync(string[] forwardedArgs)
+    {
+        await singleInstanceCommandLineLock.WaitAsync();
+        try
+        {
+            for (var attempt = 0; attempt < 120; attempt++)
+            {
+                var model = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    var export = ExportProvider?.GetExportedValueOrDefault<ICSharpCode.ILSpy.AssemblyTree.AssemblyTreeModel>();
+                    if (export == null)
+                    {
+                        if (attempt == 0 || (attempt + 1) % 20 == 0)
+                            TraceFinder($"SingleInstance wait attempt {attempt + 1}: AssemblyTreeModel export not ready.");
+                        return null;
+                    }
+
+                    if (export.Root == null)
+                    {
+                        if (attempt == 0 || (attempt + 1) % 20 == 0)
+                            TraceFinder($"SingleInstance wait attempt {attempt + 1}: AssemblyTreeModel.Root not ready.");
+                        return null;
+                    }
+
+                    return export;
+                });
+
+                if (model != null)
+                {
+                    await model.HandleSingleInstanceCommandLineArguments(forwardedArgs);
+                    TraceFinder($"SingleInstance forwarded args handled after attempt {attempt + 1}: {FormatArgs(forwardedArgs)}");
+                    return;
+                }
+
+                await System.Threading.Tasks.Task.Delay(250);
+            }
+
+            log.Warning("Failed to process forwarded single-instance args because AssemblyTreeModel was not ready: {Args}", string.Join(", ", forwardedArgs));
+            TraceFinder($"SingleInstance failed to process forwarded args because AssemblyTreeModel was not ready: {FormatArgs(forwardedArgs)}");
+        }
+        catch (Exception ex)
+        {
+            log.Warning(ex, "Failed to process forwarded single-instance args.");
+            TraceFinder($"SingleInstance forwarded args processing failed: {ex}");
+        }
+        finally
+        {
+            singleInstanceCommandLineLock.Release();
+        }
     }
 
     private void HookActivationLifetime()

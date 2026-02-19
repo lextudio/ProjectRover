@@ -189,10 +189,6 @@
       <Link>AppEnv\CommandLineTools.cs</Link>
     </Compile>
 
-    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\AppEnv\SingleInstance.cs">
-      <Link>AppEnv\SingleInstance.cs</Link>
-    </Compile>
-
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\AssemblyTree\AssemblyTreeModel.cs">
       <Link>AssemblyTree\AssemblyTreeModel.cs</Link>
     </Compile>
