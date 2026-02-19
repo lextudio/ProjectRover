@@ -127,7 +127,7 @@
     <value>Add shell integration</value>
   </data>
   <data name="AddShellIntegrationMessage" xml:space="preserve">
-    <value>This will add "{0}" to the registry at "HKCU\Software\Classes\dllfile\shell\Open with ILSpy\command" and "HKCU\Software\Classes\exefile\shell\Open with ILSpy\command" to allow opening .dll and .exe files from the Windows Explorer context menu.
+    <value>This will add "{0}" to the registry at "HKCU\Software\Classes\dllfile\shell\Open with Project Rover\command" and "HKCU\Software\Classes\exefile\shell\Open with Project Rover\command" to allow opening .dll and .exe files from the Windows Explorer context menu.
 
 Do you want to continue?</value>
   </data>
@@ -843,7 +843,7 @@ If this does not solve the problem and your system supports long paths, you can 
     <value>Remove shell integration</value>
   </data>
   <data name="RemoveShellIntegrationMessage" xml:space="preserve">
-    <value>This will remove "{0}" from the registry at "HKCU\Software\Classes\dllfile\shell\Open with ILSpy\command" and "HKCU\Software\Classes\exefile\shell\Open with ILSpy\command".
+    <value>This will remove "{0}" from the registry at "HKCU\Software\Classes\dllfile\shell\Open with Project Rover\command" and "HKCU\Software\Classes\exefile\shell\Open with Project Rover\command".
 
 Do you want to continue?</value>
   </data>

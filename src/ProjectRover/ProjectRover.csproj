@@ -111,9 +111,6 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\ILSpy\ILSpy\Options\MiscSettingsViewModel.cs">
-      <Link>Options\MiscSettingsViewModel.cs</Link>
-    </Compile>
     <Compile Include="..\ILSpy\ILSpy\Options\DisplaySettingsViewModel.cs">
       <Link>Options\DisplaySettingsViewModel.cs</Link>
     </Compile>
