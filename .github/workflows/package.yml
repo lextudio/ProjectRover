@@ -22,7 +22,7 @@ on:
 
 jobs:
   package-all:
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -85,15 +85,6 @@ jobs:
       with:
         name: ProjectRover-macos-universal-dmg
         path: ProjectRover-macos-universal.dmg
-
-    - name: Archive artifacts (macOS universal)
-      run: tar -czpf ProjectRover-macos-universal.tar.gz ProjectRover.app
-
-    - name: Upload artifacts (macOS universal)
-      uses: actions/upload-artifact@v4
-      with:
-        name: ProjectRover-macos-universal
-        path: ProjectRover-macos-universal.tar.gz
 
     - name : Restore dependencies (Linux x64)
       run: dotnet restore -r linux-x64 --force-evaluate
