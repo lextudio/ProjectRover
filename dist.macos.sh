@@ -76,13 +76,13 @@ if [ ! -f "src/ProjectRover/bin/Release/net10.0/osx-x64/publish/ProjectRover" ];
 fi
 echo "   ✓ x64 binary created"
 
-echo "[4/6] Creating universal application bundle..."
+echo "[4/7] Creating universal application bundle..."
 if ! ./build/macos/build-application-bundle.sh osx-universal; then
     echo "❌ Failed to create universal bundle"
     exit 1
 fi
 
-echo "[5/6] Verifying universal binary..."
+echo "[5/7] Verifying universal binary..."
 if file ProjectRover.app/Contents/MacOS/ProjectRover | grep -q "universal binary"; then
     echo "   ✓ Universal binary verified (both x86_64 and arm64)"
 else
@@ -90,7 +90,14 @@ else
     exit 1
 fi
 
-echo "[6/6] Cleaning up temporary artifacts..."
+echo "[6/7] Building DMG package..."
+if ! ./build/macos/build-dmg.sh ProjectRover.app ProjectRover-macos-universal.dmg images/social.png; then
+    echo "❌ Failed to create DMG package"
+    exit 1
+fi
+echo "   ✓ DMG package created"
+
+echo "[7/7] Cleaning up temporary artifacts..."
 rm -rf src/ProjectRover/bin src/ProjectRover/obj
 find . -name "packages.lock.json" -delete
 
@@ -98,6 +105,7 @@ echo
 echo "✅ Universal macOS application bundle created successfully!"
 echo
 echo "📍 Location: $(pwd)/ProjectRover.app"
+echo "📍 DMG:      $(pwd)/ProjectRover-macos-universal.dmg"
 echo
 echo "🚀 To run the app:"
 echo "   open ProjectRover.app"

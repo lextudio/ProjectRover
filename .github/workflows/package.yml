@@ -77,6 +77,15 @@ jobs:
     - name: Build .app bundle (macOS universal)
       run: build/macos/build-application-bundle.sh osx-universal
 
+    - name: Build .dmg package (macOS universal)
+      run: build/macos/build-dmg.sh ProjectRover.app ProjectRover-macos-universal.dmg images/social.png
+
+    - name: Upload artifacts (.dmg, macOS universal)
+      uses: actions/upload-artifact@v4
+      with:
+        name: ProjectRover-macos-universal-dmg
+        path: ProjectRover-macos-universal.dmg
+
     - name: Archive artifacts (macOS universal)
       run: tar -czpf ProjectRover-macos-universal.tar.gz ProjectRover.app
 
