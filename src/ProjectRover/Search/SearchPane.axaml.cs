@@ -103,15 +103,15 @@ namespace ICSharpCode.ILSpy.Search
 
         public string SearchTerm => (this.FindControl<Controls.SearchBox>("SearchBox")?.Text) ?? string.Empty;
 
-        void FocusSearchBox()
+        public void FocusSearchBox()
         {
-            Dispatcher.UIThread.InvokeAsync(() => {
+            Dispatcher.UIThread.Post(() => {
                 var sb = this.FindControl<Controls.SearchBox>("SearchBox");
-                sb?.Focus();
-                // Attempt to select all if internal TextBox exposed
-                var tb = sb?.FindControl<TextBox>("PART_TextBox");
-                tb?.SelectAll();
-            });
+                if (sb?.FocusTextBox(selectAll: true) == true)
+                {
+                    return;
+                }
+            }, DispatcherPriority.Input);
         }
 
         void SearchBox_TextChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

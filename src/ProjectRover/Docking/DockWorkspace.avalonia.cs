@@ -764,6 +764,29 @@ namespace ICSharpCode.ILSpy.Docking
 
       log.Debug("ActivateToolPane: invoking ActivateTool for {ContentId}", contentId);
       ActivateTool(host, contentId);
+
+      if (string.Equals(contentId, SearchPaneModel.PaneContentId, StringComparison.Ordinal))
+      {
+        RequestSearchBoxFocus(host);
+      }
+    }
+
+    private void RequestSearchBoxFocus(DockControl host, int attempt = 0)
+    {
+      App.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+      {
+        var searchPane = host.GetVisualDescendants().OfType<SearchPane>().FirstOrDefault();
+        if (searchPane != null)
+        {
+          searchPane.FocusSearchBox();
+          return;
+        }
+
+        if (attempt < 10)
+        {
+          Avalonia.Threading.DispatcherTimer.RunOnce(() => RequestSearchBoxFocus(host, attempt + 1), TimeSpan.FromMilliseconds(50));
+        }
+      });
     }
 
     /// <summary>

@@ -98,8 +98,7 @@ namespace ICSharpCode.ILSpy.Controls
         {
             this.Text = string.Empty;
             DebouncedText = string.Empty;
-            var tb = textBox ?? this.FindControl<TextBox>("PART_TextBox");
-            tb?.Focus();
+            FocusTextBox(selectAll: false);
         }
 
         private void UpdateWatermarkLabel()
@@ -172,6 +171,21 @@ namespace ICSharpCode.ILSpy.Controls
         {
             get => GetValue(DebouncedTextProperty);
             private set => SetValue(DebouncedTextProperty, value);
+        }
+
+        public bool FocusTextBox(bool selectAll = true)
+        {
+            var tb = textBox ?? this.FindControl<TextBox>("PART_TextBox");
+            if (tb == null)
+                return false;
+
+            tb.Focus();
+            if (selectAll)
+            {
+                tb.SelectAll();
+            }
+
+            return tb.IsFocused;
         }
 
         private sealed class ActionObserver<T> : IObserver<T>
