@@ -196,4 +196,4 @@ FakesAssemblies/
 
 .DS_Store
 ProjectRover.app/
-.dmg
+*.dmg
