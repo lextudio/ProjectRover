@@ -124,11 +124,6 @@ namespace ICSharpCode.ILSpy.Docking
         }
 
         var leftTools = new System.Collections.Generic.List<ITool> { assemblyTreeModel };
-        if (analyzerPane is ITool analyzerTool)
-        {
-          leftTools.Add(analyzerTool);
-          log.Debug("DockWorkspace.InitializeLayout: Added analyzer to LeftDock");
-        }
 
         var layout = DefaultDockLayoutBuilder.Build(leftTools, documentDock);
         documentDock = layout.DocumentDock;
@@ -138,11 +133,6 @@ namespace ICSharpCode.ILSpy.Docking
         dockHost.InitializeFactory = true;
         dockHost.InitializeLayout = true;
         dockHost.Layout = layout.Root;
-
-        if (analyzerPane != null && !layout.ToolDock.VisibleDockables.Contains(analyzerPane))
-        {
-          layout.ToolDock.VisibleDockables.Add(analyzerPane);
-        }
 
         AttachToDockHost(dockHost, factory, documentDock);
         HookUpToolListeners(dockHost);
@@ -1085,7 +1075,12 @@ namespace ICSharpCode.ILSpy.Docking
             else
             {
               // Fallback to hardcoded dock IDs for backward compatibility
-              targetDockId = contentId == SearchPaneModel.PaneContentId ? "SearchDock" : "LeftDock";
+              targetDockId = contentId switch
+              {
+                SearchPaneModel.PaneContentId => "SearchDock",
+                AnalyzerTreeViewModel.PaneContentId => "AnalyzeDock",
+                _ => "LeftDock"
+              };
               log.Debug("ActivateTool: Tool has no DockGroup, using fallback targetDockId={TargetDockId}", targetDockId);
             }
             
@@ -1093,7 +1088,7 @@ namespace ICSharpCode.ILSpy.Docking
             log.Debug("ActivateTool: Looking for targetDock {TargetDockId}, found={Found}", targetDockId, targetDock != null);
 
             // If target dock not found, find any existing ToolDock as fallback
-            if (targetDock == null && targetDockId != "SearchDock")
+            if (targetDock == null && targetDockId != "SearchDock" && targetDockId != "AnalyzeDock")
             {
               log.Debug("ActivateTool: Specified dock {TargetDockId} not found, looking for any existing ToolDock", targetDockId);
               targetDock = FindFirstToolDockInLayout(layout);
@@ -1214,6 +1209,159 @@ namespace ICSharpCode.ILSpy.Docking
                     docOwner.VisibleDockables.Insert(1, newSplitter);
                     RegisterDockable(newSplitter);
                     log.Debug("ActivateTool: Created and inserted new SearchDock and splitter");
+                  }
+                }
+              }
+            }
+
+            // If target dock not found in layout, try to find in registered dockables and insert it
+            if (targetDock == null && targetDockId == "AnalyzeDock")
+            {
+              log.Debug("ActivateTool: AnalyzeDock not in layout, will create and insert it");
+              var docDock = FindDockById(layout, "DocumentDock");
+              log.Debug("ActivateTool: DocumentDock found={Found}, Owner={Owner}, OwnerId={OwnerId}", docDock != null, docDock?.Owner?.GetType().Name, docDock?.Owner?.Id);
+              if (docDock != null && docDock.Owner is IDock docOwner && docOwner.VisibleDockables != null)
+              {
+                log.Debug("ActivateTool: DocOwner is {Owner}, Orientation={Orientation}", docOwner.GetType().Name, (docOwner as IProportionalDock)?.Orientation);
+                // If the owner is horizontal (e.g. MainLayout), we need to wrap DocumentDock in a vertical dock
+                if (docOwner is IProportionalDock propDock && propDock.Orientation == Dock.Model.Core.Orientation.Horizontal)
+                {
+                  var newVerticalDock = new ProportionalDock
+                  {
+                    Id = "RightDock",
+                    Orientation = Dock.Model.Core.Orientation.Vertical,
+                    Proportion = double.IsNaN(docDock.Proportion) ? 1.0 : docDock.Proportion,
+                    VisibleDockables = new ObservableCollection<IDockable>()
+                  };
+
+                  int index = docOwner.VisibleDockables.IndexOf(docDock);
+                  if (index >= 0)
+                  {
+                    docOwner.VisibleDockables.RemoveAt(index);
+                    docOwner.VisibleDockables.Insert(index, newVerticalDock);
+                    newVerticalDock.Owner = docOwner;
+                    newVerticalDock.Factory = factory;
+
+                    docDock.Owner = newVerticalDock;
+                    newVerticalDock.VisibleDockables.Add(docDock);
+                    newVerticalDock.ActiveDockable = docDock;
+
+                    if (_registeredDockables.TryGetValue("AnalyzeSplitter", out var splitter))
+                    {
+                      splitter.Owner = newVerticalDock;
+                      splitter.Factory = factory;
+                      newVerticalDock.VisibleDockables.Add(splitter);
+                    }
+                    else
+                    {
+                      var newSplitter = new ProportionalDockSplitter
+                      {
+                        Id = "AnalyzeSplitter",
+                        CanResize = true,
+                        Owner = newVerticalDock,
+                        Factory = factory
+                      };
+                      newVerticalDock.VisibleDockables.Add(newSplitter);
+                      RegisterDockable(newSplitter);
+                    }
+
+                    if (_registeredDockables.TryGetValue("AnalyzeDock", out var analyzeDock) && analyzeDock is IToolDock ad)
+                    {
+                      ad.Owner = newVerticalDock;
+                      ad.Factory = factory;
+                      newVerticalDock.VisibleDockables.Add(ad);
+                      targetDock = ad;
+                    }
+                    else
+                    {
+                      var newAnalyzeDock = new ToolDock
+                      {
+                        Id = "AnalyzeDock",
+                        Title = "Analyze",
+                        Alignment = Alignment.Bottom,
+                        VisibleDockables = new ObservableCollection<IDockable>(),
+                        CanCloseLastDockable = true,
+                        Proportion = 0.33,
+                        Owner = newVerticalDock,
+                        Factory = factory
+                      };
+
+                      newVerticalDock.VisibleDockables.Add(newAnalyzeDock);
+                      RegisterDockable(newAnalyzeDock);
+                      targetDock = newAnalyzeDock;
+                    }
+                  }
+                }
+                else
+                {
+                  log.Debug("ActivateTool: RightDock is vertical, will insert AnalyzeDock at bottom");
+                  if (_registeredDockables.TryGetValue("AnalyzeDock", out var analyzeDock) && analyzeDock is IToolDock ad)
+                  {
+                    if (!docOwner.VisibleDockables.Contains(ad))
+                    {
+                      int docIndex = docOwner.VisibleDockables.IndexOf(docDock);
+                      int splitterInsertIndex = docIndex >= 0 ? docIndex + 1 : docOwner.VisibleDockables.Count;
+
+                      if (_registeredDockables.TryGetValue("AnalyzeSplitter", out var splitter))
+                      {
+                        if (!docOwner.VisibleDockables.Contains(splitter))
+                        {
+                          splitter.Owner = docOwner;
+                          splitter.Factory = factory;
+                          docOwner.VisibleDockables.Insert(Math.Min(splitterInsertIndex, docOwner.VisibleDockables.Count), splitter);
+                        }
+                      }
+                      else
+                      {
+                        var newSplitter = new ProportionalDockSplitter
+                        {
+                          Id = "AnalyzeSplitter",
+                          CanResize = true,
+                          Owner = docOwner,
+                          Factory = factory
+                        };
+                        docOwner.VisibleDockables.Insert(Math.Min(splitterInsertIndex, docOwner.VisibleDockables.Count), newSplitter);
+                        RegisterDockable(newSplitter);
+                      }
+
+                      ad.Owner = docOwner;
+                      ad.Factory = factory;
+                      int dockInsertIndex = splitterInsertIndex + 1;
+                      docOwner.VisibleDockables.Insert(Math.Min(dockInsertIndex, docOwner.VisibleDockables.Count), ad);
+                    }
+                    targetDock = ad;
+                  }
+                  else
+                  {
+                    int docIndex = docOwner.VisibleDockables.IndexOf(docDock);
+                    int splitterInsertIndex = docIndex >= 0 ? docIndex + 1 : docOwner.VisibleDockables.Count;
+
+                    var newAnalyzeDock = new ToolDock
+                    {
+                      Id = "AnalyzeDock",
+                      Title = "Analyze",
+                      Alignment = Alignment.Bottom,
+                      VisibleDockables = new ObservableCollection<IDockable>(),
+                      CanCloseLastDockable = true,
+                      Proportion = 0.33,
+                      Owner = docOwner,
+                      Factory = factory
+                    };
+
+                    var newSplitter = new ProportionalDockSplitter
+                    {
+                      Id = "AnalyzeSplitter",
+                      CanResize = true,
+                      Owner = docOwner,
+                      Factory = factory
+                    };
+
+                    docOwner.VisibleDockables.Insert(Math.Min(splitterInsertIndex, docOwner.VisibleDockables.Count), newSplitter);
+                    docOwner.VisibleDockables.Insert(Math.Min(splitterInsertIndex + 1, docOwner.VisibleDockables.Count), newAnalyzeDock);
+                    RegisterDockable(newSplitter);
+                    RegisterDockable(newAnalyzeDock);
+                    targetDock = newAnalyzeDock;
+                    log.Debug("ActivateTool: Created and inserted new AnalyzeDock and splitter");
                   }
                 }
               }
