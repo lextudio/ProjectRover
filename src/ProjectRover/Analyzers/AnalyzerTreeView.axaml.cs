@@ -17,10 +17,11 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.ComponentModel;
+using System.Linq;
 using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using ICSharpCode.ILSpy;
 using ICSharpCode.ILSpy.Analyzers;
 using ICSharpCode.ILSpy.TreeNodes;
@@ -30,6 +31,9 @@ namespace ICSharpCode.ILSpy.Analyzers
 {
     public partial class AnalyzerTreeView : UserControl
     {
+        private AnalyzerTreeViewModel? viewModel;
+        private bool suppressSelectionChanged;
+
         public AnalyzerTreeView()
         {
             InitializeComponent();
@@ -48,19 +52,129 @@ namespace ICSharpCode.ILSpy.Analyzers
             AvaloniaXamlLoader.Load(this);
         }
 
+        protected override void OnDataContextChanged(EventArgs e)
+        {
+            base.OnDataContextChanged(e);
+
+            if (viewModel != null)
+            {
+                viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            }
+
+            viewModel = DataContext as AnalyzerTreeViewModel;
+
+            if (viewModel != null)
+            {
+                viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            }
+
+            SyncSelectionFromViewModel(focusIfActive: false);
+        }
+
+        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(AnalyzerTreeViewModel.SelectedItems)
+                || e.PropertyName == nameof(AnalyzerTreeViewModel.IsActive))
+            {
+                SyncSelectionFromViewModel(focusIfActive: true);
+            }
+        }
+
+        private void SyncSelectionFromViewModel(bool focusIfActive)
+        {
+            if (Tree == null || viewModel == null)
+            {
+                return;
+            }
+
+            var selectedNode = viewModel.SelectedItems?.FirstOrDefault();
+            if (selectedNode is null)
+            {
+                return;
+            }
+
+            ApplySelectionWithRetry(selectedNode, focusIfActive, attempt: 0);
+        }
+
+        private void ApplySelectionWithRetry(AnalyzerTreeNode selectedNode, bool focusIfActive, int attempt)
+        {
+            if (Tree == null || viewModel == null)
+            {
+                return;
+            }
+
+            // Ignore stale requests after the selection changed again.
+            if (!ReferenceEquals(viewModel.SelectedItems?.FirstOrDefault(), selectedNode))
+            {
+                return;
+            }
+
+            suppressSelectionChanged = true;
+            selectedNode.IsSelected = true;
+            if (!ReferenceEquals(Tree.SelectedItem, selectedNode))
+            {
+                Tree.SelectedItem = selectedNode;
+            }
+
+            if (ReferenceEquals(Tree.SelectedItem, selectedNode))
+            {
+                Tree.ScrollIntoView(selectedNode);
+                if (focusIfActive && viewModel.IsActive)
+                {
+                    Tree.Focus();
+                }
+                // Keep suppression for one UI turn to swallow trailing transient SelectionChanged(null).
+                Dispatcher.UIThread.Post(() => {
+                    suppressSelectionChanged = false;
+                    var currentVmSelection = viewModel?.SelectedItems?.FirstOrDefault();
+                    if (Tree != null
+                        && currentVmSelection != null
+                        && !ReferenceEquals(Tree.SelectedItem, currentVmSelection)
+                        && attempt < 3)
+                    {
+                        ApplySelectionWithRetry(currentVmSelection, focusIfActive, attempt + 1);
+                        return;
+                    }
+                }, DispatcherPriority.Background);
+                return;
+            }
+
+            // On first pane activation, ItemsSource/materialization can lag behind VM updates.
+            // if (attempt >= 3)
+            // {
+            //     suppressSelectionChanged = false;
+            //     return;
+            // }
+
+            // Dispatcher.UIThread.Post(
+            //     () => ApplySelectionWithRetry(selectedNode, focusIfActive, attempt + 1),
+            //     DispatcherPriority.Background);
+        }
+
         private void AnalyzerTreeView_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
             if (DataContext is not AnalyzerTreeViewModel vm || Tree == null)
-                return;
-
-            if (Tree.SelectedItem is AnalyzerTreeNode node)
             {
+                return;
+            }
+
+            if (suppressSelectionChanged)
+            {
+                return;
+            }
+
+            var node = e.AddedItems?.OfType<AnalyzerTreeNode>().FirstOrDefault()
+                ?? Tree.SelectedItem as AnalyzerTreeNode;
+
+            if (node != null)
+            {
+                node.IsSelected = true;
                 vm.SelectedItems = new[] { node };
                 Tree.ScrollIntoView(node);
-            }
-            else
-            {
-                vm.SelectedItems = Array.Empty<AnalyzerTreeNode>();
+                if (vm.IsActive)
+                {
+                    Tree.Focus();
+                }
             }
         }
     }
