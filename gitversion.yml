@@ -8,6 +8,9 @@ branches:
   main:
     regex: main
     increment: Patch
+  local-test:
+    regex: local-test
+    increment: Patch
 
 ignore:
   sha: []

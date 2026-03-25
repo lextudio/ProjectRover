@@ -23,6 +23,7 @@ using Serilog;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using ICSharpCode.ILSpy.Util;
+using XamlToCSharpGenerator.Runtime;
 
 namespace ProjectRover;
 
@@ -75,5 +76,6 @@ sealed class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .UseAvaloniaSourceGeneratedXaml()
             .LogToTrace();
 }

@@ -23,7 +23,6 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
@@ -249,30 +248,35 @@ namespace ICSharpCode.ILSpy.Themes
 				.Replace(" ", string.Empty, StringComparison.Ordinal);
 		}
 
+		private static ResourceDictionary? CreateThemeDictionary(string themeFileName)
+		{
+			return themeFileName switch {
+				"Dark" => new ThemeDarkDictionary(),
+				"Light" => new ThemeLightDictionary(),
+				"VSCodeDarkPlus" => new ThemeVSCodeDarkPlusDictionary(),
+				"VSCodeLightPlus" => new ThemeVSCodeLightPlusDictionary(),
+				"RSharpDark" => new ThemeRSharpDarkDictionary(),
+				"RSharpLight" => new ThemeRSharpLightDictionary(),
+				_ => null
+			};
+		}
+
 		private void ApplyThemeResourceDictionary(string themeFileName)
 		{
 			if (Application.Current == null)
 				return;
 
 			themeDictionaryContainer.MergedDictionaries.Clear();
-			var themeUri = new Uri($"avares://ProjectRover/Themes/Theme.{themeFileName}.axaml");
 
-			try
+			var dictionary = CreateThemeDictionary(themeFileName);
+			if (dictionary != null)
 			{
-				var loaded = AvaloniaXamlLoader.Load(themeUri);
-				if (loaded is IResourceProvider resourceProvider)
-				{
-					themeDictionaryContainer.MergedDictionaries.Add(resourceProvider);
-					log.Debug("Loaded theme resource dictionary {ThemeUri}", themeUri);
-				}
-				else
-				{
-					log.Warning("Loaded theme resource is not an IResourceProvider: {ThemeUri}", themeUri);
-				}
+				themeDictionaryContainer.MergedDictionaries.Add(dictionary);
+				log.Debug("Loaded theme resource dictionary for {ThemeFileName}", themeFileName);
 			}
-			catch (Exception ex)
+			else
 			{
-				log.Warning(ex, "Failed to load theme resource dictionary {ThemeUri}", themeUri);
+				log.Warning("No theme dictionary class found for {ThemeFileName}", themeFileName);
 			}
 		}
 
@@ -303,30 +307,16 @@ namespace ICSharpCode.ILSpy.Themes
 
 		private static IReadOnlyDictionary<string, SyntaxColorEntry> LoadSyntaxColorsFromThemeAxaml(string themeFileName)
 		{
-			var themeUri = new Uri($"avares://ProjectRover/Themes/Theme.{themeFileName}.axaml");
-
-			try
+			var dictionary = CreateThemeDictionary(themeFileName);
+			if (dictionary == null)
 			{
-				var loaded = AvaloniaXamlLoader.Load(themeUri);
-				if (loaded is not IResourceProvider resourceProvider)
-				{
-					log.Warning(
-						"Loaded theme resource dictionary is not an IResourceProvider: {ThemeUri}; Type={Type}",
-						themeUri,
-						loaded?.GetType().FullName ?? "<null>");
-					return EmptySyntaxColors;
-				}
-
-				var result = new Dictionary<string, SyntaxColorEntry>(StringComparer.Ordinal);
-				CollectSyntaxColors(resourceProvider, result);
-
-				return result;
-			}
-			catch (Exception ex)
-			{
-				log.Warning(ex, "Failed to parse syntax colors from theme resource {ThemeUri}", themeUri);
+				log.Warning("No theme dictionary class found for {ThemeFileName}", themeFileName);
 				return EmptySyntaxColors;
 			}
+
+			var result = new Dictionary<string, SyntaxColorEntry>(StringComparer.Ordinal);
+			CollectSyntaxColors(dictionary, result);
+			return result;
 		}
 
 		private IReadOnlyDictionary<string, SyntaxColorEntry> LoadSyntaxColorsFromCurrentThemeResource()

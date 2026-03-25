@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <AvaloniaXamlCompilerBackend>SourceGen</AvaloniaXamlCompilerBackend>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ApplicationIcon>Assets\projectrover-logo.ico</ApplicationIcon>
     <RootNamespace>ICSharpCode.ILSpy</RootNamespace>
@@ -30,6 +31,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+    <PackageReference Include="XamlToCSharpGenerator" />
     <PackageReference Include="Avalonia.Xaml.Behaviors" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
