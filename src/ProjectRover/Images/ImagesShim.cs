@@ -451,12 +451,18 @@ namespace ICSharpCode.ILSpy
 				var overlayImg = comp.Overlay != null ? LoadImage(comp.Overlay) : null;
 				var staticImg = comp.IsStatic ? LoadImage("OverlayStaticIcon") ?? LoadImage("OverlayStatic") : null;
 
-				// Compose: base + extension badge first, then access overlay, then static
+				// Compose: base + extension badge first, then access overlay on top.
+				// When there is an extension badge but no further overlay/static, return
+				// the extension-composed image directly so it is NOT scaled a second time
+				// by an outer CompositeImage (which would shrink it to 64% total).
 				IImage? composed;
 				if (extensionImg != null)
 				{
 					var withExtension = ComposeImages(baseImg, extensionImg, null);
-					composed = ComposeImages(withExtension, overlayImg, staticImg);
+					if (overlayImg != null || staticImg != null)
+						composed = ComposeImages(withExtension, overlayImg, staticImg);
+					else
+						composed = withExtension;
 				}
 				else
 				{
