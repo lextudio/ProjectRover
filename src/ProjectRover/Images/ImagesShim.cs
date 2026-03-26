@@ -194,12 +194,14 @@ namespace ICSharpCode.ILSpy
 			public object Base { get; }
 			public object? Overlay { get; }
 			public bool IsStatic { get; }
+			public bool IsExtension { get; }
 
-			public CompositeIcon(object @base, object? overlay, bool isStatic)
+			public CompositeIcon(object @base, object? overlay, bool isStatic, bool isExtension = false)
 			{
 				Base = @base;
 				Overlay = overlay;
 				IsStatic = isStatic;
+				IsExtension = isExtension;
 			}
 		}
 
@@ -433,21 +435,33 @@ namespace ICSharpCode.ILSpy
 			// Handle composite icon requests (base + overlay + optional static badge)
 			if (icon is CompositeIcon comp)
 			{
-				log.Debug("Images.LoadImage: composite request base={Base} overlay={Overlay} isStatic={IsStatic}", comp.Base, comp.Overlay, comp.IsStatic);
+				log.Debug("Images.LoadImage: composite request base={Base} overlay={Overlay} isStatic={IsStatic} isExtension={IsExtension}", comp.Base, comp.Overlay, comp.IsStatic, comp.IsExtension);
 				// Try to build cache key from resolved paths when possible
 				string baseKey = ResolveIcon(comp.Base) ?? comp.Base?.ToString() ?? "";
 				string overlayKey = comp.Overlay != null ? ResolveIcon(comp.Overlay) ?? comp.Overlay.ToString() ?? "" : "";
 				string staticKey = comp.IsStatic ? ResolveIcon("OverlayStaticIcon") ?? ResolveIcon("OverlayStatic") ?? "/Assets/OverlayStatic.svg" : "";
-				log.Debug("Images.LoadImage: composite resolved keys base={BaseKey} overlay={OverlayKey} static={StaticKey}", baseKey, overlayKey, staticKey);
-				var cacheKey = baseKey + "|" + overlayKey + "|" + staticKey;
+				string extensionKey = comp.IsExtension ? ResolveIcon("OverlayExtensionIcon") ?? "/Assets/OverlayExtension.svg" : "";
+				log.Debug("Images.LoadImage: composite resolved keys base={BaseKey} overlay={OverlayKey} static={StaticKey} extension={ExtensionKey}", baseKey, overlayKey, staticKey, extensionKey);
+				var cacheKey = baseKey + "|" + overlayKey + "|" + staticKey + "|" + extensionKey;
 				if (composedCache.TryGetValue(cacheKey, out var cachedComposed))
 					return cachedComposed;
 
 				var baseImg = LoadImage(comp.Base);
+				var extensionImg = comp.IsExtension ? LoadImage("OverlayExtensionIcon") ?? LoadImage("OverlayExtension") : null;
 				var overlayImg = comp.Overlay != null ? LoadImage(comp.Overlay) : null;
 				var staticImg = comp.IsStatic ? LoadImage("OverlayStaticIcon") ?? LoadImage("OverlayStatic") : null;
 
-				var composed = ComposeImages(baseImg, overlayImg, staticImg);
+				// Compose: base + extension badge first, then access overlay, then static
+				IImage? composed;
+				if (extensionImg != null)
+				{
+					var withExtension = ComposeImages(baseImg, extensionImg, null);
+					composed = ComposeImages(withExtension, overlayImg, staticImg);
+				}
+				else
+				{
+					composed = ComposeImages(baseImg, overlayImg, staticImg);
+				}
 				if (composed != null)
 				{
 					composedCache.TryAdd(cacheKey, composed);
@@ -569,7 +583,7 @@ namespace ICSharpCode.ILSpy
 			}
 		}
 
-		internal static object GetIcon(object icon, object overlay, bool isStatic)
+		internal static object GetIcon(object icon, object overlay, bool isStatic, bool isExtension = false)
 		{
 			string name = null;
 			string access = "Public";
@@ -614,7 +628,6 @@ namespace ICSharpCode.ILSpy
 					case MemberIcon.Constructor: name = "Constructor"; break;
 					case MemberIcon.VirtualMethod: name = "Method"; break;
 					case MemberIcon.Operator: name = "Method"; break;
-					case MemberIcon.ExtensionMethod: name = "Method"; break;
 					case MemberIcon.PInvokeMethod: name = "Method"; break;
 					case MemberIcon.Indexer: name = "Property"; break;
 					default: name = "Method"; break;
@@ -655,9 +668,9 @@ namespace ICSharpCode.ILSpy
 					overlayName = sOverlay;
 				}
 
-				if (!string.IsNullOrEmpty(overlayName))
+				if (!string.IsNullOrEmpty(overlayName) || isStatic || isExtension)
 				{
-					return new CompositeIcon(baseKey, overlayName, isStatic);
+					return new CompositeIcon(baseKey, overlayName, isStatic, isExtension);
 				}
 				return baseKey;
 			}

@@ -634,6 +634,10 @@
       <Link>TreeNodes\EventTreeNode.cs</Link>
     </Compile>
 
+    <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ExtensionTreeNode.cs">
+      <Link>TreeNodes\ExtensionTreeNode.cs</Link>
+    </Compile>
+
     <Compile Include="$(MSBuildThisFileDirectory)..\ILSpy\ILSpy\TreeNodes\ExportedTypeTreeNode.cs">
       <Link>TreeNodes\ExportedTypeTreeNode.cs</Link>
     </Compile>
