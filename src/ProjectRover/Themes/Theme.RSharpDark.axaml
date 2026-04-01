@@ -19,8 +19,7 @@
 -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:themes="clr-namespace:ICSharpCode.ILSpy.Themes"
-                    x:Class="ICSharpCode.ILSpy.Themes.ThemeRSharpDarkDictionary">
+                    xmlns:themes="clr-namespace:ICSharpCode.ILSpy.Themes">
   <SolidColorBrush x:Key="BracketHighlightBackgroundBrush" Color="#0E4583" />
   <Pen x:Key="BracketHighlightBorderPen" Brush="#00000000" Thickness="1" />
   <SolidColorBrush x:Key="LinkTextForegroundBrush" Color="#5AA9FF" />
