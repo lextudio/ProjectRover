@@ -1289,7 +1289,7 @@ namespace ICSharpCode.ILSpy.TextView
 					return;
 				}
 			}
-			MessageBus.Send(this, new NavigateToReferenceEventArgs(reference, openInNewTab));
+			MessageBus.Send(this, new NavigateToReferenceEventArgs(reference, inNewTabPage: openInNewTab));
 		}
 
 		private void SetLocalReferenceMarks(object reference)

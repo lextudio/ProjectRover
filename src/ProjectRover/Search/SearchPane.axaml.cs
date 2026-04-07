@@ -255,7 +255,7 @@ namespace ICSharpCode.ILSpy.Search
             var grid = this.FindControl<DataGrid>("resultsGrid");
             if (grid?.SelectedItem is SearchResult result)
             {
-                MessageBus.Send(this, new NavigateToReferenceEventArgs(result.Reference, inNewTabPage));
+                MessageBus.Send(this, new NavigateToReferenceEventArgs(result.Reference, inNewTabPage: inNewTabPage));
             }
         }
 
