@@ -17,53 +17,46 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
+using Avalonia.Controls.Templates;
 
 namespace ICSharpCode.ILSpy.Metadata
 {
 	static partial class Helpers
 	{
-		private static DataTemplate GetOrCreateLinkCellTemplate(string name, PropertyDescriptor descriptor, Binding binding)
+		private static readonly Dictionary<string, IDataTemplate> _linkCellTemplatesAvalonia = new Dictionary<string, IDataTemplate>();
+
+		private static IDataTemplate GetOrCreateLinkCellTemplate(string name, PropertyDescriptor descriptor, Binding binding)
 		{
-			if (linkCellTemplates.TryGetValue(name, out var template))
+			if (_linkCellTemplatesAvalonia.TryGetValue(name, out var template))
 			{
 				return template;
 			}
 
-			var tb = new TextBlock();
-			var hyper = new HyperlinkButton();
-			hyper.Click += Hyperlink_Click;
-			var run = new Run();
-			run.Bind(Run.TextProperty, binding);
-
-			DataTemplate dataTemplate = new DataTemplate() { VisualTree = tb };
-			linkCellTemplates.Add(name, dataTemplate);
-			return dataTemplate;
-
-			void Hyperlink_Click(object sender, RoutedEventArgs e)
+			var dataTemplate = new FuncDataTemplate<object>((data, _) =>
 			{
-				var hyperlink = (HyperlinkButton)sender;
-				var onClickMethod = descriptor.ComponentType.GetMethod("On" + name + "Click", BindingFlags.Instance | BindingFlags.Public);
-				if (onClickMethod != null)
+				var hyper = new HyperlinkButton();
+				hyper.Classes.Add("LinkButton");
+				hyper.Bind(ContentControl.ContentProperty, binding);
+				hyper.Click += (sender, e) =>
 				{
-					onClickMethod.Invoke(hyperlink.DataContext, Array.Empty<object>());
-				}
-			}
-		}
-	}
+					var hyperlink = (HyperlinkButton)sender;
+					var onClickMethod = descriptor.ComponentType.GetMethod("On" + name + "Click", BindingFlags.Instance | BindingFlags.Public);
+					if (onClickMethod != null)
+					{
+						onClickMethod.Invoke(hyperlink.DataContext, Array.Empty<object>());
+					}
+				};
+				return hyper;
+			}, true);
 
-	static class DataTemplateExtensions
-	{
-		extension(DataTemplate dataTemplate)
-		{
-			public object VisualTree {
-				get => dataTemplate.Content;
-				set => dataTemplate.Content = value;
-			}
+			_linkCellTemplatesAvalonia.Add(name, dataTemplate);
+			return dataTemplate;
 		}
 	}
 }
