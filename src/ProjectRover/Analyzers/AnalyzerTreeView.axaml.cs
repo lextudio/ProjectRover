@@ -96,7 +96,7 @@ namespace ICSharpCode.ILSpy.Analyzers
             ApplySelectionWithRetry(selectedNode, focusIfActive, attempt: 0);
         }
 
-        private void ApplySelectionWithRetry(AnalyzerTreeNode selectedNode, bool focusIfActive, int attempt)
+        private void ApplySelectionWithRetry(SharpTreeNode selectedNode, bool focusIfActive, int attempt)
         {
             if (Tree == null || viewModel == null)
             {
